@@ -47,10 +47,8 @@ def firefox_set_ui(profilepath, bg, bgdark, accent, accentdark, color, accentonw
         lightbg, darkbg = accent, accentdark
         lighttabbg, darktabbg = bg, bgdark
     else:
-        lightbg, darkbg = bg
-        darkbg = bgdark
-        lighttabbg = accent
-        darktabbg = accentdark
+        lightbg, darkbg = bg, bgdark
+        lighttabbg, darktabbg = accent, accentdark
     # Foregrounds
     if utils.color_is_light(lightbg) == True:
         lightfg, lightfgrgb = "black", "rgba(0, 0, 0, "
