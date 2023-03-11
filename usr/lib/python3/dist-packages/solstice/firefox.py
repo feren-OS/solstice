@@ -112,5 +112,8 @@ def firefox_set_ui(profilepath, bg, bgdark, accent, accentdark, color, accentonw
                 .replace("COLORFG", colorfg)
             linescounted += 1
 
-        with open(profilepath + "/chrome/" + i, 'w') as fp:
-            fp.write('\n'.join(result))
+        try:
+            with open(profilepath + "/chrome/" + i, 'w') as fp:
+                fp.write('\n'.join(result))
+        except Exception as e:
+            raise SolsticeFirefoxException(_("Writing {0} failed: {1}").format(i, e))
