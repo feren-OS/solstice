@@ -35,6 +35,7 @@ def update_profile(iteminfo, profilename, profilepath, darkmode, nocache):
         raise SolsticeFirefoxException(_("Configuring user.js failed: %s") % e)
 
     firefox_set_ui(profilepath, iteminfo["bg"], iteminfo["bgdark"], iteminfo["accent"], iteminfo["accentdark"], iteminfo["color"], iteminfo["accentonwindow"])
+    #TODO: Permissions and whatnot
 
 
 #Colourise the Firefox interface
