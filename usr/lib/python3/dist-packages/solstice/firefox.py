@@ -16,7 +16,7 @@ def update_profile(iteminfo, profilename, profilepath, darkmode, nocache):
         try:
             os.mkdir("%s/chrome" % profilepath)
         except Exception as e:
-            raise SolsticeChromiumException(_("Failed to create the profile's chrome folder: %s") % e)
+            raise SolsticeFirefoxException(_("Failed to create the profile's chrome folder: %s") % e)
 
     #First, copy config files over
     for cfile in ["handlers.json", "user.js"]:
