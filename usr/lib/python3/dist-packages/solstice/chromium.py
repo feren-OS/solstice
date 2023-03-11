@@ -120,7 +120,7 @@ def chromi_set_sitepermissions(preferencedict, itemid, ogwebsite, extrawebsites)
 
     #Set the permissions for extra websites in this SSB
     for extrawebsite in extrawebsites:
-        shortenedurl = get_shortened_url(extrawebsite)
+        shortenedurl = utils.get_shortened_url(extrawebsite)
         try:
             shortenedurl = shortenedurl.split("/")[0]
         except:
