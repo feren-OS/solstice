@@ -38,7 +38,7 @@ class main:
     #### PROFILE EXECUTION
     def run_profile(self, itemid, profileid, browser, browsertype, website, wmclass, nohistory=False, forcedark=False, closecallback=None):
         #string, string, string, string, bool
-        profiledir = "{0}/{1}/{2}".format(default_ice_directory, itemid, profileid)
+        profiledir = "{0}/{1}/{2}".format(variables.default_ice_directory, itemid, profileid)
 
         if browser in self.sources_storage["browsers"]:
             commandtorun = self.sources_storage["browsers"][browser]["command"]
@@ -133,7 +133,7 @@ class main:
         profileconfs["lastupdated"] = datetime.today().strftime('%Y%m%d')
 
         try:
-            with open("{0}/{1}/{2}/.solstice-settings".format(default_ice_directory, iteminfo["id"], profileid), 'w') as fp:
+            with open("%s/.solstice-settings" % profilepath, 'w') as fp:
                 fp.write(json.dumps(profileconfs, separators=(',', ':')))
         except Exception as exceptionstr:
             raise ICESharedModuleException(_("Failed to write to .solstice-settings"))
