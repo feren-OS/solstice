@@ -11,7 +11,7 @@ import shutil
 class SolsticeFirefoxException(Exception):
     pass
 
-def update_profile(iteminfo, profilename, profilepath, darkmode, nocache):
+def update_profile(iteminfo, extrawebsites, profilename, profilepath, darkmode, nocache):
     if not os.path.isdir("%s/chrome" % profilepath):
         try:
             os.mkdir("%s/chrome" % profilepath)

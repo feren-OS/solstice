@@ -102,12 +102,13 @@ class main:
         if not os.path.isdir(profilepath):
             utils.create_profile_folder(iteminfo["id"], profileid)
 
+        extrawebsites = [] #TODO
         if iteminfo["browsertype"] == "chromium":
             from . import chromium
-            chromium.update_profile(iteminfo, profilename, profilepath, darkmode, nocache)
+            chromium.update_profile(iteminfo, extrawebsites, profilename, profilepath, darkmode, nocache)
         elif iteminfo["browsertype"] == "firefox":
             from . import firefox
-            firefox.update_profile(iteminfo, profilename, profilepath, darkmode, nocache)
+            firefox.update_profile(iteminfo, extrawebsites, profilename, profilepath, darkmode, nocache)
         #If Flatpak, grant access to the profile's directory
         if "flatpak" in self.sources_storage["browsers"][iteminfo["browser"]]:
             os.system("/usr/bin/flatpak override --user {0} --filesystem={1}/{2}".format(self.sources_storage["browsers"][iteminfo["browser"]]["flatpak"], variables.default_ice_directory, iteminfo["id"]))
