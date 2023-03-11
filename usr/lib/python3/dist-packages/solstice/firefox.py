@@ -70,11 +70,9 @@ def firefox_set_ui(profilepath, bg, bgdark, accent, accentdark, color, accentonw
     privatebg = utils.color_filter(color, -70.0)
     privatetabbg = utils.color_filter(color, -46.0)
     if utils.color_is_light(privatebg) == True:
-        privatefg = "black"
-        privatefgrgb = "rgba(0, 0, 0, "
+        privatefg, privatefgrgb = "black", "rgba(0, 0, 0, "
     else:
-        privatefg = "white"
-        privatefgrgb = "rgba(255, 255, 255, "
+        privatefg, privatefgrgb = "white", "rgba(255, 255, 255, "
     if utils.color_is_light(privatetabbg) == True:
         privatetabfg = "black"
     else:
