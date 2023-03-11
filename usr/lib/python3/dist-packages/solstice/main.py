@@ -7,6 +7,8 @@ import os
 import subprocess
 import gettext
 gettext.install("solstice-python", "/usr/share/locale", names="ngettext")
+import gi
+from gi.repository import GLib
 import json
 import shutil
 from datetime import datetime
@@ -110,6 +112,8 @@ class main:
         if "flatpak" in self.sources_storage["browsers"][iteminfo["browser"]]:
             os.system("/usr/bin/flatpak override --user {0} --filesystem={1}/{2}".format(self.sources_storage["browsers"][iteminfo["browser"]]["flatpak"], variables.default_ice_directory, iteminfo["id"]))
             #NOTE: Flatpak permissions are granted to the profiles folder per application so that the browser cannot read profiles it is not assigned to
+            #...and also let them access their respective Downloads folders
+            os.system("/usr/bin/flatpak override --user {0} --filesystem={1}".format(self.sources_storage["browsers"][iteminfo["browser"]]["flatpak"], GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) + "/" + _("{0} Downloads").format(iteminfo["name"])))
             #TODO: Move this elsewhere when adding in browser reselection?
 
         #Make note of the profile name and last updated configs
