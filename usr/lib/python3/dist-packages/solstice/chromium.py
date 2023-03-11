@@ -112,7 +112,7 @@ def chromi_set_sitepermissions(preferencedict, itemid, ogwebsite, extrawebsites)
     #dict, string, list
 
     #Set the permissions for default website in this SSB
-    shortenedurl = get_shortened_url(ogwebsite)
+    shortenedurl = utils.get_shortened_url(ogwebsite)
     for permtype in ["ar", "autoplay", "automatic_downloads", "background_sync", "clipboard", "file_handling", "font_access", "midi_sysex", "notifications", "payment_handler", "sensors", "sound", "sleeping-tabs", "window_placement", "vr"]:
         preferencedict["profile"]["content_settings"]["exceptions"][permtype] = {}
         preferencedict["profile"]["content_settings"]["exceptions"][permtype]["[*.]"+shortenedurl+",*"] = {"expiration": "0", "model": 0, "setting": 1}
