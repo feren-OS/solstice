@@ -116,6 +116,13 @@ def are_colours_different(hexcode1, hexcode2):
     else:
         return True
 
+def proc_exists(pid):
+    try:
+        os.kill(pid, 0) #Send a You There? to the PID identified
+    except:
+        return False
+    return True
+
 def export_icon_file(itemid, iconsource): #TODO: Move to Storium module's code
     try:
         #Make sure necessary directories exist
@@ -158,6 +165,21 @@ def export_icon_file(itemid, iconsource): #TODO: Move to Storium module's code
 
     except Exception as e:
         raise SolsticeUtilsException(_("Exporting icon failed: %s") % e)
+
+def profileid_generate(itemid, profilename):
+    name = profilename.replace(" ", "").replace("\\", "").replace("/", "").replace("?", "").replace("*", "").replace("+", "").replace("%", "").lower()
+    result = str(name)
+
+    if os.path.isdir("{0}/{1}/{2}".format(variables.default_ice_directory, itemid, result)): #Duplication prevention
+        numbertried = 2
+        while os.path.isdir("{0}/{1}/{2}{3}".format(variables.default_ice_directory, itemid, result, numbertried)):
+            numbertried += 1
+        result = name + str(numbertried) #Append duplication prevention number
+
+    return result
+
+def get_profilepath(itemid, profileid):
+    return "{0}/{1}/{2}".format(variables.default_ice_directory, itemid, profileid)
 
 # def get_profiles_folder(itemid): #string
 #     return variables.default_ice_directory + "/%s" % itemid

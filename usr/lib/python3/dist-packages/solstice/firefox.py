@@ -29,6 +29,10 @@ def update_profile(iteminfo, extrawebsites, profilename, profilepath, darkmode, 
         for line in result:
             result[linescounted] = result[linescounted].replace("WEBSITEHERE", iteminfo["website"]).replace("NAMEHERE", iteminfo["name"]).replace("CLEARHISTORY", utils.boolean_to_jsonbool(iteminfo["nohistory"] == True))
             linescounted += 1
+
+        #Set no cache preference
+        result = set_profile_nocache(profilepath, nocache, True, result)
+
         with open(profilepath + "/user.js", 'w') as fp:
             fp.write('\n'.join(result))
     except Exception as e:
@@ -38,8 +42,58 @@ def update_profile(iteminfo, extrawebsites, profilename, profilepath, darkmode, 
     #TODO: Permissions and whatnot
 
 
+#Dark Mode
+def set_profile_darkmode(profilepath, value, patchvar=False, vartopatch={}):
+    #string, bool
+    if not os.path.isdir(profilepath):
+        raise SolsticeFirefoxException(_("The profile %s does not exist") % profilepath.split("/")[-1])
+
+    raise SolsticeFirefoxException(_("Dark Mode is not available in Mozilla Firefox and its forks. Developers: Make sure your program checks for the 'darkmodeavailable' value in metadata.") % profilepath.split("/")[-1])
+
+
+#No Cache
+def set_profile_nocache(profilepath, value, patchvar=False, vartopatch=[]):
+    #string, bool
+    if not os.path.isdir(profilepath):
+        raise SolsticeFirefoxException(_("The profile %s does not exist") % profilepath.split("/")[-1])
+
+    valuestoadd = {"browser.cache.disk.enable": "false", "browser.cache.memory.enable": "false"}
+    if value == False:
+        valuestoadd["browser.cache.disk.enable"] = "true"
+        valuestoadd["browser.cache.memory.enable"] = "true"
+
+    if patchvar == False: #Allow this to also be used in update_profile without causing an additional file-write
+        with open(profilepath + "/user.js", 'r') as fp:
+            result = fp.read().splitlines()
+    else:
+        result = vartopatch
+    linescounted = 0
+    for line in result: #Check for and update existing values in user.js
+        valuestoaddtmp = valuestoadd.copy()
+        for i in valuestoaddtmp:
+            if line.startswith('user_pref("' + i + '", '):
+                result[linescounted] = 'user_pref("' + i + '", ' + valuestoaddtmp[i] + ");"
+                valuestoadd.pop(i) #Remove this value from the 'values to add' list
+        linescounted += 1
+    for i in valuestoadd: #Add in remaining values to the user.js file
+        result.append('user_pref("' + i + '", ' + valuestoaddtmp[i] + ");")
+
+    if patchvar == False: #Allow this to also be used in update_profile without causing an additional file-write
+        try:
+            with open(profilepath + "/user.js", 'w') as fp:
+                fp.write('\n'.join(result))
+        except Exception as e:
+            raise SolsticeFirefoxException(_("Configuring user.js failed: %s") % e)
+    else:
+        return result
+
+
 #Colourise the Firefox interface
 def firefox_set_ui(profilepath, bg, bgdark, accent, accentdark, color, accentonwindow):
+    #string, string, string, string, string, string, boolean
+    if not os.path.isdir(profilepath):
+        raise SolsticeChromiumException(_("The profile %s does not exist") % profilepath.split("/")[-1])
+
     for cfile in ["userContent.css", "userChrome.css", "ferenChrome.css", "ice.css"]:
         shutil.copy("/usr/share/solstice/firefox/chrome/" + cfile, profilepath + "/chrome/" + cfile)
 
