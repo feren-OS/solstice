@@ -170,34 +170,34 @@ def profileid_generate(itemid, profilename):
     name = profilename.replace(" ", "").replace("\\", "").replace("/", "").replace("?", "").replace("*", "").replace("+", "").replace("%", "").lower()
     result = str(name)
 
-    if os.path.isdir("{0}/{1}/{2}".format(variables.default_ice_directory, itemid, result)): #Duplication prevention
+    if os.path.isdir("{0}/{1}/{2}".format(variables.solstice_profiles_directory, itemid, result)): #Duplication prevention
         numbertried = 2
-        while os.path.isdir("{0}/{1}/{2}{3}".format(variables.default_ice_directory, itemid, result, numbertried)):
+        while os.path.isdir("{0}/{1}/{2}{3}".format(variables.solstice_profiles_directory, itemid, result, numbertried)):
             numbertried += 1
         result = name + str(numbertried) #Append duplication prevention number
 
     return result
 
 def get_profilepath(itemid, profileid):
-    return "{0}/{1}/{2}".format(variables.default_ice_directory, itemid, profileid)
+    return "{0}/{1}/{2}".format(variables.solstice_profiles_directory, itemid, profileid)
 
 # def get_profiles_folder(itemid): #string
-#     return variables.default_ice_directory + "/%s" % itemid
+#     return variables.solstice_profiles_directory + "/%s" % itemid
 
 def create_profile_folder(self, itemid, profileid):
-    if not os.path.isdir(variables.default_ice_directory): #Make sure the profiles directory even exists
+    if not os.path.isdir(variables.solstice_profiles_directory): #Make sure the profiles directory even exists
         try:
-            os.mkdir(variables.default_ice_directory)
+            os.mkdir(variables.solstice_profiles_directory)
         except Exception as e:
             raise SolsticeUtilsException(_("Failed to create the user's Solstice Profiles folder: %s") % e)
 
-    if not os.path.isdir(variables.default_ice_directory + "/%s" % itemid): #Now create the directory for this website application's profiles to go
+    if not os.path.isdir(variables.solstice_profiles_directory + "/%s" % itemid): #Now create the directory for this website application's profiles to go
         try:
-            os.mkdir(variables.default_ice_directory + "/%s" % itemid)
+            os.mkdir(variables.solstice_profiles_directory + "/%s" % itemid)
         except Exception as e:
             raise SolsticeUtilsException(_("Failed to create the application's Solstice Profiles folder: %s") % e)
 
-    if os.path.isdir("{0}/{1}/{2}".format(variables.default_ice_directory, itemid, profileid)): #Fail if profile exists
+    if os.path.isdir("{0}/{1}/{2}".format(variables.solstice_profiles_directory, itemid, profileid)): #Fail if profile exists
         raise SolsticeUtilsException(_("The profile %s already exists") % profileid)
     else:
-        os.mkdir("{0}/{1}/{2}".format(variables.default_ice_directory, itemid, profileid))
+        os.mkdir("{0}/{1}/{2}".format(variables.solstice_profiles_directory, itemid, profileid))
