@@ -1,4 +1,7 @@
 {
+    "background_mode": {
+        "enabled": false
+    },
     "brave": {
         "ens": {
             "resolve_method": 1
@@ -6,6 +9,9 @@
         "p3a": {
             "enabled": false,
             "notice_acknowledged": true
+        },
+        "sns": {
+            "resolve_method": 1
         },
         "stats": {
             "reporting_enabled": false
@@ -19,7 +25,7 @@
         "p3a_usage": 0
     },
     "browser": {
-        "enabled_labs_experiments": [ "ignore-gpu-blocklist" ]
+        "enabled_labs_experiments": [ "ignore-gpu-blocklist", "edge-share-menu@1", "edge-split-screen@1", "edge-rounded-containers@1", "edge-visual-rejuv-rounded-tabs@1" ]
     },
     "hardware_acceleration_mode_previous": true,
     "tor": {

@@ -181,9 +181,6 @@ def profileid_generate(itemid, profilename):
 def get_profilepath(itemid, profileid):
     return "{0}/{1}/{2}".format(variables.solstice_profiles_directory, itemid, profileid)
 
-# def get_profiles_folder(itemid): #string
-#     return variables.solstice_profiles_directory + "/%s" % itemid
-
 def create_profile_folder(self, itemid, profileid):
     if not os.path.isdir(variables.solstice_profiles_directory): #Make sure the profiles directory even exists
         try:

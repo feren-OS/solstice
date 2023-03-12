@@ -37,14 +37,23 @@
         },
         "brave": {
             "always_show_bookmark_bar_on_ntp": false,
+            "default_private_search_provider_guid": "b459346a-828a-485a-b68b-340f5aacabf4",
             "enable_media_router_on_restart": false,
+            "hangouts_enabled": true,
+            "ipfs": { "resolve_method": 3 },
             "new_tab_page": { "hide_all_widgets": true, "show_branded_background_image": false, "show_brave_today": false },
             "shields_settings_version": 2,
-            "hangouts_enabled": true,
+            "show_bookmarks_button": false,
+            "show_brave_rewards_button": false,
+            "show_side_panel_button": false,
             "hide_brave_rewards_button": true,
             "location_bar_is_wide": true,
+            "today": {
+                "should_show_toolbar_button": false
+            },
             "wallet": {
                 "auto_lock_minutes": 1,
+                "default_solana_wallet": 1,
                 "default_wallet2": 1,
                 "show_wallet_icon_on_toolbar": false,
                 "wallet_current_chain_id": "0x1"
@@ -54,6 +63,30 @@
         "browser": {
             "custom_chrome_frame": true,
             "has_seen_welcome_page": true,
+            "hub_app_preferences": {
+                "64be4f9b-3b81-4b6e-b354-0ba00d6ba485": { "auto_show": { "enabled": false } },
+                "8682d0fa-50b3-4ece-aa5b-e0b33f9919e2": { "auto_show": { "enabled": false } },
+                "96defd79-4015-4a32-bd09-794ff72183ef": { "auto_show": { "enabled": false } }
+            },
+            "should_shoreline_search_auto_open": false,
+            "should_underside_auto_open": false,
+            "show_hub_app_in_sidebar_buttons": {
+                "0c835d2d-9592-4c7a-8d0a-0e283c9ad3cd": 3,
+                "2354565a-f412-4654-b89c-f92eaa9dbd20": 3,
+                "523b5ef3-0b10-4154-8b62-10b2ebd00921": 3,
+                "64be4f9b-3b81-4b6e-b354-0ba00d6ba485": 3,
+                "8682d0fa-50b3-4ece-aa5b-e0b33f9919e2": 3,
+                "8ac719c5-140b-4bf2-a0b7-c71617f1f377": 3,
+                "92f1b743-e26b-433b-a1ec-912d1f0ad1fa": 3,
+                "96defd79-4015-4a32-bd09-794ff72183ef": 3,
+                "9ce3c9c2-462f-4cc9-bbd7-57d656445be0": 3,
+                "cd4688a9-e888-48ea-ad81-76193d56b1be": 3
+            },
+            "show_hub_apps_tower": false,
+            "show_hub_apps_tower_pinned": false,
+            "show_hubapps_personalization": false,
+            "show_sidebar_notification": false,
+            "show_sidebar_notification_preferred": false,
             "show_hub_popup_on_download_start": false,
             "show_toolbar_bookmarks_button": false,
             "show_toolbar_collections_button": false,
@@ -117,12 +150,13 @@
                 "usage_count": 0
             }
         },
-        "download": { "default_directory": "", "directory_upgrade": true },
+        "download": { "allow_office_viewer_for_download": false, "default_directory": "", "directory_upgrade": true },
         "edge_quick_search": {
             "show_mini_menu": false,
             "show_smart_actions": false
         },
         "edge_shopping_assistant_enabled": false,
+        "edge_underside_triggering_enabled": false,
         "enable_do_not_track": true,
         "extensions": {
             "settings": {
@@ -172,10 +206,12 @@
             },
             "custom_background_local_to_device": false,
             "enable_prerender": false,
+            "hide_default_top_sites": true,
             "layout_mode": 3,
             "news_feed_display": "off",
             "num_personal_suggestions": 1,
-            "quick_links_options": 0,
+            "quick_links_options": 1,
+            "show_greeting": false,
             "show_image_of_day": false,
             "show_settings": false,
             "use_most_visited_tiles": false

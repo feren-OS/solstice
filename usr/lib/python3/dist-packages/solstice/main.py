@@ -92,10 +92,9 @@ class main:
             with open(profilepath + "/.storium-active-pid", 'w') as pidfile:
                 pidfile.write(str(ssbproc.pid))
 
+        if not closecallback == None:
+            closecallback()
         if nohistory == True and browsertype == "chromium":
-            if not closecallback == None:
-                closecallback()
-
             #FIXME: We need a better way of doing this.
             time.sleep(16)
             if os.path.isfile(profilepath + "/Default/History"):
@@ -104,9 +103,6 @@ class main:
                 os.remove(profilepath + "/Default/History-journal")
             if os.path.isdir(profilepath + "/Default/Sessions"):
                 shutil.rmtree(profilepath + "/Default/Sessions")
-        else:
-            if not closecallback == None:
-                closecallback()
 
 
     #### PROFILE CREATION / UPDATING
