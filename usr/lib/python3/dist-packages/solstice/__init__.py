@@ -4,6 +4,6 @@
 
 import os
 
-__all__ = ["main", "utils", "chromium", "firefox"]
+__all__ = ["main", "variables", "utils", "chromium", "firefox"]
 
 

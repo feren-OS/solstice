@@ -16,11 +16,6 @@ import ast
 import signal
 import time
 
-class variables:
-    #Developer options
-    applications_directory = os.path.expanduser("~") + "/.local/share/applications"
-    solstice_profiles_directory = os.path.expanduser("~") + "/.local/share/solstice"
-
 class SolsticeModuleException(Exception):
     pass
 class ProfileInUseException(Exception):
@@ -28,30 +23,23 @@ class ProfileInUseException(Exception):
 
 class main:
     def __init__(self):
-        self.refresh_memory()
-
-    def refresh_memory(self): # Function to refresh some memory values
-        self.sources_storage = {}
-
-        with open("/usr/share/solstice/sources-info/data.json", 'r') as fp:
-            self.sources_storage = json.loads(fp.read())
-
+        pass
 
     #### PROFILE EXECUTION
     def run_profile(self, itemid, profileid, browser, browsertype, website, wmclass, nohistory=False, closecallback=None):
         #string, string, string, string, bool
         profilepath = utils.get_profilepath(itemid, profileid)
 
-        if browsertype not in self.sources_storage:
+        if browsertype not in variables.sources:
             raise SolsticeModuleException(_("Corrupt or incompatible data - %s is not a type of supported browser") % browsertype)
 
-        if browser in self.sources_storage[browsertype]:
-            commandtorun = self.sources_storage[browsertype][browser]["command"]
+        if browser in variables.sources[browsertype]:
+            commandtorun = variables.sources[browsertype][browser]["command"]
 
             #Check for configs
             darkmode, nocache = False, False
-            if os.path.isfile(profilesdir + "/" + profileid + "/.solstice-settings"):
-                with open(profilesdir + "/" + profileid + "/.solstice-settings", 'r') as fp:
+            if os.path.isfile(profilepath + "/.solstice-settings"):
+                with open(profilepath + "/.solstice-settings", 'r') as fp:
                     icesettings = json.loads(fp.read())
                     if "darkmode" in icesettings:
                         darkmode = icesettings["darkmode"]
@@ -59,11 +47,11 @@ class main:
                         nocache = icesettings["nocache"]
             #Append and prepend to command as according to the selected preferences
             if darkmode == True:
-                commandtorun.insert(0, self.sources_storage["browsers"][browser]["darkmodeprefix"])
-                commandtorun.append(self.sources_storage["browsers"][browser]["darkmodesuffix"])
+                commandtorun.insert(0, variables.sources[iteminfo["browsertype"]][browser]["darkmodeprefix"])
+                commandtorun.append(variables.sources[iteminfo["browsertype"]][browser]["darkmodesuffix"])
             if nocache == True:
-                commandtorun.insert(0, self.sources_storage["browsers"][browser]["nocacheprefix"])
-                commandtorun.append(self.sources_storage["browsers"][browser]["nocachesuffix"])
+                commandtorun.insert(0, variables.sources[iteminfo["browsertype"]][browser]["nocacheprefix"])
+                commandtorun.append(variables.sources[iteminfo["browsertype"]][browser]["nocachesuffix"])
             piececount = 0 #for loop right below
             while piececount < len(commandtorun):
                 #Translate arguments to their context-appropriate values
@@ -114,11 +102,11 @@ class main:
         if not os.path.isdir(profilepath):
             utils.create_profile_folder(iteminfo["id"], profileid)
             #If Flatpak, grant access to the profile's directory
-            if "flatpak" in self.sources_storage["browsers"][iteminfo["browser"]]:
-                os.system("/usr/bin/flatpak override --user {0} --filesystem={1}/{2}".format(self.sources_storage["browsers"][iteminfo["browser"]]["flatpak"], variables.solstice_profiles_directory, iteminfo["id"]))
+            if "flatpak" in variables.sources[iteminfo["browsertype"]][iteminfo["browser"]]:
+                os.system("/usr/bin/flatpak override --user {0} --filesystem={1}/{2}".format(variables.sources[iteminfo["browsertype"]][iteminfo["browser"]]["flatpak"], variables.solstice_profiles_directory, iteminfo["id"]))
                 #NOTE: Flatpak permissions are granted to the profiles folder per application so that the browser cannot read profiles it is not assigned to
                 #...and also let them access their respective Downloads folders
-                os.system("/usr/bin/flatpak override --user {0} --filesystem={1}".format(self.sources_storage["browsers"][iteminfo["browser"]]["flatpak"], GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) + "/" + _("{0} Downloads").format(iteminfo["name"])))
+                os.system("/usr/bin/flatpak override --user {0} --filesystem={1}".format(variables.sources[iteminfo["browsertype"]][iteminfo["browser"]]["flatpak"], GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) + "/" + _("{0} Downloads").format(iteminfo["name"])))
                 #TODO: Move this elsewhere when adding in browser reselection?
         else:
             if os.path.isfile(profilepath + "/.storium-active-pid"):

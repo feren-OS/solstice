@@ -2,7 +2,7 @@
 #
 # Copyright 2020-2023 Dominic Hayes
 
-from .main import variables
+from . import variables
 import os
 import gettext
 gettext.install("solstice-python", "/usr/share/locale", names="ngettext")
@@ -181,7 +181,7 @@ def profileid_generate(itemid, profilename):
 def get_profilepath(itemid, profileid):
     return "{0}/{1}/{2}".format(variables.solstice_profiles_directory, itemid, profileid)
 
-def create_profile_folder(self, itemid, profileid):
+def create_profile_folder(itemid, profileid):
     if not os.path.isdir(variables.solstice_profiles_directory): #Make sure the profiles directory even exists
         try:
             os.mkdir(variables.solstice_profiles_directory)
@@ -198,3 +198,91 @@ def create_profile_folder(self, itemid, profileid):
         raise SolsticeUtilsException(_("The profile %s already exists") % profileid)
     else:
         os.mkdir("{0}/{1}/{2}".format(variables.solstice_profiles_directory, itemid, profileid))
+
+def get_profile_settings(itemid, profileid):
+    #Returns: readablename, nocache, darkmode
+    profiledir = get_profilepath(itemid, profileid)
+    if not os.path.isfile("%s/.solstice-settings" % profilepath):
+        return profileid, False, False
+    with open("%s/.solstice-settings" % profilepath, 'r') as fp:
+        profileconfs = json.loads(fp.read())
+    result = {}
+    if "readablename" in profileconfs:
+        result["readablename"] = profileconfs["readablename"]
+    else:
+        result["readablename"] = profileid
+    if "nocache" in profileconfs:
+        result["nocache"] = profileconfs["nocache"]
+    else:
+        result["nocache"] = False
+    if "darkmode" in profileconfs:
+        result["darkmode"] = profileconfs["darkmode"]
+    else:
+        result["darkmode"] = False
+    return result["readablename"], result["nocache"], result["darkmode"]
+
+def complete_item_information(desktopinfo):
+    #Adds fallback values for any missing values
+    fallbackpalette = False
+    fallbackchromi = False
+    defaultitems = {"extraids": [],
+                    "nohistory": False,
+                    "nocache": False,
+                    "googlehangouts": False,
+                    "bonusids": [],
+                    "bg": "#ffffff",
+                    "bgdark": "#000000",
+                    "accent": "#4ba9fb",
+                    "accentdark": "#1a192d",
+                    "color": "#4ba9fb",
+                    "accentonwindow": True,
+                    "chromicolor": "-5919045",
+                    "chromicolordark": "-13485757"}
+    itemsrequired = ["name", "wmclass", "website", "browser", "browsertype", "lastupdated"]
+    for item in itemsrequired:
+        if item not in desktopinfo or desktopinfo[item] == "":
+            raise SolsticeUtilsException(_("Corrupt or overdated .desktop file - %s is missing") % item)
+    #Fall back to Solstice palette if the provided palette is incomplete
+    if "bg" not in itemsrequired or "bgdark" not in itemsrequired or "accent" not in itemsrequired or "accentdark" not in itemsrequired:
+        fallbackpalette = True
+    elif itemsrequired["bg"] == "" or itemsrequired["bgdark"] == "" or itemsrequired["accent"] == "" or itemsrequired["accentdark"] == "":
+        fallbackpalette = True
+    if fallbackpalette == True:
+        itemsrequired.pop("bg")
+        itemsrequired.pop("bgdark")
+        itemsrequired.pop("accent")
+        itemsrequired.pop("accentdark")
+        itemsrequired.pop("accentonwindow")
+        print(_("W: %s is missing colour values, falling back to Solstice palette") % desktopinfo["name"])
+    #Same for Chromium colour
+    if "chromicolor" not in itemsrequired or "chromicolordark" not in itemsrequired:
+        fallbackchromi = True
+    elif itemsrequired["chromicolor"] == "" or itemsrequired["chromicolordark"] == "":
+        fallbackchromi = True
+    if fallbackchromi == True:
+        itemsrequired.pop("chromicolor")
+        itemsrequired.pop("chromicolordark")
+    #Add in fallback values for missing values
+    for items in defaultitems:
+        if item not in desktopinfo or desktopinfo[item] == "":
+            desktopinfo[item] = defaultitems[item]
+    return desktopinfo
+
+def is_browser_available(browser, browsertype):
+    if browsertype not in variables.sources: #Invalid browser type
+        return False
+    if browser not in variables.sources[browsertype]: #Browser isn't categorised as this
+        return False
+    if "command" not in variables.sources[browsertype][browser]: #Browser is unavailable
+        return False
+    return os.path.isfile(variables.sources[browsertype][browser]["command"][0])
+
+def get_available_browsers(browsertype):
+    if browsertype not in variables.sources: #Invalid browser type
+        raise SolsticeUtilsException(_("%s is not a valid browser type") % browsertype)
+    result = []
+    for browser in variables.sources[browsertype]:
+        if "command" in variables.sources[browsertype][browser]:
+            if os.path.isfile(variables.sources[browsertype][browser]["command"][0]):
+                result.append(browser) #Add the available browsers to list,
+    return result #and return the list

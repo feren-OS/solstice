@@ -4,12 +4,14 @@ import QtQuick.Controls 2.3
 import org.kde.kirigami 2.13 as Kirigami
 
 ApplicationWindow {
-    id: window
+    id: mainwnd
     objectName: "mainwnd"
     visible: true
     width: 1020
     height: 600
-    title: "APPTITLE" // Changed by feren-storium-ice
+    title: "APPTITLE" // Changed by solstice
+    property var buttonRowMargin: 5
+    property var creationCancel: QtObject { property bool returnHome: true }
 
     //SIGNALS
     signal editProfile()
@@ -20,9 +22,6 @@ ApplicationWindow {
 
     Kirigami.Theme.inherit: true
     color: Kirigami.Theme.backgroundColor
-
-    property var buttonRowMargin: 5
-    property var creationCancel: QtObject { property bool returnHome: true }
 
     SwipeView {
         id: pages
@@ -88,23 +87,23 @@ ApplicationWindow {
                             Layout.preferredHeight: 7 * Kirigami.Units.gridUnit
                             onClicked: window.openProfile(profileid, alwaysUseProfile.checked)
 
-                            ToolTip.visible: myname ? hovered : false
-                            ToolTip.text: myname
+                            ToolTip.visible: pname ? hovered : false
+                            ToolTip.text: pname
                             ToolTip.delay: Kirigami.Units.toolTipDelay
 
                             contentItem: ColumnLayout {
                                 Kirigami.Avatar {
-                                    name: myname
+                                    name: pname
                                     iconSource: "user-identity"
                                     cache: false
                                     readonly property int size: 3 * Kirigami.Units.gridUnit
-                                    width: size
-                                    height: size
+                                    implicitWidth: size
+                                    implicitHeight: size
                                     anchors.centerIn: parent //FIXME: it misaligns without this
                                 }
                                 Text {
                                     id: profilelbl
-                                    text: myname
+                                    text: pname
                                     font: buttondeleg1.font
                                     width: buttondeleg1.width - Kirigami.Units.gridUnit
                                     horizontalAlignment: Text.AlignHCenter
@@ -213,8 +212,8 @@ ApplicationWindow {
                                     iconSource: "user-identity"
                                     cache: false
                                     readonly property int size: 3 * Kirigami.Units.gridUnit
-                                    width: size
-                                    height: size
+                                    implicitWidth: size
+                                    implicitHeight: size
                                     anchors.centerIn: parent //FIXME: it misaligns without this
                                 }
                                 Text {

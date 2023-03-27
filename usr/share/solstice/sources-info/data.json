@@ -107,5 +107,13 @@
             "flatpak": "io.gitlab.librewolf-community",
             "expected-file": "/user.js"
         }
+    },
+    "epiphany": {
+        "epiphany": {
+            "name": "Web",
+            "classprefix": "",
+            "flatpak": "org.gnome.Epiphany",
+            "unavailable": 1
+        }
     }
 }
