@@ -267,7 +267,7 @@ def complete_item_information(desktopinfo):
         desktopinfo.pop("chromicolordark")
         print(_("W: %s is missing Chromium colour, falling back to Solstice Chromium colour") % desktopinfo["name"])
     #Add in fallback values for missing values
-    for items in defaultitems:
+    for item in defaultitems:
         if item not in desktopinfo or desktopinfo[item] == "":
             desktopinfo[item] = defaultitems[item]
     return desktopinfo
