@@ -236,8 +236,7 @@ def complete_item_information(desktopinfo):
                     "accentdark": "#1a192d",
                     "color": "#4ba9fb",
                     "accentonwindow": True,
-                    "chromicolor": "-5919045",
-                    "chromicolordark": "-13485757"}
+                    "chromicolor": "-5919045"}
     itemsrequired = ["name", "wmclass", "website", "browser", "browsertype", "lastupdated"]
     for item in itemsrequired:
         if item not in desktopinfo or desktopinfo[item] == "":
@@ -258,13 +257,12 @@ def complete_item_information(desktopinfo):
         desktopinfo.pop("color")
         print(_("W: %s is missing accent colour, falling back to Solstice accent colour") % desktopinfo["name"])
     #Same for Chromium colour
-    if "chromicolor" not in desktopinfo or "chromicolordark" not in desktopinfo:
+    if "chromicolor" not in desktopinfo:
         fallbackchromi = True
-    elif desktopinfo["chromicolor"] == "" or desktopinfo["chromicolordark"] == "":
+    elif desktopinfo["chromicolor"] == "":
         fallbackchromi = True
     if fallbackchromi == True:
         desktopinfo.pop("chromicolor")
-        desktopinfo.pop("chromicolordark")
         print(_("W: %s is missing Chromium colour, falling back to Solstice Chromium colour") % desktopinfo["name"])
     #Add in fallback values for missing values
     for item in defaultitems:

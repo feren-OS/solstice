@@ -245,9 +245,9 @@ class main:
             raise SolsticeModuleException(_("Failed to write to .solstice-settings"))
 
     def batch_set_profilesettings(self, browsertype, profilepath, outdated, newname, darkmode, nocache):
-        change_profile_name(profilepath, newname, True)
-        set_profile_darkmode(browsertype, profilepath, darkmode, outdated, True)
-        set_profile_nocache(browsertype, profilepath, darkmode, outdated, True)
+        self.change_profile_name(profilepath, newname, True)
+        self.set_profile_darkmode(browsertype, profilepath, darkmode, outdated, True)
+        self.set_profile_nocache(browsertype, profilepath, darkmode, outdated, True)
 
         #By doing things this way, we assumedly save 2 file writes
         profileconfs = {"readablename": newname, "darkmode": darkmode, "nocache": nocache}

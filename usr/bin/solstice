@@ -126,7 +126,6 @@ class DesktopFileInformation:
         self.info["color"] = entry.get("X-Solstice-Color")
         self.info["accentonwindow"] = self.strToBool(entry.get("X-Solstice-AccentWindow"))
         self.info["chromicolor"] = entry.get("X-Solstice-ChromiColor")
-        self.info["chromicolordark"] = entry.get("X-Solstice-ChromiColor-Dark")
         self.info["lastupdated"] = entry.get("X-Solstice-LastUpdate")
         try:
             self.info = utils.complete_item_information(self.info)
@@ -392,18 +391,18 @@ class SolsticeGUI(QApplication):
 
         darkmode = self.mainwnd.findChild(QObject, "forceDarkMode").property('checked')
         nocache = self.mainwnd.findChild(QObject, "noCache").property('checked')
-        try:
-            if self.lastedited == "": #New profile
-                profileid = utils.profileid_generate(self.profilesdir, self.mainwnd.findChild(QObject, "editProfileName").property('text'))
-                #'Update' profile to give it its initial configurations
-                self.main.update_profile(self.info, newname, profileid, darkmode, nocache)
-            else:
-                outdated = self.getProfileOutdated(self.lastedited)
-                utils.batch_set_profilesettings(self.browsertype, self.profilesdir, outdated, newname, darkmode, nocache)
-        except Exception as e:
-            self.mainwnd.findChild(QObject, "editProfileNameError").setProperty('text', _("Failed to save changes"))
-            print(e)
-            return
+        # try:
+        if self.lastedited == "": #New profile
+            profileid = utils.profileid_generate(self.profilesdir, self.mainwnd.findChild(QObject, "editProfileName").property('text'))
+            #'Update' profile to give it its initial configurations
+            self.main.update_profile(self.info, newname, profileid, darkmode, nocache)
+        else:
+            outdated = self.getProfileOutdated(self.lastedited)
+            self.main.batch_set_profilesettings(self.browsertype, self.profilesdir, outdated, newname, darkmode, nocache)
+        # except Exception as e:
+        #     self.mainwnd.findChild(QObject, "editProfileNameError").setProperty('text', _("Failed to save changes"))
+        #     print(e)
+        #     return
 
         self.mainwnd.findChild(QObject, "editProfileNameError").setProperty('text', _(""))
         if self.lastedited == "":
