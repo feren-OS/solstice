@@ -71,6 +71,7 @@
             },
             "should_shoreline_search_auto_open": false,
             "should_underside_auto_open": false,
+            "show_edge_pill_shaped_tabs": false,
             "show_hub_app_in_sidebar_buttons": {
                 "0c835d2d-9592-4c7a-8d0a-0e283c9ad3cd": 3,
                 "2354565a-f412-4654-b89c-f92eaa9dbd20": 3,

@@ -27,6 +27,9 @@
     "browser": {
         "enabled_labs_experiments": [ "ignore-gpu-blocklist", "edge-share-menu@1", "edge-split-screen@1", "edge-rounded-containers@1", "edge-visual-rejuv-rounded-tabs@1" ]
     },
+    "edge": {
+        "perf_center": { "efficiency_mode_toggle": true }
+    },
     "hardware_acceleration_mode_previous": true,
     "tor": {
         "tor_disabled": true
