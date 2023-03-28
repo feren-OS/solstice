@@ -2,7 +2,7 @@
 #
 # Copyright 2020-2023 Dominic Hayes
 
-from . import utils
+from . import utils, variables
 import os
 import subprocess
 import gettext
@@ -35,27 +35,26 @@ class main:
 
         if browser in variables.sources[browsertype]:
             commandtorun = variables.sources[browsertype][browser]["command"]
-
             #Check for configs
             darkmode, nocache = False, False
             if os.path.isfile(profilepath + "/.solstice-settings"):
                 with open(profilepath + "/.solstice-settings", 'r') as fp:
-                    icesettings = json.loads(fp.read())
-                    if "darkmode" in icesettings:
-                        darkmode = icesettings["darkmode"]
-                    if "nocache" in icesettings:
-                        nocache = icesettings["nocache"]
+                    solsettings = json.loads(fp.read())
+                    if "darkmode" in solsettings:
+                        darkmode = solsettings["darkmode"]
+                    if "nocache" in solsettings:
+                        nocache = solsettings["nocache"]
             #Append and prepend to command as according to the selected preferences
             if darkmode == True:
-                commandtorun.insert(0, variables.sources[iteminfo["browsertype"]][browser]["darkmodeprefix"])
-                commandtorun.append(variables.sources[iteminfo["browsertype"]][browser]["darkmodesuffix"])
+                commandtorun = variables.sources[browsertype][browser]["darkmodeprefix"] + commandtorun
+                commandtorun = commandtorun + variables.sources[browsertype][browser]["darkmodesuffix"]
             if nocache == True:
-                commandtorun.insert(0, variables.sources[iteminfo["browsertype"]][browser]["nocacheprefix"])
-                commandtorun.append(variables.sources[iteminfo["browsertype"]][browser]["nocachesuffix"])
+                commandtorun = variables.sources[browsertype][browser]["nocacheprefix"] + commandtorun
+                commandtorun = commandtorun + variables.sources[browsertype][browser]["nocachesuffix"]
             piececount = 0 #for loop right below
-            while piececount < len(commandtorun):
+            for piece in commandtorun:
                 #Translate arguments to their context-appropriate values
-                commandtorun[piececount] = commandtorun[piececount].replace(
+                commandtorun[piececount] = piece.replace(
                     "%WEBSITEURL%", website).replace(
                     "%WINCLASS%", wmclass).replace(
                     "%PROFILEDIR%", profilepath)
@@ -175,8 +174,10 @@ class main:
 
 
     #### PROFILE OPTIONS
-    def change_profile_name(self, profilepath, value):
+    def change_profile_name(self, profilepath, value, returnonly=False):
         #string, string
+        if returnonly:
+            return
 
         #Change the profile's name after its initial creation occurred
         profileconfs = {}
@@ -190,7 +191,7 @@ class main:
         except Exception as exceptionstr:
             raise SolsticeModuleException(_("Failed to write to .solstice-settings"))
 
-    def set_profile_darkmode(self, browsertype, profilepath, value, outdated=False):
+    def set_profile_darkmode(self, browsertype, profilepath, value, outdated=False, returnonly=False):
         #string, boolean
 
         if outdated == False: #If the profile is outdated, the changes made per browser will be made when the profile gets updated on launch,
@@ -201,6 +202,9 @@ class main:
             elif iteminfo["browsertype"] == "firefox":
                 from . import firefox
                 firefox.set_profile_darkmode(profilepath, value)
+
+        if returnonly:
+            return
 
         #Update solstice-settings to reaffirm this change
         profileconfs = {}
@@ -214,7 +218,7 @@ class main:
         except Exception as exceptionstr:
             raise SolsticeModuleException(_("Failed to write to .solstice-settings"))
 
-    def set_profile_nocache(self, browsertype, profilepath, value, outdated=False):
+    def set_profile_nocache(self, browsertype, profilepath, value, outdated=False, returnonly=False):
         #string, boolean
 
         if outdated == False:
@@ -225,12 +229,28 @@ class main:
                 from . import firefox
                 firefox.set_profile_nocache(profilepath, value)
 
+        if returnonly:
+            return
+
         #Update solstice-settings to reaffirm this change
         profileconfs = {}
         if os.path.isfile("%s/.solstice-settings" % profilepath):
             with open("%s/.solstice-settings" % profilepath, 'r') as fp:
                 profileconfs = json.loads(fp.read())
         profileconfs["nocache"] = value
+        try:
+            with open("%s/.solstice-settings" % profilepath, 'w') as fp:
+                fp.write(json.dumps(profileconfs, separators=(',', ':')))
+        except Exception as exceptionstr:
+            raise SolsticeModuleException(_("Failed to write to .solstice-settings"))
+
+    def batch_set_profilesettings(self, browsertype, profilepath, outdated, newname, darkmode, nocache):
+        change_profile_name(profilepath, newname, True)
+        set_profile_darkmode(browsertype, profilepath, darkmode, outdated, True)
+        set_profile_nocache(browsertype, profilepath, darkmode, outdated, True)
+
+        #By doing things this way, we assumedly save 2 file writes
+        profileconfs = {"readablename": newname, "darkmode": darkmode, "nocache": nocache}
         try:
             with open("%s/.solstice-settings" % profilepath, 'w') as fp:
                 fp.write(json.dumps(profileconfs, separators=(',', ':')))

@@ -2,6 +2,7 @@
 
 from solstice import main as solstice
 from solstice import utils, variables
+import os
 import sys
 import gettext
 gettext.install("solstice-gui", "/usr/share/locale", names="ngettext")
@@ -10,6 +11,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtQml import * #Needs python3-pyqt5.qtquick
 from xdg.DesktopEntry import DesktopEntry
 import ast
+import json
 
 QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
 
@@ -116,7 +118,6 @@ class DesktopFileInformation:
         except:
             self.info["bonusids"] = []
         self.info["nohistory"] = self.strToBool(entry.get("X-Solstice-NoHistory"))
-        self.info["nocache"] = self.strToBool(entry.get("X-Solstice-NoCache"))
         self.info["googlehangouts"] = self.strToBool(entry.get("X-Solstice-GoogleHangouts"))
         self.info["bg"] = entry.get("X-Solstice-BG")
         self.info["bgdark"] = entry.get("X-Solstice-BG-Dark")
@@ -130,7 +131,7 @@ class DesktopFileInformation:
         try:
             self.info = utils.complete_item_information(self.info)
         except Exception as e:
-            self.info = {}
+            del self.info
             raise SolsticeGUIException(e)
 
     def strToBool(self, string):
@@ -144,21 +145,21 @@ class SolsticeGUI(QApplication):
         super().__init__(sys.argv)
         self.main = solstice.main()
         self.info = infoclass
-        self.mainwnd = None
-        self.errorwnd = None
+        self.mainwnd = None #we manipulate the window numerous times in the code
+        self.errorwnd = None #FIXME: Do we manipulate the errorwnd after initial spawning?
         self.maineng = None #storing the engines so they don't get deleted
-        self.erroreng = None
+        self.erroreng = None # after self.open...Window()
 
         if self.info != {}: #Don't run this code if the file is corrupt
             self.profilesdir = "{0}/{1}".format(variables.solstice_profiles_directory, self.info["id"])
-            self.autoload = self.getAutoProfileLoad()
+            self.autoload = self.getAutoProfileLoad() #Multiple parts of code get this value
             self.browser = self.info["browser"]
             self.browsertype = self.info["browsertype"]
-            browserCheck = self.browserCheck()
+            browserCheck = self.browserCheck() #It's used again later in the code
             if browserCheck == True:
                 self.autoProfileLoad() #If a profile is set to autolaunch, launch it
             guiwmclass = self.info["wmclass"]
-        else:
+        else: #Instead run this code if the file is corrupt
             guiwmclass = "solstice"
 
         #Set window class
@@ -171,17 +172,19 @@ class SolsticeGUI(QApplication):
 
         self.openMainWindow()
         #Set label values, and the window title
-        guiname = self.info["name"]
-        self.mainwnd.setProperty('title', guiname)
-        self.mainwnd.findChild(QObject, "profilesHeader").setProperty('text', "Who's using %s?" % guiname)
-        self.mainwnd.findChild(QObject, "browsersHeader").setProperty('text', "Choose a browser to launch %s" % guiname)
-        self.mainwnd.findChild(QObject, "manageHeader").setProperty('text', "Manage %s Profiles" % guiname)
-        self.mainwnd.findChild(QObject, "editProfileSubheader").setProperty('text', "Choose your name, and options for your profile.\nOnce you are done. hit Finish below.")
-        #TODO: Add in label changing to translate the labels
+        self.interfaceLabels()
+        #Apply browser-specific GUI adjustments
+        self.refreshBrowserFeatures()
+        #Refresh profiles list
+        self.refreshProfilesList()
         #Final checks
         if browserCheck == False: #Show the browser selector if browser not available
-            self.browserSelect()
+            self.gotoBrowserSelect()
+        else:
+            self.gotoProfiles()
 
+
+    #GUI spawning
     def openMainWindow(self):
         #Set up QML windows
         self.maineng = QQmlApplicationEngine()
@@ -195,11 +198,12 @@ class SolsticeGUI(QApplication):
         self.maineng.load('/usr/lib/solstice/gui.qml')
         self.mainwnd = self.maineng.rootObjects()[0]
         #Connect main window events
-        self.mainwnd.editProfile.connect(onEditProfile)
-        self.mainwnd.openProfile.connect(onOpenProfile)
-        self.mainwnd.enterEditProfile.connect(onEnterEditProfile)
-        self.mainwnd.enterCreateProfile.connect(onEnterCreateProfile)
-        self.mainwnd.deleteProfile.connect(onDeleteProfile)
+        self.mainwnd.openProfile.connect(self.openProfile)
+        self.mainwnd.gotoProfileEditor.connect(self.gotoProfileEditor)
+        self.mainwnd.saveProfile.connect(self.saveProfile)
+        self.mainwnd.deleteProfile.connect(self.quit)
+        #Load value of autolaunch checkbox
+        self.mainwnd.findChild(QObject, "alwaysUseProfile").setProperty('checked', not self.autoload == "")
 
     def openErrorWindow(self):
         if self.mainwnd != None:
@@ -215,75 +219,25 @@ class SolsticeGUI(QApplication):
         self.errorwnd.openStoreBrowsers.connect(self.quit) #TODO
         self.errorwnd.openStoreID.connect(self.quit) #TODO
 
-    def autoProfileLoad(self):
-        #Don't autoload if --force-manager is currently in effect
-        if "--force-manager" in sys.argv:
-            return
-        self.openProfile(self.autoload, True, True)
 
-    def getAutoProfileLoad(self):
-        result = ""
-        #Shortened name to make the multiple times the code uses it shorter too
-        solauto = "%s/.solstice-autolaunch" % self.profilesdir
-        if not os.path.isfile(solauto):
-            return ""
-        with open(solauto, 'r') as fp:
-            result = fp.readline()
-        return result
+    #Labels
+    def interfaceLabels(self):
+        self.mainwnd.setProperty('title', self.info["name"])
+        self.mainwnd.findChild(QObject, "profilesHeader").setProperty('text', "Who's using %s?" % self.info["name"])
+        self.mainwnd.findChild(QObject, "browsersHeader").setProperty('text', "Choose a browser to launch %s" % self.info["name"])
+        self.mainwnd.findChild(QObject, "manageHeader").setProperty('text', "Manage %s Profiles" % self.info["name"])
+        self.mainwnd.findChild(QObject, "editProfileSubheader").setProperty('text', "Choose your name, and options for your profile.\nOnce you are done. hit Finish below.")
+        #TODO: Add in label changing to translate the labels
 
-    def setAutoProfileLoad(self, value):
-        if value == "" and os.path.isfile(solauto):
-            try:
-                os.remove(solauto)
-            except Exception as e:
-                raise SolsticeGUIException(_("Could not disable automatic profile launching: %s") % e)
-        elif value == "":
-            return
-        #Shortened name to make the multiple times the code uses it shorter too
-        solauto = "%s/.solstice-autolaunch" % self.profilesdir
-        try:
-            with open(solauto, 'w') as fp:
-                fp.write(value)
-        except Exception as e:
-            raise SolsticeGUIException(_("Could not configure automatic profile launching: %s") % e)
 
-    def getProfiles(self):
-        profiles = []
-        for i in os.listdir(self.profilesdir):
-            if os.path.isdir(self.profilesdir + "/" + i):
-                if os.path.isfile(self.profilesdir + "/" + i + variables.sources[self.browsertype][self.browser]["expected-file"]):
-                    readablename = i
-                    if os.path.isfile(self.profilesdir + "/" + i + "/.solstice-settings"):
-                        with open(self.profilesdir + "/" + i + "/.solstice-settings", 'r') as fp:
-                            solsettings = json.loads(fp.read())
-                            if "readablename" in solsettings:
-                                readablename = solsettings["readablename"]
-                    profiles.append({"myname": readablename, "profileid": i})
-        return profiles
-
-    def getProfileOutdated(self, profileid):
-        profilepath = utils.get_profilepath(self.info["id"], profileid)
-        if not os.path.isfile("%s/.solstice-settings" % profilepath):
-            return True #lastupdated is in said file
-        with open("%s/.solstice-settings" % profilepath, 'r') as fp:
-            profileconfs = json.loads(fp.read())
-        if "lastupdated" not in profileconfs:
-            return True #not having lastupdated means it's outdated by definition
-        try:
-            if int(profileconfs["lastupdated"]) < int(self.info["lastupdated"]):
-                return True #profile's last update was earlier than the shortcut's
-            else:
-                return False #profile is up to date
-        except:
-            return True #this usually means they aren't numbers, thus outdated by definition
-
+    #Browser Management and Checks
     def browserCheck(self):
         if not utils.is_browser_available(self.browser, self.browsertype):
             return False
         else:
             return True
 
-    def browserSelect(self):
+    def gotoBrowserSelect(self):
         browsersavailable = []
         try:
             browsersavailable = utils.get_available_browsers(self.browsertype)
@@ -306,6 +260,32 @@ class SolsticeGUI(QApplication):
 
         pass #TODO: Go to Browser Selection page
 
+    def setBrowser(self, newbrowser):
+        pass #TODO
+
+        self.browser = newbrowser
+        #TODO: Force all existing profiles to update on launch
+        self.refreshBrowserFeatures() #Refresh feature availability
+        self.gotoProfiles()
+
+    def refreshBrowserFeatures(self):
+        #Dark mode option
+        if utils.is_feature_available(self.browsertype, self.browser, "darkmodeavailable"):
+            self.mainwnd.findChild(QObject, "forceDarkMode").setProperty('enabled', True)
+            self.mainwnd.findChild(QObject, "forceDarkModeHint").setProperty('text', _("Only works on compatible applications"))
+        else:
+            self.mainwnd.findChild(QObject, "forceDarkMode").setProperty('enabled', False)
+            self.mainwnd.findChild(QObject, "forceDarkModeHint").setProperty('text', _("Not available on %s") % variables.sources[self.browsertype][self.browser]["name"])
+        #No cache option
+        if utils.is_feature_available(self.browsertype, self.browser, "nocacheavailable"):
+            self.mainwnd.findChild(QObject, "noCache").setProperty('enabled', True)
+            self.mainwnd.findChild(QObject, "noCacheHint").setProperty('text', _("Worsens load times of websites"))
+        else:
+            self.mainwnd.findChild(QObject, "noCache").setProperty('enabled', False)
+            self.mainwnd.findChild(QObject, "noCacheHint").setProperty('text', _("Not available on %s") % variables.sources[self.browsertype][self.browser]["name"])
+
+
+    #Error handling
     def genericError(self, wintitle, errortitle, errormessage):
         self.openErrorWindow()
 
@@ -329,18 +309,155 @@ class SolsticeGUI(QApplication):
         #announcement: Link to the announcement - used if perma is True
         pass #TODO
 
+
+    #Automatic Profile Loading
+    def autoProfileLoad(self):
+        #Don't autoload if overridden or there is no configured profile
+        if "--force-manager" in sys.argv or self.autoload == "":
+            return
+        self.openProfile(self.autoload, True, True)
+        sys.exit(0) #End the code here
+
+    def getAutoProfileLoad(self):
+        result = ""
+        #Shortened name to make the multiple times the code uses it shorter too
+        solauto = "%s/.solstice-autolaunch" % self.profilesdir
+        if not os.path.isfile(solauto):
+            return ""
+        with open(solauto, 'r') as fp:
+            result = fp.readline()
+        if not os.path.isdir(utils.get_profilepath(self.info["id"], result)):
+            return ""
+        return result
+
+    def setAutoProfileLoad(self, value):
+        solauto = "%s/.solstice-autolaunch" % self.profilesdir
+        if value == "" and os.path.isfile(solauto):
+            try:
+                os.remove(solauto)
+            except Exception as e:
+                raise SolsticeGUIException(_("Could not disable automatic profile launching: %s") % e)
+        elif value == "":
+            return
+        #Shortened name to make the multiple times the code uses it shorter too
+        try:
+            with open(solauto, 'w') as fp:
+                fp.write(value)
+        except Exception as e:
+            raise SolsticeGUIException(_("Could not configure automatic profile launching: %s") % e)
+
+
+    #Profile(s) Checks
+    def refreshProfilesList(self):
+        if not os.path.isdir(self.profilesdir):
+            self.profilesmodel.setData([])
+            return
+        profiles = []
+        for i in os.listdir(self.profilesdir):
+            if os.path.isdir(self.profilesdir + "/" + i):
+                if os.path.isfile(self.profilesdir + "/" + i + variables.sources[self.browsertype][self.browser]["expected-file"]):
+                    readablename = i
+                    if os.path.isfile(self.profilesdir + "/" + i + "/.solstice-settings"):
+                        with open(self.profilesdir + "/" + i + "/.solstice-settings", 'r') as fp:
+                            solsettings = json.loads(fp.read())
+                            if "readablename" in solsettings:
+                                readablename = solsettings["readablename"]
+                    profiles.append({"pname": readablename, "profileid": i})
+        #Refresh profiles list in profilesmodel
+        self.profilesmodel.setData(profiles)
+
+    def getProfileOutdated(self, profileid):
+        profilepath = utils.get_profilepath(self.info["id"], profileid)
+        if not os.path.isfile("%s/.solstice-settings" % profilepath):
+            return True #lastupdated is in said file
+        with open("%s/.solstice-settings" % profilepath, 'r') as fp:
+            profileconfs = json.loads(fp.read())
+        if "lastupdated" not in profileconfs:
+            return True #not having lastupdated means it's outdated by definition
+        try:
+            if ast.literal_eval(profileconfs["lastupdated"]) < ast.literal_eval(self.info["lastupdated"]):
+                return True #profile's last update was earlier than the shortcut's
+            else:
+                return False #profile is up to date
+        except:
+            return True #this usually means they aren't numbers, thus outdated by definition
+
+
+    #Profile management
+    def saveProfile(self):
+        newname = self.mainwnd.findChild(QObject, "editProfileName").property('text')
+        if newname == "":
+            self.mainwnd.findChild(QObject, "editProfileNameError").setProperty('text', _("Please enter a name for this profile"))
+            return
+
+        darkmode = self.mainwnd.findChild(QObject, "forceDarkMode").property('checked')
+        nocache = self.mainwnd.findChild(QObject, "noCache").property('checked')
+        try:
+            if self.lastedited == "": #New profile
+                profileid = utils.profileid_generate(self.profilesdir, self.mainwnd.findChild(QObject, "editProfileName").property('text'))
+                #'Update' profile to give it its initial configurations
+                self.main.update_profile(self.info, newname, profileid, darkmode, nocache)
+            else:
+                outdated = self.getProfileOutdated(self.lastedited)
+                utils.batch_set_profilesettings(self.browsertype, self.profilesdir, outdated, newname, darkmode, nocache)
+        except Exception as e:
+            self.mainwnd.findChild(QObject, "editProfileNameError").setProperty('text', _("Failed to save changes"))
+            print(e)
+            return
+
+        self.mainwnd.findChild(QObject, "editProfileNameError").setProperty('text', _(""))
+        if self.lastedited == "":
+            #Automatically launch newly created profile
+            self.openProfile(profileid, False)
+        else:
+            #Return to profile manager
+            self.mainwnd.findChild(QObject, "pages").setProperty('currentIndex', 1)
+            self.mainwnd.findChild(QObject, "profileManager").forceActiveFocus(True)
+        del self.lastedited #delete the variable as it is now redundant
+
+    def gotoProfileEditor(self, newprofile, profileid=""):
+        self.lastedited = profileid
+        self.mainwnd.findChild(QObject, "editProfileNameError").setProperty('text', _(""))
+        if newprofile == True:
+            self.mainwnd.findChild(QObject, "editProfileHeader").setProperty('text', _("Create a profile"))
+            self.mainwnd.findChild(QObject, "deleteProfileBtn").setProperty('enabled', False)
+            self.mainwnd.findChild(QObject, "editProfileName").setProperty('text', "")
+            self.mainwnd.findChild(QObject, "forceDarkMode").setProperty('checked', False)
+            self.mainwnd.findChild(QObject, "noCache").setProperty('checked', False)
+        else:
+            profilename, nocache, darkmode = utils.get_profile_settings(self.info["id"], profileid) #Getting necessary values
+            self.mainwnd.findChild(QObject, "editProfileHeader").setProperty('text', _("Configuring %s") % profilename)
+            self.mainwnd.findChild(QObject, "deleteProfileBtn").setProperty('enabled', False)
+            self.mainwnd.findChild(QObject, "editProfileName").setProperty('text', profilename)
+            self.mainwnd.findChild(QObject, "forceDarkMode").setProperty('checked', darkmode)
+            self.mainwnd.findChild(QObject, "noCache").setProperty('checked', nocache)
+        self.mainwnd.findChild(QObject, "pages").setProperty('currentIndex', 2)
+        self.mainwnd.findChild(QObject, "editProfileName").forceActiveFocus(True)
+
+    def updateProfile(self, profileid):
+        profilename, nocache, darkmode = utils.get_profile_settings(self.info["id"], profileid) #Getting necessary values
+        self.main.update_profile(self.info, profilename, profileid, darkmode, nocache)
+
+    def gotoProfiles(self):
+        if self.profilesmodel.profiles == []: #Jump to profile creator if there are no profiles
+            self.gotoProfileEditor(True)
+        else:
+            self.mainwnd.findChild(QObject, "pages").setProperty('currentIndex', 0)
+
+
+
+    #Run profile
     def openProfile(self, profileid, alwaysuse, auto=False):
         #Set autostart if alwaysuse is True
         if auto == False: #Don't change autoload if autoloading
-            if alwaysuse == True and self.autoload != profileid:
+            if alwaysuse == True and self.autoload != profileid: #Reducing file-writes
                 self.setAutoProfileLoad(profileid)
             elif alwaysuse == False:
                 self.setAutoProfileLoad("")
 
-        #Check lastupdated of profile against shortcut's lastupdated, and if shortcut's is younger then update the profile
+        #Check lastupdated of profile against shortcut's lastupdated
         if self.getProfileOutdated(profileid) == True:
-            profilename, nocache, darkmode = utils.get_profile_settings(self.info["id"], profileid)
-            self.main.update_profile(self.info, profilename, profileid, darkmode, nocache)
+            self.updateProfile(profileid) #Update the profile if the shortcut's younger
             #TODO: Add exception catches to show error dialog
 
         #Start the requested profile
@@ -348,9 +465,13 @@ class SolsticeGUI(QApplication):
 
         self.quit()
 
+    #Callback to close mainwnd
+    def closeCallback(self):
+        self.mainwnd.close()
+
 app = None
 try:
-    infoclass = DesktopFileInformation(str(sys.argv[1]))
+    infoclass = DesktopFileInformation(sys.argv[1])
 except Exception as e:
     print("Failed to load shortcut: %s" % e)
     app = SolsticeGUI({})

@@ -11,13 +11,12 @@ ApplicationWindow {
     height: 600
     title: "APPTITLE" // Changed by solstice
     property var buttonRowMargin: 5
-    property var creationCancel: QtObject { property bool returnHome: true }
+    property bool lastViewedEditor: false
 
     //SIGNALS
-    signal editProfile()
     signal openProfile(var profileid, var alwaysuse)
-    signal enterEditProfile(var profileid)
-    signal enterCreateProfile()
+    signal gotoProfileEditor(var newprofile, var profileid)
+    signal saveProfile()
     signal deleteProfile()
 
     Kirigami.Theme.inherit: true
@@ -26,7 +25,7 @@ ApplicationWindow {
     SwipeView {
         id: pages
         objectName: "pages"
-        interactive: false
+        interactive: true //FIXME
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
@@ -57,7 +56,7 @@ ApplicationWindow {
                 Label {
                     id: profilesSubheader
                     objectName: "profilesSubheader"
-                    text: "Select your profile from the options below to begin.\nIf you are a guest, hit "+'"'+"Browse as Guest"+'"'+" below, otherwise if you're a new user hit "+'"'+"Add a profile"+'"'+" instead to begin."
+                    text: "Select your profile from the options below to begin.\nIf you are a new user, hit "+'"'+"Add a profile"+'"'+" instead to begin."
                 }
             }
 
@@ -85,7 +84,7 @@ ApplicationWindow {
                             id: buttondeleg1
                             Layout.preferredWidth: 7.5 * Kirigami.Units.gridUnit
                             Layout.preferredHeight: 7 * Kirigami.Units.gridUnit
-                            onClicked: window.openProfile(profileid, alwaysUseProfile.checked)
+                            onClicked: mainwnd.openProfile(profileid, alwaysUseProfile.checked)
 
                             ToolTip.visible: pname ? hovered : false
                             ToolTip.text: pname
@@ -200,15 +199,15 @@ ApplicationWindow {
                             id: buttondeleg1
                             Layout.preferredWidth: 7.5 * Kirigami.Units.gridUnit
                             Layout.preferredHeight: 7 * Kirigami.Units.gridUnit
-                            onClicked: window.enterEditProfile(profileid)
+                            onClicked: mainwnd.gotoProfileEditor(false, profileid);
 
-                            ToolTip.visible: myname ? hovered : false
-                            ToolTip.text: myname
+                            ToolTip.visible: pname ? hovered : false
+                            ToolTip.text: pname
                             ToolTip.delay: Kirigami.Units.toolTipDelay
 
                             contentItem: ColumnLayout {
                                 Kirigami.Avatar {
-                                    name: myname
+                                    name: pname
                                     iconSource: "user-identity"
                                     cache: false
                                     readonly property int size: 3 * Kirigami.Units.gridUnit
@@ -218,7 +217,7 @@ ApplicationWindow {
                                 }
                                 Text {
                                     id: profilelbl
-                                    text: myname
+                                    text: pname
                                     font: buttondeleg1.font
                                     width: buttondeleg1.width - Kirigami.Units.gridUnit
                                     horizontalAlignment: Text.AlignHCenter
@@ -286,11 +285,10 @@ ApplicationWindow {
                 }
             }
             Label {
-                id: editProfileNameEmpty
-                objectName: "editProfileNameEmpty"
-                text: "Please specify a name for this profile"
+                id: editProfileNameError
+                objectName: "editProfileNameError"
+                text: ""
                 color: Kirigami.Theme.negativeTextColor
-                visible: false
                 wrapMode: Text.WordWrap
                 elide: Text.ElideRight
                 horizontalAlignment: Text.AlignRight
@@ -316,32 +314,43 @@ ApplicationWindow {
                 anchors.centerIn: parent
             }
 
-            CheckBox {
-                id: forceDarkMode
-                objectName: "forceDarkMode"
-                text: "Always use dark mode"
+            ColumnLayout {
                 anchors {
                     left: editingAvatar.right
                     right: parent.right
                     verticalCenter: parent.verticalCenter
                     leftMargin: Kirigami.Units.largeSpacing * 2
                 }
-            }
-            Label {
-                id: forceDarkModeHint
-                objectName: "forceDarkModeHint"
-                text: "Only works on compatible applications"
-                wrapMode: Text.WordWrap
-                elide: Text.ElideRight
-                font.pointSize: Kirigami.Theme.smallFont.pointSize
+                spacing: 0
 
-                anchors {
-                    top: forceDarkMode.bottom
-                    left: forceDarkMode.left
-                    right: parent.right
+                CheckBox {
+                    id: forceDarkMode
+                    objectName: "forceDarkMode"
+                    text: "Always use dark mode"
+                }
+                Label {
+                    id: forceDarkModeHint
+                    objectName: "forceDarkModeHint"
+                    text: "Only works on compatible applications"
+                    wrapMode: Text.WordWrap
+                    elide: Text.ElideRight
+                    font.pointSize: Kirigami.Theme.smallFont.pointSize
+                }
+                Item { height: Kirigami.Units.smallSpacing }
+                CheckBox {
+                    id: noCache
+                    objectName: "noCache"
+                    text: "Disable browser cache"
+                }
+                Label {
+                    id: noCacheHint
+                    objectName: "noCacheHint"
+                    text: "Worsens load times of websites"
+                    wrapMode: Text.WordWrap
+                    elide: Text.ElideRight
+                    font.pointSize: Kirigami.Theme.smallFont.pointSize
                 }
             }
-
         }
 
         Item {
@@ -389,11 +398,6 @@ ApplicationWindow {
         anchors.right: parent.right
         anchors.margins: buttonRowMargin
 
-        // Profile Select Buttons
-        Button {
-            text: "Browse as Guest (dummy)"
-            visible: pages.currentIndex == 0 ? true : false
-        }
         // Profile Manager Buttons
         Button {
             text: "Manage bonuses in Store... (dummy)"
@@ -411,12 +415,12 @@ ApplicationWindow {
             visible: pages.currentIndex == 2 ? true : false
             enabled: profilesRepeater.count > 0 ? true : false
             onClicked: {
-                if (creationCancel.returnHome == true) {
-                    pages.currentIndex = 0;
-                    profileSelect.forceActiveFocus(true);
-                } else {
+                if (lastViewedEditor == true) {
                     pages.currentIndex = 1;
                     profileManager.forceActiveFocus(true);
+                } else {
+                    pages.currentIndex = 0;
+                    profileSelect.forceActiveFocus(true);
                 }
             }
         }
@@ -446,16 +450,13 @@ ApplicationWindow {
             visible: pages.currentIndex == 3 ? true : false
         }
         // Profile Select Buttons
-        Button {
+        Button { //also Profile Management in this button's case
             text: "Add a profile..."
             icon {
                 name: "list-add"
             }
-            visible: pages.currentIndex == 0 ? true : false
-            onClicked: {
-                creationCancel.returnHome = true; // return to *this* page if we cancel
-                enterCreateProfile();
-            }
+            visible: pages.currentIndex == 0 || pages.currentIndex == 1 ? true : false
+            onClicked: gotoProfileEditor(true, "");
         }
         Button {
             text: "Manage profiles..."
@@ -465,21 +466,11 @@ ApplicationWindow {
             visible: pages.currentIndex == 0 ? true : false
             onClicked: {
                 pages.currentIndex = 1;
+                lastViewedEditor = true;
                 profileManager.forceActiveFocus(true);
             }
         }
         // Profile Management Buttons
-        Button {
-            text: "Add a profile..."
-            icon {
-                name: "list-add"
-            }
-            visible: pages.currentIndex == 1 ? true : false
-            onClicked: {
-                creationCancel.returnHome = false; // return to *this* page if we cancel
-                enterCreateProfile();
-            }
-        }
         Button {
             text: "Done"
             objectName: "exitManagerBtn"
@@ -491,6 +482,7 @@ ApplicationWindow {
             visible: pages.currentIndex == 1 ? true : false
             onClicked: {
                 pages.currentIndex = 0;
+                lastViewedEditor = false;
                 profileSelect.forceActiveFocus(true);
             }
         }
@@ -503,7 +495,7 @@ ApplicationWindow {
                 color: Kirigami.Theme.positiveTextColor
             }
             visible: pages.currentIndex == 2 ? true : false
-            onClicked: window.editProfile()
+            onClicked: mainwnd.saveProfile();
         }
     }
 }

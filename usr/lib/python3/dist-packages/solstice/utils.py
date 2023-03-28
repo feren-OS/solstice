@@ -12,6 +12,7 @@ import collections.abc
 from PIL import Image #TODO: remove once icons moved
 import magic #TODO: remove once icons moved
 import math
+import json
 
 class SolsticeUtilsException(Exception):
     pass
@@ -166,13 +167,13 @@ def export_icon_file(itemid, iconsource): #TODO: Move to Storium module's code
     except Exception as e:
         raise SolsticeUtilsException(_("Exporting icon failed: %s") % e)
 
-def profileid_generate(itemid, profilename):
+def profileid_generate(profilesdir, profilename):
     name = profilename.replace(" ", "").replace("\\", "").replace("/", "").replace("?", "").replace("*", "").replace("+", "").replace("%", "").lower()
     result = str(name)
 
-    if os.path.isdir("{0}/{1}/{2}".format(variables.solstice_profiles_directory, itemid, result)): #Duplication prevention
+    if os.path.isdir("{0}/{1}".format(profilesdir, result)): #Duplication prevention
         numbertried = 2
-        while os.path.isdir("{0}/{1}/{2}{3}".format(variables.solstice_profiles_directory, itemid, result, numbertried)):
+        while os.path.isdir("{0}/{1}{2}".format(profilesdir, result, numbertried)):
             numbertried += 1
         result = name + str(numbertried) #Append duplication prevention number
 
@@ -202,9 +203,9 @@ def create_profile_folder(itemid, profileid):
 def get_profile_settings(itemid, profileid):
     #Returns: readablename, nocache, darkmode
     profiledir = get_profilepath(itemid, profileid)
-    if not os.path.isfile("%s/.solstice-settings" % profilepath):
+    if not os.path.isfile("%s/.solstice-settings" % profiledir):
         return profileid, False, False
-    with open("%s/.solstice-settings" % profilepath, 'r') as fp:
+    with open("%s/.solstice-settings" % profiledir, 'r') as fp:
         profileconfs = json.loads(fp.read())
     result = {}
     if "readablename" in profileconfs:
@@ -227,7 +228,6 @@ def complete_item_information(desktopinfo):
     fallbackchromi = False
     defaultitems = {"extraids": [],
                     "nohistory": False,
-                    "nocache": False,
                     "googlehangouts": False,
                     "bonusids": [],
                     "bg": "#ffffff",
@@ -243,25 +243,29 @@ def complete_item_information(desktopinfo):
         if item not in desktopinfo or desktopinfo[item] == "":
             raise SolsticeUtilsException(_("Corrupt or overdated .desktop file - %s is missing") % item)
     #Fall back to Solstice palette if the provided palette is incomplete
-    if "bg" not in itemsrequired or "bgdark" not in itemsrequired or "accent" not in itemsrequired or "accentdark" not in itemsrequired:
+    if "bg" not in desktopinfo or "bgdark" not in desktopinfo or "accent" not in desktopinfo or "accentdark" not in desktopinfo:
         fallbackpalette = True
-    elif itemsrequired["bg"] == "" or itemsrequired["bgdark"] == "" or itemsrequired["accent"] == "" or itemsrequired["accentdark"] == "":
+    elif desktopinfo["bg"] == "" or desktopinfo["bgdark"] == "" or desktopinfo["accent"] == "" or desktopinfo["accentdark"] == "":
         fallbackpalette = True
     if fallbackpalette == True:
-        itemsrequired.pop("bg")
-        itemsrequired.pop("bgdark")
-        itemsrequired.pop("accent")
-        itemsrequired.pop("accentdark")
-        itemsrequired.pop("accentonwindow")
-        print(_("W: %s is missing colour values, falling back to Solstice palette") % desktopinfo["name"])
+        desktopinfo.pop("bg")
+        desktopinfo.pop("bgdark")
+        desktopinfo.pop("accent")
+        desktopinfo.pop("accentdark")
+        desktopinfo.pop("accentonwindow")
+        print(_("W: %s is missing colour palette, falling back to Solstice palette") % desktopinfo["name"])
+    if "color" not in desktopinfo or desktopinfo["color"] == "":
+        desktopinfo.pop("color")
+        print(_("W: %s is missing accent colour, falling back to Solstice accent colour") % desktopinfo["name"])
     #Same for Chromium colour
-    if "chromicolor" not in itemsrequired or "chromicolordark" not in itemsrequired:
+    if "chromicolor" not in desktopinfo or "chromicolordark" not in desktopinfo:
         fallbackchromi = True
-    elif itemsrequired["chromicolor"] == "" or itemsrequired["chromicolordark"] == "":
+    elif desktopinfo["chromicolor"] == "" or desktopinfo["chromicolordark"] == "":
         fallbackchromi = True
     if fallbackchromi == True:
-        itemsrequired.pop("chromicolor")
-        itemsrequired.pop("chromicolordark")
+        desktopinfo.pop("chromicolor")
+        desktopinfo.pop("chromicolordark")
+        print(_("W: %s is missing Chromium colour, falling back to Solstice Chromium colour") % desktopinfo["name"])
     #Add in fallback values for missing values
     for items in defaultitems:
         if item not in desktopinfo or desktopinfo[item] == "":
@@ -286,3 +290,8 @@ def get_available_browsers(browsertype):
             if os.path.isfile(variables.sources[browsertype][browser]["command"][0]):
                 result.append(browser) #Add the available browsers to list,
     return result #and return the list
+
+def is_feature_available(browsertype, browser, key): #use for sources[browsertype][browser][*available]
+    if key not in variables.sources[browsertype][browser]:
+        return False #Default to unavailable
+    return variables.sources[browsertype][browser][key]
