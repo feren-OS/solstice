@@ -196,10 +196,10 @@ class main:
 
         if outdated == False: #If the profile is outdated, the changes made per browser will be made when the profile gets updated on launch,
             #thus, we save a write to disk by just skipping those aforementioned changes in here
-            if iteminfo["browsertype"] == "chromium":
+            if browsertype == "chromium":
                 from . import chromium
                 chromium.set_profile_darkmode(profilepath, value)
-            elif iteminfo["browsertype"] == "firefox":
+            elif browsertype == "firefox":
                 from . import firefox
                 firefox.set_profile_darkmode(profilepath, value)
 
@@ -222,10 +222,10 @@ class main:
         #string, boolean
 
         if outdated == False:
-            if iteminfo["browsertype"] == "chromium":
+            if browsertype == "chromium":
                 from . import chromium
                 chromium.set_profile_nocache(profilepath, value)
-            elif iteminfo["browsertype"] == "firefox":
+            elif browsertype == "firefox":
                 from . import firefox
                 firefox.set_profile_nocache(profilepath, value)
 

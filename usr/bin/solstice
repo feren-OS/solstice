@@ -391,25 +391,26 @@ class SolsticeGUI(QApplication):
 
         darkmode = self.mainwnd.findChild(QObject, "forceDarkMode").property('checked')
         nocache = self.mainwnd.findChild(QObject, "noCache").property('checked')
-        try:
-            if self.lastedited == "": #New profile
-                profileid = utils.profileid_generate(self.profilesdir, self.mainwnd.findChild(QObject, "editProfileName").property('text'))
-                #'Update' profile to give it its initial configurations
-                self.main.update_profile(self.info, newname, profileid, darkmode, nocache)
-            else:
-                outdated = self.getProfileOutdated(self.lastedited)
-                self.main.batch_set_profilesettings(self.browsertype, self.profilesdir, outdated, newname, darkmode, nocache)
-        except Exception as e:
-            self.mainwnd.findChild(QObject, "editProfileNameError").setProperty('text', _("Failed to save changes"))
-            print(e)
-            return
+        # try:
+        if self.lastedited == "": #New profile
+            profileid = utils.profileid_generate(self.profilesdir, self.mainwnd.findChild(QObject, "editProfileName").property('text'))
+            #'Update' profile to give it its initial configurations
+            self.main.update_profile(self.info, newname, profileid, darkmode, nocache)
+        else:
+            outdated = self.getProfileOutdated(self.lastedited)
+            self.main.batch_set_profilesettings(self.browsertype, utils.get_profilepath(self.info["id"], self.lastedited), outdated, newname, darkmode, nocache)
+        # except Exception as e:
+        #     self.mainwnd.findChild(QObject, "editProfileNameError").setProperty('text', _("Failed to save changes"))
+        #     print(e)
+        #     return
 
         self.mainwnd.findChild(QObject, "editProfileNameError").setProperty('text', _(""))
         if self.lastedited == "":
             #Automatically launch newly created profile
             self.openProfile(profileid, False)
         else:
-            #Return to profile manager
+            #Refresh profiles list and return to profile manager
+            self.refreshProfilesList()
             self.mainwnd.findChild(QObject, "pages").setProperty('currentIndex', 1)
             self.mainwnd.findChild(QObject, "profileManager").forceActiveFocus(True)
         del self.lastedited #delete the variable as it is now redundant
