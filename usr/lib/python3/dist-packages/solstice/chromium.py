@@ -50,10 +50,12 @@ def update_profile(iteminfo, extrawebsites, profilename, profilepath, darkmode, 
     result["custom_links"]["list"][0]["url"] = iteminfo["website"]
     result["session"]["startup_urls"] = [iteminfo["website"]]
     result["download"]["default_directory"] = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) + "/" + _("{0} Downloads").format(iteminfo["name"])
-    result["profile"]["name"] = _("{0} - {1}").format(profilename, iteminfo["name"])
     result["ntp"]["custom_background_dict"]["attribution_line_1"] = _("{0} - {1}").format(profilename, iteminfo["name"])
     result["vivaldi"]["homepage"] = iteminfo["website"]
     result["vivaldi"]["homepage_cache"] = iteminfo["website"]
+
+    #Set the profile's name
+    result = change_profile_name(profilepath, iteminfo["name"], profilename, True, result)
 
     #Set dark theme preference
     result = set_profile_darkmode(profilepath, darkmode, True, result)
@@ -88,6 +90,65 @@ def update_profile(iteminfo, extrawebsites, profilename, profilepath, darkmode, 
 
     #and finish off with this:
     chromi_finishing_touches(profilepath)
+
+
+#Profile Name
+def change_profile_name(profilepath, itemname, value, patchvar=False, vartopatch={}):
+    #string, string
+    if not os.path.isdir(profilepath):
+        raise SolsticeChromiumException(_("The profile %s does not exist") % profilepath.split("/")[-1])
+    PreferencesFile = "%s/Default/Preferences" % profilepath
+
+    if patchvar == False: #Allow this to also be used in update_profile without causing an additional file-write
+        result = {}
+        if os.path.isfile(PreferencesFile): #Load old Preferences into variable if one exists
+            with open(PreferencesFile, 'r') as fp:
+                result = json.loads(fp.read())
+    else:
+        result = vartopatch
+
+    #Update configurations in Preferences
+    result["profile"]["name"] = _("{0} - {1}").format(value, itemname)
+
+    if patchvar == False:
+        #Save to the Preferences file
+        try:
+            with open(PreferencesFile, 'w') as fp:
+                fp.write(json.dumps(result, separators=(',', ':')))
+        except Exception as exceptionstr:
+            raise SolsticeChromiumException(_("Failed to write to Preferences"))
+        change_profile_name_ls(profilepath) #Only run this when called externally
+    else:
+        return result
+
+def change_profile_name_ls(profilepath, patchvar=False, vartopatch={}):
+    #string
+    if not os.path.isdir(profilepath):
+        raise SolsticeChromiumException(_("The profile %s does not exist") % profilepath.split("/")[-1])
+    LocalState = "%s/Local State" % profilepath
+
+    if patchvar == False: #Allow this to also be used in chromi_update_local_state without causing an additional file-write
+        result = {}
+        if os.path.isfile(LocalState): #Load old Local State into variable if one exists
+            with open(LocalState, 'r') as fp:
+                result = json.loads(fp.read())
+    else:
+        result = vartopatch
+
+    if "profile" in result: #Remove cached profile name
+        if "info_cache" in result["profile"]:
+            if "Default" in result["profile"]["info_cache"]:
+                result["profile"]["info_cache"].pop("Default")
+
+    if patchvar == False:
+        #Save to the Local State
+        try:
+            with open(LocalState, 'w') as fp:
+                fp.write(json.dumps(result, separators=(',', ':')))
+        except Exception as exceptionstr:
+            raise SolsticeChromiumException(_("Failed to write to Local State"))
+    else:
+        return result
 
 
 #Dark Mode
@@ -165,10 +226,14 @@ def chromi_set_sitepermissions(preferencedict, itemid, ogwebsite, extrawebsites)
 
     #Set the permissions for default website in this SSB
     shortenedurl = utils.shorten_url(ogwebsite)
-    for permtype in ["ar", "autoplay", "automatic_downloads", "background_sync", "clipboard", "file_handling", "font_access", "midi_sysex", "notifications", "payment_handler", "sensors", "sound", "sleeping-tabs", "window_placement", "vr"]:
+    for permtype in ["ar", "autoplay", "automatic_downloads", "background_sync", "clipboard", "file_handling", "font_access", "local_fonts", "midi_sysex", "notifications", "payment_handler", "sensors", "sound", "sleeping-tabs", "window_placement", "vr"]:
         preferencedict["profile"]["content_settings"]["exceptions"][permtype] = {}
         preferencedict["profile"]["content_settings"]["exceptions"][permtype]["[*.]"+shortenedurl+",*"] = {"expiration": "0", "model": 0, "setting": 1}
         preferencedict["profile"]["content_settings"]["exceptions"][permtype][shortenedurl+",*"] = {"expiration": "0", "model": 0, "setting": 1}
+    for permtype in ["file_system_write_guard", "hid_guard"]:
+        preferencedict["profile"]["content_settings"]["exceptions"][permtype] = {}
+        preferencedict["profile"]["content_settings"]["exceptions"][permtype]["[*.]"+shortenedurl+",*"] = {"expiration": "0", "model": 0, "setting": 3}
+        preferencedict["profile"]["content_settings"]["exceptions"][permtype][shortenedurl+",*"] = {"expiration": "0", "model": 0, "setting": 3}
 
     #Set the permissions for extra websites in this SSB
     for extrawebsite in extrawebsites:
@@ -177,9 +242,12 @@ def chromi_set_sitepermissions(preferencedict, itemid, ogwebsite, extrawebsites)
             shortenedurl = shortenedurl.split("/")[0]
         except:
             pass
-        for permtype in ["ar", "autoplay", "automatic_downloads", "background_sync", "clipboard", "file_handling", "font_access", "midi_sysex", "notifications", "payment_handler", "sensors", "sound", "sleeping-tabs", "window_placement", "vr"]:
+        for permtype in ["ar", "autoplay", "automatic_downloads", "background_sync", "clipboard", "file_handling", "font_access", "local_fonts", "midi_sysex", "notifications", "payment_handler", "sensors", "sound", "sleeping-tabs", "window_placement", "vr"]:
             preferencedict["profile"]["content_settings"]["exceptions"][permtype]["[*.]"+shortenedurl+",*"] = {"expiration": "0", "model": 0, "setting": 1}
             preferencedict["profile"]["content_settings"]["exceptions"][permtype][shortenedurl+",*"] = {"expiration": "0", "model": 0, "setting": 1}
+        for permtype in ["file_system_write_guard", "hid_guard"]:
+            preferencedict["profile"]["content_settings"]["exceptions"][permtype]["[*.]"+shortenedurl+",*"] = {"expiration": "0", "model": 0, "setting": 3}
+            preferencedict["profile"]["content_settings"]["exceptions"][permtype][shortenedurl+",*"] = {"expiration": "0", "model": 0, "setting": 3}
 
     #Return the modified Preferences
     return preferencedict
@@ -283,6 +351,9 @@ def chromi_update_local_state(profilepath):
             result = json.loads(fp.read())
     with open("/usr/share/solstice/chromiums/Local State", 'r') as fp: #Also load default local state, so we can patch
         result = utils.dict_recurupdate(result, json.loads(fp.read()))
+
+    #Remove profile cache from Local State
+    result = change_profile_name_ls(profilepath, True, result)
 
     #Save to the Local State
     try:

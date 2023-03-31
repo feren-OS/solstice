@@ -13,6 +13,7 @@ from PIL import Image #TODO: remove once icons moved
 import magic #TODO: remove once icons moved
 import math
 import json
+import ast
 
 class SolsticeUtilsException(Exception):
     pass
@@ -221,6 +222,25 @@ def get_profile_settings(itemid, profileid):
     else:
         result["darkmode"] = False
     return result["readablename"], result["nocache"], result["darkmode"]
+
+def get_profile_outdated(profileid, itemid, shortcutlastupdated):
+    profilepath = get_profilepath(itemid, profileid)
+    if not os.path.isfile("%s/.solstice-settings" % profilepath):
+        return True #lastupdated is in said file
+    with open("%s/.solstice-settings" % profilepath, 'r') as fp:
+        profileconfs = json.loads(fp.read())
+    if "lastupdated" not in profileconfs:
+        return True #not having lastupdated means it's outdated by definition
+    try:
+        if int(profileconfs["lastupdated"]) < int(shortcutlastupdated):
+            return True #profile's last update was earlier than the shortcut's
+        else:
+            if int(profileconfs["lastupdated"]) < variables.solstice_lastupdated:
+                return True #profile's last update was earlier than Solstice's was
+            else:
+                return False #profile is up to date
+    except:
+        return True #this usually means they aren't numbers, thus outdated by definition
 
 def complete_item_information(desktopinfo):
     #Adds fallback values for any missing values

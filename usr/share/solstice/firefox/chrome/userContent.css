@@ -72,3 +72,9 @@
         display: none !important;
     }
 }
+
+@-moz-document url-prefix('about:blocked') {
+    #ignore_warning_link {
+        display: none !important;
+    }
+}

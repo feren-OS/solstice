@@ -25,7 +25,7 @@ ApplicationWindow {
     SwipeView {
         id: pages
         objectName: "pages"
-        interactive: true //FIXME
+        interactive: false
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right

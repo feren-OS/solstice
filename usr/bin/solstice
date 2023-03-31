@@ -200,7 +200,7 @@ class SolsticeGUI(QApplication):
         self.mainwnd.openProfile.connect(self.openProfile)
         self.mainwnd.gotoProfileEditor.connect(self.gotoProfileEditor)
         self.mainwnd.saveProfile.connect(self.saveProfile)
-        self.mainwnd.deleteProfile.connect(self.quit)
+        self.mainwnd.deleteProfile.connect(self.deleteProfile)
         #Load value of autolaunch checkbox
         self.mainwnd.findChild(QObject, "alwaysUseProfile").setProperty('checked', not self.autoload == "")
 
@@ -336,8 +336,9 @@ class SolsticeGUI(QApplication):
                 os.remove(solauto)
             except Exception as e:
                 raise SolsticeGUIException(_("Could not disable automatic profile launching: %s") % e)
+            return #Prevent code after this
         elif value == "":
-            return
+            return #from running if ""
         #Shortened name to make the multiple times the code uses it shorter too
         try:
             with open(solauto, 'w') as fp:
@@ -391,18 +392,18 @@ class SolsticeGUI(QApplication):
 
         darkmode = self.mainwnd.findChild(QObject, "forceDarkMode").property('checked')
         nocache = self.mainwnd.findChild(QObject, "noCache").property('checked')
-        # try:
-        if self.lastedited == "": #New profile
-            profileid = utils.profileid_generate(self.profilesdir, self.mainwnd.findChild(QObject, "editProfileName").property('text'))
-            #'Update' profile to give it its initial configurations
-            self.main.update_profile(self.info, newname, profileid, darkmode, nocache)
-        else:
-            outdated = self.getProfileOutdated(self.lastedited)
-            self.main.batch_set_profilesettings(self.browsertype, utils.get_profilepath(self.info["id"], self.lastedited), outdated, newname, darkmode, nocache)
-        # except Exception as e:
-        #     self.mainwnd.findChild(QObject, "editProfileNameError").setProperty('text', _("Failed to save changes"))
-        #     print(e)
-        #     return
+        try:
+            if self.lastedited == "": #New profile
+                profileid = utils.profileid_generate(self.profilesdir, self.mainwnd.findChild(QObject, "editProfileName").property('text'))
+                #'Update' profile to give it its initial configurations
+                self.main.update_profile(self.info, newname, profileid, darkmode, nocache)
+            else:
+                outdated = utils.get_profile_outdated(self.lastedited, self.info["id"], self.info["lastupdated"])
+                self.main.batch_set_profilesettings(self.browsertype, utils.get_profilepath(self.info["id"], self.lastedited), self.info["name"], newname, outdated, darkmode, nocache)
+        except Exception as e:
+            self.mainwnd.findChild(QObject, "editProfileNameError").setProperty('text', _("Failed to save changes"))
+            print(e)
+            return
 
         self.mainwnd.findChild(QObject, "editProfileNameError").setProperty('text', _(""))
         if self.lastedited == "":
@@ -411,8 +412,7 @@ class SolsticeGUI(QApplication):
         else:
             #Refresh profiles list and return to profile manager
             self.refreshProfilesList()
-            self.mainwnd.findChild(QObject, "pages").setProperty('currentIndex', 1)
-            self.mainwnd.findChild(QObject, "profileManager").forceActiveFocus(True)
+            self.gotoManager()
         del self.lastedited #delete the variable as it is now redundant
 
     def gotoProfileEditor(self, newprofile, profileid=""):
@@ -443,6 +443,23 @@ class SolsticeGUI(QApplication):
             self.gotoProfileEditor(True)
         else:
             self.mainwnd.findChild(QObject, "pages").setProperty('currentIndex', 0)
+            self.mainwnd.findChild(QObject, "profileSelect").forceActiveFocus(True)
+
+    def gotoManager(self):
+        if self.profilesmodel.profiles == []: #Jump to profile creator if there are no profiles
+            self.gotoProfileEditor(True)
+        else:
+            self.mainwnd.findChild(QObject, "pages").setProperty('currentIndex', 1)
+            self.mainwnd.findChild(QObject, "profileManager").forceActiveFocus(True)
+
+    def deleteProfile(self):
+        #The only time we can press this button is inside the Editor.
+        #Therefore, since self.lastedited exists during such times, we can use it for the profile ID
+        self.main.delete_profile(self.info, self.lastedited)
+
+        self.refreshProfilesList()
+        self.gotoManager()
+
 
 
 
@@ -456,7 +473,8 @@ class SolsticeGUI(QApplication):
                 self.setAutoProfileLoad("")
 
         #Check lastupdated of profile against shortcut's lastupdated
-        if self.getProfileOutdated(profileid) == True:
+        if utils.get_profile_outdated(profileid, self.info["id"], self.info["lastupdated"]) == True:
+            print("testy")
             self.updateProfile(profileid) #Update the profile if the shortcut's younger
             #TODO: Add exception catches to show error dialog
 

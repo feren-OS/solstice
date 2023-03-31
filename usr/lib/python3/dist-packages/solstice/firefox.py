@@ -39,7 +39,20 @@ def update_profile(iteminfo, extrawebsites, profilename, profilepath, darkmode, 
         raise SolsticeFirefoxException(_("Configuring user.js failed: %s") % e)
 
     firefox_set_ui(profilepath, iteminfo["bg"], iteminfo["bgdark"], iteminfo["accent"], iteminfo["accentdark"], iteminfo["color"], iteminfo["accentonwindow"])
-    #TODO: Permissions and whatnot
+
+    #FIXME: Permissions hasn't been done yet as it requires effectively having a whole SQLite writer just to do it
+
+
+#Profile Name
+def change_profile_name(profilepath, itemname, value, patchvar=False, vartopatch={}):
+    #string, string
+    if not os.path.isdir(profilepath):
+        raise SolsticeFirefoxException(_("The profile %s does not exist") % profilepath.split("/")[-1])
+
+    if patchvar == False: #Allow this to also be used in update_profile without causing an additional file-write
+        return #No visible profile name value to modify on Firefox's side, far as I know
+    else:
+        return vartopatch #So spit back out the unmodified variable here to prevent the variable Noneing after this call finishes
 
 
 #Dark Mode

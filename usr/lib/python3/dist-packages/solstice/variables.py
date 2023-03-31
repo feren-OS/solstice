@@ -11,3 +11,4 @@ with open("/usr/share/solstice/sources-info/data.json", 'r') as fp:
 #Developer options
 applications_directory = os.path.expanduser("~") + "/.local/share/applications"
 solstice_profiles_directory = os.path.expanduser("~") + "/.local/share/solstice"
+solstice_lastupdated = 20230331

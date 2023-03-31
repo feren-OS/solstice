@@ -174,8 +174,18 @@ class main:
 
 
     #### PROFILE OPTIONS
-    def change_profile_name(self, profilepath, value, returnonly=False):
+    def change_profile_name(self, browsertype, profilepath, itemname, value, outdated=False, returnonly=False):
         #string, string
+
+        if outdated == False: #If the profile is outdated, the changes made per browser will be made when the profile gets updated on launch,
+            #thus, we save a write to disk by just skipping those aforementioned changes in here
+            if browsertype == "chromium":
+                from . import chromium
+                chromium.change_profile_name(profilepath, itemname, value)
+            elif browsertype == "firefox":
+                from . import firefox
+                firefox.change_profile_name(profilepath, itemname, value)
+
         if returnonly:
             return
 
@@ -244,13 +254,20 @@ class main:
         except Exception as exceptionstr:
             raise SolsticeModuleException(_("Failed to write to .solstice-settings"))
 
-    def batch_set_profilesettings(self, browsertype, profilepath, outdated, newname, darkmode, nocache):
-        self.change_profile_name(profilepath, newname, True)
+    def batch_set_profilesettings(self, browsertype, profilepath, itemname, newname, outdated, darkmode, nocache):
+        self.change_profile_name(browsertype, profilepath, itemname, newname, outdated, True)
         self.set_profile_darkmode(browsertype, profilepath, darkmode, outdated, True)
         self.set_profile_nocache(browsertype, profilepath, darkmode, outdated, True)
+        #By doing things this way, we prevent 2 extra file writes
 
-        #By doing things this way, we assumedly save 2 file writes
-        profileconfs = {"readablename": newname, "darkmode": darkmode, "nocache": nocache}
+        #Update solstice-settings to reaffirm these changes
+        profileconfs = {}
+        if os.path.isfile("%s/.solstice-settings" % profilepath):
+            with open("%s/.solstice-settings" % profilepath, 'r') as fp:
+                profileconfs = json.loads(fp.read())
+        profileconfs["readablename"] = newname
+        profileconfs["darkmode"] = darkmode
+        profileconfs["nocache"] = nocache
         try:
             with open("%s/.solstice-settings" % profilepath, 'w') as fp:
                 fp.write(json.dumps(profileconfs, separators=(',', ':')))
