@@ -223,20 +223,26 @@ def get_profile_settings(itemid, profileid):
         result["darkmode"] = False
     return result["readablename"], result["nocache"], result["darkmode"]
 
-def get_profile_outdated(profileid, itemid, shortcutlastupdated):
+def get_profile_outdated(profileid, itemid, shortcutlastupdated, browserid):
     profilepath = get_profilepath(itemid, profileid)
     if not os.path.isfile("%s/.solstice-settings" % profilepath):
         return True #lastupdated is in said file
     with open("%s/.solstice-settings" % profilepath, 'r') as fp:
         profileconfs = json.loads(fp.read())
-    if "lastupdated" not in profileconfs:
-        return True #not having lastupdated means it's outdated by definition
+    if "lastupdatedshortcut" not in profileconfs:
+        return True #not having lastupdatedshortcut means it's outdated by definition
+    if "lastupdatedsolstice" not in profileconfs:
+        return True #not having lastupdatedsolstice also does
+    if "lastbrowser" not in profileconfs:
+        return True #not having lastbrowser also does
     try:
-        if int(profileconfs["lastupdated"]) < int(shortcutlastupdated):
+        if int(profileconfs["lastupdatedshortcut"]) < int(shortcutlastupdated):
             return True #profile's last update was earlier than the shortcut's
         else:
-            if int(profileconfs["lastupdated"]) < variables.solstice_lastupdated:
+            if int(profileconfs["lastupdatedsolstice"]) < variables.solstice_lastupdated:
                 return True #profile's last update was earlier than Solstice's was
+            elif int(profileconfs["lastbrowser"]) != browserid:
+                return True #profile's last browser wasn't the current one
             else:
                 return False #profile is up to date
     except:

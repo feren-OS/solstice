@@ -492,7 +492,7 @@ class SolsticeGUI(QApplication):
                 #'Update' profile to give it its initial configurations
                 self.main.update_profile(self.info, newname, profileid, darkmode, nocache)
             else:
-                outdated = utils.get_profile_outdated(self.lastedited, self.info["id"], self.info["lastupdated"])
+                outdated = utils.get_profile_outdated(self.lastedited, self.info["id"], self.info["lastupdated"], self.browser)
                 self.main.batch_set_profilesettings(self.browsertype, utils.get_profilepath(self.info["id"], self.lastedited), self.info["name"], newname, outdated, darkmode, nocache)
         except Exception as e:
             self.mainwnd.findChild(QObject, "editProfileNameError").setProperty('text', _("Failed to save changes"))
@@ -565,8 +565,7 @@ class SolsticeGUI(QApplication):
                 self.setAutoProfileLoad("")
 
         #Check lastupdated of profile against shortcut's lastupdated
-        if utils.get_profile_outdated(profileid, self.info["id"], self.info["lastupdated"]) == True:
-            print("testy")
+        if utils.get_profile_outdated(profileid, self.info["id"], self.info["lastupdated"], self.browser) == True:
             self.updateProfile(profileid) #Update the profile if the shortcut's younger
             #TODO: Add exception catches to show error dialog
 

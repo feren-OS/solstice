@@ -102,10 +102,10 @@ class main:
             utils.create_profile_folder(iteminfo["id"], profileid)
             #If Flatpak, grant access to the profile's directory
             if "flatpak" in variables.sources[iteminfo["browsertype"]][iteminfo["browser"]]:
-                os.system("/usr/bin/flatpak override --user {0} --filesystem={1}/{2}".format(variables.sources[iteminfo["browsertype"]][iteminfo["browser"]]["flatpak"], variables.solstice_profiles_directory, iteminfo["id"]))
+                os.system('/usr/bin/flatpak override --user {0} --filesystem="{1}/{2}"'.format(variables.sources[iteminfo["browsertype"]][iteminfo["browser"]]["flatpak"], variables.solstice_profiles_directory, iteminfo["id"]))
                 #NOTE: Flatpak permissions are granted to the profiles folder per application so that the browser cannot read profiles it is not assigned to
                 #...and also let them access their respective Downloads folders
-                os.system("/usr/bin/flatpak override --user {0} --filesystem={1}".format(variables.sources[iteminfo["browsertype"]][iteminfo["browser"]]["flatpak"], GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) + "/" + _("{0} Downloads").format(iteminfo["name"])))
+                os.system('/usr/bin/flatpak override --user {0} --filesystem="{1}"'.format(variables.sources[iteminfo["browsertype"]][iteminfo["browser"]]["flatpak"], GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) + "/" + _("{0} Downloads").format(iteminfo["name"])))
                 #TODO: Move this elsewhere when adding in browser reselection?
         else:
             if os.path.isfile(profilepath + "/.storium-active-pid"):
@@ -138,8 +138,10 @@ class main:
         profileconfs["nocache"] = nocache
         #...and dark-mode preference,
         profileconfs["darkmode"] = darkmode
-        #...and note the current date and save .solstice-settings
-        profileconfs["lastupdated"] = datetime.today().strftime('%Y%m%d')
+        #...and update lastupdated values, and save .solstice-settings.
+        profileconfs["lastupdatedshortcut"] = int(iteminfo["lastupdated"])
+        profileconfs["lastupdatedsolstice"] = int(variables.solstice_lastupdated)
+        profileconfs["lastbrowser"] = iteminfo["browser"]
 
         try:
             with open("%s/.solstice-settings" % profilepath, 'w') as fp:

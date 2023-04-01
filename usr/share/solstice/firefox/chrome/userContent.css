@@ -33,13 +33,13 @@
     #browserPrivacyCategory,
     #trackingGroup,
     #historyGroup,
-    #notificationSettingsRow,
-    #autoplaySettingsRow,
-    #xrSettingsRow,
-    #permissions-block-popups,
     #popupPolicy,
     #popupPolicyButton,
     #httpsOnlyBox {
+        /*#notificationSettingsRow,
+        #autoplaySettingsRow,
+        #xrSettingsRow,
+        #permissions-block-popups, TODO*/
         display: none !important;
     }
 }
