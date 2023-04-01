@@ -60,6 +60,7 @@ class BrowsersModel(QAbstractListModel):
     IconRole = Qt.UserRole + 3
     DescriptionRole = Qt.UserRole + 4
     AvailableRole = Qt.UserRole + 5
+    PrecheckedRole = Qt.UserRole + 6
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -77,6 +78,8 @@ class BrowsersModel(QAbstractListModel):
             return self.browsers[row]["desc"]
         if role == self.AvailableRole:
             return self.browsers[row]["available"]
+        if role == self.PrecheckedRole: #For preselecting current choice
+            return self.browsers[row]["prechecked"]
 
     def rowCount(self, parent=QModelIndex()):
         return len(self.browsers)
@@ -84,7 +87,7 @@ class BrowsersModel(QAbstractListModel):
     def roleNames(self):
         return {self.IDRole: b'browserid', self.NameRole: b'brname',
             self.IconRole: b'bricon', self.DescriptionRole: b'desc',
-            self.AvailableRole: b'available'}
+            self.AvailableRole: b'available', self.PrecheckedRole: b'prechecked'}
 
     def setData(self, data):
         self.browsers = data
@@ -177,12 +180,12 @@ class SolsticeGUI(QApplication):
         self.interfaceLabels()
         #Apply browser-specific GUI adjustments
         self.refreshBrowserFeatures()
-        #Refresh profiles list
-        self.refreshProfilesList()
         #Final checks
         if browserCheck == False: #Show the browser selector if browser not available
             self.gotoBrowserSelect()
         else:
+            #Refresh profiles list, and go to profile select
+            self.refreshProfilesList()
             self.gotoProfiles()
 
 
@@ -204,6 +207,7 @@ class SolsticeGUI(QApplication):
         self.mainwnd.gotoProfileEditor.connect(self.gotoProfileEditor)
         self.mainwnd.saveProfile.connect(self.saveProfile)
         self.mainwnd.deleteProfile.connect(self.deleteProfile)
+        self.mainwnd.gotoBrowserSelect.connect(self.gotoBrowserSelect)
         self.mainwnd.setBrowser.connect(self.setBrowser)
         #Load value of autolaunch checkbox
         self.mainwnd.findChild(QObject, "alwaysUseProfile").setProperty('checked', not self.autoload == "")
@@ -247,7 +251,8 @@ class SolsticeGUI(QApplication):
                 "brname": variables.sources[self.browsertype][i]["name"],
                 "bricon": variables.sources[self.browsertype][i]["icon"],
                 "desc": browserdesc,
-                "available": True})
+                "available": True,
+                "prechecked": i == self.browser})
         for browsertype in variables.sources:
             if browsertype == self.browsertype: #...but we still want to list the others as unavailable.
                 continue #Also, skipping the one we already did for obvious reasons.
@@ -263,7 +268,8 @@ class SolsticeGUI(QApplication):
                     "brname": variables.sources[browsertype][i]["name"],
                     "bricon": variables.sources[browsertype][i]["icon"],
                     "desc": browserdesc,
-                    "available": False})
+                    "available": False,
+                    "prechecked": False})
         #Refresh browsers list in browsersmodel
         self.browsersmodel.setData(browsers)
 
@@ -287,17 +293,20 @@ class SolsticeGUI(QApplication):
         self.refreshBrowsersList(browsersavailable)
 
         if self.browser not in browsersavailable:
+            self.mainwnd.findChild(QObject, "cancelBrowserSelect").setProperty('enabled', False) #Disable cancel button
+            self.mainwnd.findChild(QObject, "browsersSubheader").setProperty('text', _("The browser used to launch this application is missing or has been removed.\nTo continue, please choose a replacement browser below."))
             if self.browser in variables.sources[self.browsertype]: #Check if unavailable
                 if "unavailable" in variables.sources[self.browsertype][self.browser]:
                     if variables.sources[self.browsertype][self.browser]["unavailable"] == 0: #Changed browsertype
-                        pass #TODO: Change labels
+                        self.mainwnd.findChild(QObject, "browsersSubheader").setProperty('text', _("The browser used to launch this application has changed browser engines, and is no longer compatible with %s's profiles.\nTo continue, please choose a replacement browser below.") % self.info["name"])
                     elif variables.sources[self.browsertype][self.browser]["unavailable"] == 1: #No longer supported
-                        pass #TODO: Change labels
-            else:
-                pass #TODO: Change labels to account for this
-            pass #TODO: Disable cancel button
+                        self.mainwnd.findChild(QObject, "browsersSubheader").setProperty('text', _("The browser used to launch this application is no longer compatible.\nTo continue, please choose a replacement browser below."))
+        else: #Visiting the browser changer manually
+            self.mainwnd.findChild(QObject, "browsersSubheader").setProperty('text', _("Select a browser from the options below to use it for this application.\nIf you want to keep your current preference, press Cancel."))
+            self.mainwnd.findChild(QObject, "cancelBrowserSelect").setProperty('enabled', True)
 
-        pass #TODO: Go to Browser Selection page
+        #Go to browser selection page
+        self.mainwnd.findChild(QObject, "pages").setProperty('currentIndex', 3)
 
     def setBrowser(self, newbrowser):
         newfilename = variables.sources[self.browsertype][newbrowser]["classprefix"] + self.info["id"]
@@ -325,6 +334,9 @@ class SolsticeGUI(QApplication):
         #Write new shortcut
         with open(newpath, 'w') as fp:
             fp.write(''.join(newshortcut))
+
+        #Mark as executable too
+        subprocess.Popen(["/usr/bin/chmod", "+x", newpath])
 
         #Reload with new file
         commandtorun = list(sys.argv)
@@ -363,7 +375,24 @@ class SolsticeGUI(QApplication):
         self.openErrorWindow()
 
         #The browser and ID are in self.infoclass
-        pass #TODO
+        #Change labels
+        self.errorwnd.setProperty('title', _("No browsers available - %s") % self.info["name"])
+        self.errorwnd.findChild(QObject, "noBrowsersHeader").setProperty('text', _("No browsers are available for %s") % self.info["name"])
+        self.errorwnd.findChild(QObject, "noBrowsersSubheader").setProperty('text', _("Unfortunately, %s cannot currently start as there are no installed browsers that can run it.") % self.info["name"])
+        self.errorwnd.findChild(QObject, "noBrowsersError").setProperty('visible', True)
+        if self.browser in variables.sources[self.browsertype]: #Check if unavailable
+            if "unavailable" in variables.sources[self.browsertype][self.browser]:
+                self.errorwnd.findChild(QObject, "browserSubstituteTitle").setProperty('text', _("{0} can no longer run {1}").format(variables.sources[self.browsertype][self.browser]["name"], self.info["name"]))
+                if variables.sources[self.browsertype][self.browser]["unavailable"] == 0: #Changed browsertype
+                    self.errorwnd.findChild(QObject, "browserSubstituteDesc").setProperty('text', _("The browser used to launch this application has changed browser engines, and is no longer compatible with %s's profiles.") % self.info["name"])
+                elif variables.sources[self.browsertype][self.browser]["unavailable"] == 1: #No longer supported
+                    self.errorwnd.findChild(QObject, "browserSubstituteDesc").setProperty('text', _("The browser used to launch this application is no longer compatible."))
+                self.errorwnd.findChild(QObject, "getStoreBrowserBtn").setProperty('visible', False)
+            else:
+                self.errorwnd.findChild(QObject, "browserSubstituteTitle").setProperty('text', _("{0} was chosen for {1}").format(variables.sources[self.browsertype][self.browser]["name"], self.info["name"]))
+                self.errorwnd.findChild(QObject, "browserSubstituteDesc").setProperty('text', _("Would you like to install {0} to allow {1} to run?").format(variables.sources[self.browsertype][self.browser]["name"], self.info["name"]))
+                self.errorwnd.findChild(QObject, "getStoreBrowserBtn").setProperty('text', _("View %s in Store... (dummy)") % variables.sources[self.browsertype][self.browser]["name"])
+                self.errorwnd.findChild(QObject, "getStoreBrowserBtn").setProperty('visible', True)
 
     def websiteUnavailableError(self, perma=False, announcement=""):
         #FIXME: Currently goes unused (would this even be feasible, now it's DC'd from Store?)

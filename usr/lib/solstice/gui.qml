@@ -19,6 +19,7 @@ ApplicationWindow {
     signal gotoProfileEditor(var newprofile, var profileid)
     signal saveProfile()
     signal deleteProfile()
+    signal gotoBrowserSelect()
     signal setBrowser(var newbrowser)
 
     Kirigami.Theme.inherit: true
@@ -27,7 +28,7 @@ ApplicationWindow {
     SwipeView {
         id: pages
         objectName: "pages"
-        interactive: true //FIXME
+        interactive: false
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
@@ -368,13 +369,13 @@ ApplicationWindow {
                 Label {
                     id: browsersHeader
                     objectName: "browsersHeader"
-                    text: "Choose a browser to launch APPTITLE" // Changed by feren-storium-ice
+                    text: "BROWSERSELECTTEXT" // Changed by feren-storium-ice
                     font.pixelSize: Kirigami.Theme.defaultFont.pixelSize * 1.6
                 }
                 Label {
                     id: browsersSubheader
                     objectName: "browsersSubheader"
-                    text: "The browser used to launch this application is missing or has been removed.\nTo continue, please choose a replacement browser below."
+                    text: "BROWSERSELECTSUBTEXT"
                 }
             }
 
@@ -412,6 +413,7 @@ ApplicationWindow {
                                     onCheckedChanged: mainwnd.selectedBrowser = browserid
                                     ButtonGroup.group: browserSelectRadios
                                     enabled: available
+                                    checked: prechecked
                                 }
                                 Kirigami.Icon {
                                     source: bricon
@@ -476,6 +478,15 @@ ApplicationWindow {
                 name: "feren-store"
             }
             visible: pages.currentIndex == 1 ? true : false
+            //TODO: OnClicked
+        }
+        Button {
+            text: "Change browser..."
+            icon {
+                name: "document-edit"
+            }
+            visible: pages.currentIndex == 1 ? true : false
+            onClicked: mainwnd.gotoBrowserSelect()
         }
         // Profile Editor Buttons
         Button {
@@ -505,6 +516,24 @@ ApplicationWindow {
             visible: pages.currentIndex == 2 ? true : false
             onClicked: deleteProfile();
         }
+        // Browser Select Buttons
+        Button {
+            objectName: "cancelBrowserSelect"
+            text: "Cancel"
+            icon {
+                name: "dialog-cancel"
+            }
+            visible: pages.currentIndex == 3 ? true : false
+            onClicked: pages.currentIndex = 1
+        }
+        Button {
+            text: "Get a new browser from Store... (dummy)"
+            icon {
+                name: "feren-store"
+            }
+            visible: pages.currentIndex == 3 ? true : false
+            //TODO: OnClicked
+        }
 
         // Separator
         Rectangle {
@@ -514,7 +543,7 @@ ApplicationWindow {
         }
         // Browser Select Buttons
         Button {
-            text: "Confirm"
+            text: "Done"
             icon {
                 color: Kirigami.Theme.positiveTextColor
             }

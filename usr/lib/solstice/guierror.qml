@@ -49,10 +49,7 @@ ApplicationWindow {
                 font.pixelSize: Kirigami.Theme.defaultFont.pixelSize * 1.6
                 wrapMode: Text.WordWrap
                 elide: Text.ElideRight
-                anchors {
-                    left: parent.left
-                    right: parent.right
-                }
+                Layout.preferredWidth: errorwnd.width - 40
             }
             Label {
                 id: genericErrorSubheader
@@ -60,10 +57,7 @@ ApplicationWindow {
                 text: "Error text goes here"
                 wrapMode: Text.WordWrap
                 elide: Text.ElideRight
-                anchors {
-                    left: parent.left
-                    right: parent.right
-                }
+                Layout.preferredWidth: errorwnd.width - 40
             }
         }
 
@@ -81,24 +75,50 @@ ApplicationWindow {
             Label {
                 id: noBrowsersHeader
                 objectName: "noBrowsersHeader"
-                text: "No browsers are available for APPTITLE" // Changed by feren-storium-ice
+                text: "NOBROWSERSHEADER" // Changed by feren-storium-ice
                 font.pixelSize: Kirigami.Theme.defaultFont.pixelSize * 1.6
                 wrapMode: Text.WordWrap
                 elide: Text.ElideRight
-                anchors {
-                    left: parent.left
-                    right: parent.right
-                }
+                Layout.preferredWidth: errorwnd.width - 40
             }
             Label {
                 id: noBrowsersSubheader
                 objectName: "noBrowsersSubheader"
-                text: "Unfortunately, APPTITLE cannot currently start as there are no installed browsers that can run it."
+                text: "NOBROWSERSSUBHEADER"
                 wrapMode: Text.WordWrap
                 elide: Text.ElideRight
-                anchors {
-                    left: parent.left
-                    right: parent.right
+                Layout.preferredWidth: errorwnd.width - 40
+            }
+
+            Rectangle {
+                color: "#00000000"
+                height: Kirigami.Units.largeSpacing
+            }
+            ColumnLayout {
+                objectName: "browserSubstitute"
+                Label {
+                    objectName: "browserSubstituteTitle"
+                    text: "BROWSERSUBSTITUTETITLE" // Changed by feren-storium-ice
+                    font.pixelSize: Kirigami.Theme.defaultFont.pixelSize * 1.2
+                    wrapMode: Text.WordWrap
+                    elide: Text.ElideRight
+                    Layout.preferredWidth: errorwnd.width - 40
+                }
+                Label {
+                    objectName: "browserSubstituteDesc"
+                    text: "BROWSERSUBSTITUTEDESCRIPTION"
+                    wrapMode: Text.WordWrap
+                    elide: Text.ElideRight
+                    Layout.preferredWidth: errorwnd.width - 40
+                }
+                Button {
+                    text: "VIEWBROWSERBUTTON"
+                    objectName: "getStoreBrowserBtn"
+                    icon {
+                        name: "feren-store"
+                        color: Kirigami.Theme.positiveTextColor
+                    }
+                    //TODO: onClicked
                 }
             }
         }
@@ -121,10 +141,7 @@ ApplicationWindow {
                 font.pixelSize: Kirigami.Theme.defaultFont.pixelSize * 1.6
                 wrapMode: Text.WordWrap
                 elide: Text.ElideRight
-                anchors {
-                    left: parent.left
-                    right: parent.right
-                }
+                Layout.preferredWidth: errorwnd.width - 40
             }
             Label {
                 id: unavailableSubheader
@@ -132,10 +149,7 @@ ApplicationWindow {
                 text: "Unfortunately, APPTITLE has ceased all operations, meaning it is no longer available.\n\nSince APPTITLE is no longer available, would you like to remove APPTITLE from Feren OS?\nNOTE: Once done, you cannot install APPTITLE again."
                 wrapMode: Text.WordWrap
                 elide: Text.ElideRight
-                anchors {
-                    left: parent.left
-                    right: parent.right
-                }
+                Layout.preferredWidth: errorwnd.width - 40
             }
             Button {
                 text: "More information"
@@ -157,11 +171,10 @@ ApplicationWindow {
 
         // Browser Unavailable
         Button {
-            text: "Get a new browser from Store..."
-            objectName: "getStoreBrowserBtn"
+            text: "Get a new browser from Store... (dummy)"
+            objectName: "getStoreBrowsersBtn"
             icon {
                 name: "feren-store"
-                color: Kirigami.Theme.positiveTextColor
             }
             visible: noBrowsersError.visible
             onClicked: openStoreBrowsers();
