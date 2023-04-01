@@ -295,17 +295,17 @@ def is_browser_available(browser, browsertype):
         return False
     if browser not in variables.sources[browsertype]: #Browser isn't categorised as this
         return False
-    if "command" not in variables.sources[browsertype][browser]: #Browser is unavailable
+    if "required-file" not in variables.sources[browsertype][browser]: #Browser is unavailable
         return False
-    return os.path.isfile(variables.sources[browsertype][browser]["command"][0])
+    return os.path.isfile(variables.sources[browsertype][browser]["required-file"][0])
 
 def get_available_browsers(browsertype):
     if browsertype not in variables.sources: #Invalid browser type
         raise SolsticeUtilsException(_("%s is not a valid browser type") % browsertype)
     result = []
     for browser in variables.sources[browsertype]:
-        if "command" in variables.sources[browsertype][browser]:
-            if os.path.isfile(variables.sources[browsertype][browser]["command"][0]):
+        if "required-file" in variables.sources[browsertype][browser]:
+            if os.path.isfile(variables.sources[browsertype][browser]["required-file"][0]):
                 result.append(browser) #Add the available browsers to list,
     return result #and return the list
 

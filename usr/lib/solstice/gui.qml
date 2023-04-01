@@ -12,12 +12,14 @@ ApplicationWindow {
     title: "APPTITLE" // Changed by solstice
     property var buttonRowMargin: 5
     property bool lastViewedEditor: false
+    property string selectedBrowser: ""
 
     //SIGNALS
     signal openProfile(var profileid, var alwaysuse)
     signal gotoProfileEditor(var newprofile, var profileid)
     signal saveProfile()
     signal deleteProfile()
+    signal setBrowser(var newbrowser)
 
     Kirigami.Theme.inherit: true
     color: Kirigami.Theme.backgroundColor
@@ -25,7 +27,7 @@ ApplicationWindow {
     SwipeView {
         id: pages
         objectName: "pages"
-        interactive: false
+        interactive: true //FIXME
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
@@ -178,7 +180,7 @@ ApplicationWindow {
             }
 
             ScrollView {
-                width: parent.width > profilesToManage.width ? profilesToManage.width : profilesToManage.width // center the profiles list
+                width: parent.width > profilesToManage.width ? profilesToManage.width : parent.width // center the profiles list
                 height: profilesToManage.height + Kirigami.Units.gridUnit
                 anchors.centerIn: parent
                 anchors.verticalCenterOffset: Kirigami.Units.gridUnit * 0.5 // rebalance the centering
@@ -376,16 +378,85 @@ ApplicationWindow {
                 }
             }
 
-            ScrollView {
-                width: browsers.width
-                anchors.top: browserSelectCaption.bottom //need to do this differently so it doesn't overlap or underlap the caption
+            Item {
+                anchors.top: browserSelectCaption.bottom
+                anchors.left: parent.left
+                anchors.right: parent.right
                 anchors.bottom: parent.bottom
-                anchors.horizontalCenter: parent.horizontalCenter
-                clip: true
-                contentHeight: browsers.height
-                ColumnLayout {
-                    id: browsers
+                anchors.topMargin: Kirigami.Units.smallSpacing
 
+                ScrollView {
+                    width: browsersToSelect.width + Kirigami.Units.gridUnit
+                    height: parent.height > browsersToSelect.height ? browsersToSelect.height : parent.height // center the browsers list
+                    anchors.centerIn: parent
+                    anchors.horizontalCenterOffset: Kirigami.Units.gridUnit * 0.5 // rebalance the centering
+                    clip: true
+                    contentHeight: browsersToSelect.height
+                    ButtonGroup { id: browserSelectRadios }
+                    ColumnLayout {
+                        id: browsersToSelect
+                        objectName: "browsersToSelect"
+                        spacing: Kirigami.Units.largeSpacing
+                        Rectangle {
+                            color: "#00000000"
+                            Layout.fillHeight: true
+                        }
+
+                        Repeater {
+                            id: browserSelectRepeater
+                            model: BrowsersModel
+                            delegate: RowLayout {
+                                spacing: 0
+                                RadioButton {
+                                    id: browserDelegRadio
+                                    onCheckedChanged: mainwnd.selectedBrowser = browserid
+                                    ButtonGroup.group: browserSelectRadios
+                                    enabled: available
+                                }
+                                Kirigami.Icon {
+                                    source: bricon
+                                    anchors.margins: Kirigami.Units.mediumSpacing
+                                    implicitHeight: Kirigami.Units.iconSizes.large
+                                    implicitWidth: Kirigami.Units.iconSizes.large
+                                    MouseArea { //expands hitbox
+                                        anchors.fill: parent
+                                        onClicked: { browserDelegRadio.checked = available }
+                                    }
+                                }
+                                Item { width: Kirigami.Units.largeSpacing }
+                                ColumnLayout {
+                                    spacing: 0
+                                    Layout.preferredWidth: Kirigami.Units.gridUnit * 23
+                                    Label {
+                                        wrapMode: Text.WordWrap
+                                        elide: Text.ElideRight
+                                        text: brname
+                                        Layout.preferredWidth: parent.width
+                                    }
+                                    Label {
+                                        text: desc
+                                        wrapMode: Text.WordWrap
+                                        elide: Text.ElideRight
+                                        font.pointSize: Kirigami.Theme.smallFont.pointSize
+                                        visible: text
+                                        Layout.preferredWidth: parent.width
+                                        //NOTE: Layout.preferredWidth is the only way to seemingly make
+                                        // this work in *Layout
+                                    }
+                                    MouseArea { //expands hitbox
+                                        anchors.fill: parent
+                                        onClicked: { browserDelegRadio.checked = available }
+                                    }
+                                }
+                            }
+                        }
+
+
+                        Rectangle {
+                            color: "#00000000"
+                            Layout.fillHeight: true
+                        }
+                    }
                 }
             }
         }
@@ -443,11 +514,13 @@ ApplicationWindow {
         }
         // Browser Select Buttons
         Button {
-            text: "Confirm (dummy)"
+            text: "Confirm"
             icon {
                 color: Kirigami.Theme.positiveTextColor
             }
+            enabled: mainwnd.selectedBrowser != ""
             visible: pages.currentIndex == 3 ? true : false
+            onClicked: setBrowser(mainwnd.selectedBrowser)
         }
         // Profile Select Buttons
         Button { //also Profile Management in this button's case

@@ -4,6 +4,7 @@ from solstice import main as solstice
 from solstice import utils, variables
 import os
 import sys
+import subprocess
 import gettext
 gettext.install("solstice-gui", "/usr/share/locale", names="ngettext")
 from PyQt5.QtCore import *
@@ -67,7 +68,7 @@ class BrowsersModel(QAbstractListModel):
     def data(self, index, role=Qt.DisplayRole):
         row = index.row()
         if role == self.IDRole:
-            return self.browsers[row]["profileid"]
+            return self.browsers[row]["browserid"]
         if role == self.NameRole:
             return self.browsers[row]["brname"]
         if role == self.IconRole:
@@ -81,7 +82,9 @@ class BrowsersModel(QAbstractListModel):
         return len(self.browsers)
 
     def roleNames(self):
-        return {self.IDRole: b'profileid', self.NameRole: b'brname', }
+        return {self.IDRole: b'browserid', self.NameRole: b'brname',
+            self.IconRole: b'bricon', self.DescriptionRole: b'desc',
+            self.AvailableRole: b'available'}
 
     def setData(self, data):
         self.browsers = data
@@ -201,8 +204,12 @@ class SolsticeGUI(QApplication):
         self.mainwnd.gotoProfileEditor.connect(self.gotoProfileEditor)
         self.mainwnd.saveProfile.connect(self.saveProfile)
         self.mainwnd.deleteProfile.connect(self.deleteProfile)
+        self.mainwnd.setBrowser.connect(self.setBrowser)
         #Load value of autolaunch checkbox
         self.mainwnd.findChild(QObject, "alwaysUseProfile").setProperty('checked', not self.autoload == "")
+
+        #TEMP, TODO
+        self.gotoBrowserSelect()
 
     def openErrorWindow(self):
         if self.mainwnd != None:
@@ -230,6 +237,36 @@ class SolsticeGUI(QApplication):
 
 
     #Browser Management and Checks
+    def refreshBrowsersList(self, browsersavailable):
+        browsers = []
+        for i in browsersavailable: #only contains available browsers of the same browsertype...
+            browserdesc = ""
+            if "subtitle" in variables.sources[self.browsertype][i]:
+                browserdesc = variables.sources[self.browsertype][i]["subtitle"]
+            browsers.append({"browserid": i,
+                "brname": variables.sources[self.browsertype][i]["name"],
+                "bricon": variables.sources[self.browsertype][i]["icon"],
+                "desc": browserdesc,
+                "available": True})
+        for browsertype in variables.sources:
+            if browsertype == self.browsertype: #...but we still want to list the others as unavailable.
+                continue #Also, skipping the one we already did for obvious reasons.
+            for i in variables.sources[browsertype]:
+                if not "required-file" in variables.sources[browsertype][i]:
+                    continue #Skip dummy browser slots for unavailable browsers
+                if not os.path.isfile(variables.sources[browsertype][i]["required-file"][0]):
+                    continue #Skip uninstalled browsers
+                browserdesc = _("Not available - Website Applications made on non-{0} browsers cannot use {1} as their browser").format(
+                    browsertype.capitalize(),
+                    variables.sources[browsertype][i]["name"])
+                browsers.append({"browserid": i,
+                    "brname": variables.sources[browsertype][i]["name"],
+                    "bricon": variables.sources[browsertype][i]["icon"],
+                    "desc": browserdesc,
+                    "available": False})
+        #Refresh browsers list in browsersmodel
+        self.browsersmodel.setData(browsers)
+
     def browserCheck(self):
         if not utils.is_browser_available(self.browser, self.browsertype):
             return False
@@ -246,6 +283,9 @@ class SolsticeGUI(QApplication):
             self.browserUnavailableError()
             return
 
+        #Refresh model
+        self.refreshBrowsersList(browsersavailable)
+
         if self.browser not in browsersavailable:
             if self.browser in variables.sources[self.browsertype]: #Check if unavailable
                 if "unavailable" in variables.sources[self.browsertype][self.browser]:
@@ -260,12 +300,37 @@ class SolsticeGUI(QApplication):
         pass #TODO: Go to Browser Selection page
 
     def setBrowser(self, newbrowser):
-        pass #TODO
+        newfilename = variables.sources[self.browsertype][newbrowser]["classprefix"] + self.info["id"]
+        newpath = os.path.join(os.path.dirname(sys.argv[1]), newfilename + ".desktop")
 
-        self.browser = newbrowser
-        #TODO: Force all existing profiles to update on launch
-        self.refreshBrowserFeatures() #Refresh feature availability
-        self.gotoProfiles()
+        #Create new shortcut
+        with open(sys.argv[1], 'r') as old:
+            newshortcut = old.readlines()
+
+        linescounted = 0
+        for line in newshortcut:
+            if line.startswith("X-Solstice-Browser="):
+                newshortcut[linescounted] = "X-Solstice-Browser=" + newbrowser + "\n"
+            elif line.startswith("StartupWMClass="):
+                newshortcut[linescounted] = "StartupWMClass=" + newfilename + "\n"
+            elif line.startswith("Exec="):
+                if line.endswith(" --force-manager\n"):
+                    newshortcut[linescounted] = 'Exec=/usr/bin/solstice "' + newpath + '" --force-manager\n'
+                else:
+                    newshortcut[linescounted] = 'Exec=/usr/bin/solstice "' + newpath + '"\n'
+            linescounted += 1
+        
+        os.remove(sys.argv[1]) #Remove old shortcut
+        #TODO: Account for if we're running on a child shortcut
+        #Write new shortcut
+        with open(newpath, 'w') as fp:
+            fp.write(''.join(newshortcut))
+
+        #Reload with new file
+        commandtorun = list(sys.argv)
+        commandtorun[1] = newpath
+        subprocess.Popen(commandtorun)
+        self.quit()
 
     def refreshBrowserFeatures(self):
         #Dark mode option
@@ -461,8 +526,6 @@ class SolsticeGUI(QApplication):
         self.gotoManager()
 
 
-
-
     #Run profile
     def openProfile(self, profileid, alwaysuse, auto=False):
         #Set autostart if alwaysuse is True
@@ -488,6 +551,8 @@ class SolsticeGUI(QApplication):
         self.mainwnd.close()
 
 app = None
+if not os.path.isfile(sys.argv[1]):
+    sys.exit(2)
 try:
     infoclass = DesktopFileInformation(sys.argv[1])
 except Exception as e:
