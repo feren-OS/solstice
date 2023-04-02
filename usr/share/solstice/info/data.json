@@ -61,7 +61,7 @@
             "bonusesavailable": true,
             "expected-file": "/Local State"
         },
-        "ungoogled-chromium": {
+        "ungoogled-chromium-flatpak": {
             "name": "Ungoogled Chromium",
             "icon": "com.github.Eloston.UngoogledChromium",
             "required-file": ["/var/lib/flatpak/app/com.github.Eloston.UngoogledChromium/current/active/files/bin/chromium"],

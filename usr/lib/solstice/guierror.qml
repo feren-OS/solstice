@@ -50,7 +50,7 @@ ApplicationWindow {
             Label {
                 id: genericErrorHeader
                 objectName: "genericErrorHeader"
-                text: "Error" // Changed by solstice
+                text: "GENERICERRORHEADER" // Changed by solstice
                 font.pixelSize: Kirigami.Theme.defaultFont.pixelSize * 1.6
                 wrapMode: Text.WordWrap
                 elide: Text.ElideRight
@@ -59,7 +59,7 @@ ApplicationWindow {
             Label {
                 id: genericErrorSubheader
                 objectName: "genericErrorSubheader"
-                text: "Error text goes here"
+                text: "GENERICERRORSUBHEADER"
                 wrapMode: Text.WordWrap
                 elide: Text.ElideRight
                 Layout.preferredWidth: errorwnd.width - 40
@@ -80,7 +80,7 @@ ApplicationWindow {
             Label {
                 id: noBrowsersHeader
                 objectName: "noBrowsersHeader"
-                text: "NOBROWSERSHEADER" // Changed by solstice
+                text: "NOBROWSERSHEADER"
                 font.pixelSize: Kirigami.Theme.defaultFont.pixelSize * 1.6
                 wrapMode: Text.WordWrap
                 elide: Text.ElideRight
@@ -103,7 +103,7 @@ ApplicationWindow {
                 objectName: "browserSubstitute"
                 Label {
                     objectName: "browserSubstituteTitle"
-                    text: "BROWSERSUBSTITUTETITLE" // Changed by solstice
+                    text: "BROWSERSUBSTITUTETITLE"
                     font.pixelSize: Kirigami.Theme.defaultFont.pixelSize * 1.2
                     wrapMode: Text.WordWrap
                     elide: Text.ElideRight
@@ -142,7 +142,7 @@ ApplicationWindow {
             Label {
                 id: unavailableHeader
                 objectName: "unavailableHeader"
-                text: "NOTAVAILABLEHEADER" // Changed by solstice
+                text: "NOTAVAILABLEHEADER"
                 font.pixelSize: Kirigami.Theme.defaultFont.pixelSize * 1.6
                 wrapMode: Text.WordWrap
                 elide: Text.ElideRight
@@ -157,7 +157,7 @@ ApplicationWindow {
                 Layout.preferredWidth: errorwnd.width - 40
             }
             Button {
-                text: "More information"
+                text: "MOREINFORMATIONBTN"
                 objectName: "moreInformationBtn"
                 icon {
                     name: "internet-web-browser"
@@ -176,7 +176,7 @@ ApplicationWindow {
 
         // Browser Unavailable
         Button {
-            text: "Get a new browser from Store... (dummy)"
+            text: "GETSTOREBROWSERSBTN"
             objectName: "getStoreBrowsersBtn"
             icon {
                 name: "feren-store"
@@ -194,7 +194,8 @@ ApplicationWindow {
 
         // Generic Error
         Button {
-            text: "OK"
+            text: "GENERICOK"
+            objectName: "genericOk"
             visible: genericError.visible
             onClicked: {
                 dismiss();
@@ -202,7 +203,8 @@ ApplicationWindow {
         }
         // Browser Unavailable
         Button {
-            text: "OK"
+            text: "UNAVAILABLEOK"
+            objectName: "unavailableOk"
             visible: noBrowsersError.visible
             onClicked: {
                 dismiss();
@@ -210,12 +212,13 @@ ApplicationWindow {
         }
         // Website Unavailable
         Button {
-            text: "Dismiss"
+            text: "UNAVAILABLEDISMISS"
+            objectName: "unavailableDismiss"
             visible: unavailableError.visible
             onClicked: dismiss();
         }
         Button {
-            text: "Remove (dummy)"
+            text: "UNINSTALLSTOREBTN"
             objectName: "uninstallStoreBtn"
             icon {
                 name: "delete"

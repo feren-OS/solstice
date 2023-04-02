@@ -55,7 +55,7 @@ ApplicationWindow {
                 Label {
                     id: profilesHeader
                     objectName: "profilesHeader"
-                    text: "Who's using APPTITLE?" // Changed by solstice
+                    text: "PROFILESHEADER" // Changed by solstice
                     font.pixelSize: Kirigami.Theme.defaultFont.pixelSize * 1.6
                     wrapMode: Text.WordWrap
                     elide: Text.ElideRight
@@ -64,7 +64,7 @@ ApplicationWindow {
                 Label {
                     id: profilesSubheader
                     objectName: "profilesSubheader"
-                    text: "Select your profile from the options below to begin.\nIf you are a new user, hit "+'"'+"Add a profile"+'"'+" instead to begin."
+                    text: "PROFILESSUBHEADER"
                     wrapMode: Text.WordWrap
                     elide: Text.ElideRight
                     Layout.preferredWidth: mainwnd.width - 40
@@ -138,7 +138,7 @@ ApplicationWindow {
             CheckBox {
                 id: alwaysUseProfile
                 objectName: "alwaysUseProfile"
-                text: "Always use this profile"
+                text: "ALWAYSUSEPROFILE" // Changed by Solstice
                 checked: false
                 anchors {
                     bottom: alwaysUseProfileHint.top
@@ -149,7 +149,7 @@ ApplicationWindow {
             Label {
                 id: alwaysUseProfileHint
                 objectName: "alwaysUseProfileHint"
-                text: 'You can manage profiles and select other profiles by right-clicking this application in the Applications Menu and choosing "Manage Profiles...".'
+                text: "ALWAYSUSEPROFILEHINT" // Changed by Solstice
                 wrapMode: Text.WordWrap
                 elide: Text.ElideRight
                 font.pointSize: Kirigami.Theme.smallFont.pointSize
@@ -178,7 +178,7 @@ ApplicationWindow {
                 Label {
                     id: manageHeader
                     objectName: "manageHeader"
-                    text: "Manage APPTITLE Profiles" // Changed by solstice
+                    text: "MANAGEHEADER"
                     font.pixelSize: Kirigami.Theme.defaultFont.pixelSize * 1.6
                     wrapMode: Text.WordWrap
                     elide: Text.ElideRight
@@ -187,7 +187,7 @@ ApplicationWindow {
                 Label {
                     id: manageSubheader
                     objectName: "manageSubheader"
-                    text: "Select a profile from the options below to manage it.\nOnce you are done managing profiles, hit Done below."
+                    text: "MANAGESUBHEADER"
                     wrapMode: Text.WordWrap
                     elide: Text.ElideRight
                     Layout.preferredWidth: mainwnd.width - 40
@@ -269,7 +269,7 @@ ApplicationWindow {
                 Label {
                     id: editProfileHeader
                     objectName: "editProfileHeader"
-                    text: "Create a profile" // Changed by solstice
+                    text: "EDITPROFILEHEADER"
                     font.pixelSize: Kirigami.Theme.defaultFont.pixelSize * 1.6
                     wrapMode: Text.WordWrap
                     elide: Text.ElideRight
@@ -278,7 +278,7 @@ ApplicationWindow {
                 Label {
                     id: editProfileSubheader
                     objectName: "editProfileSubheader"
-                    text: "Choose your name, and options for your profile.\nOnce you are done. hit Finish below."
+                    text: "EDITPROFILESUBHEADER"
                     wrapMode: Text.WordWrap
                     elide: Text.ElideRight
                     Layout.preferredWidth: mainwnd.width - 40
@@ -296,7 +296,8 @@ ApplicationWindow {
                 }
 
                 Text {
-                    text: "Profile name"
+                    objectName: "editProfileNameHint"
+                    text: "EDITPROFILENAMEHINT" // Changed by solstice
                     opacity: 0.5
                     visible: !editProfileName.text
                     anchors {
@@ -349,12 +350,12 @@ ApplicationWindow {
                 CheckBox {
                     id: forceDarkMode
                     objectName: "forceDarkMode"
-                    text: "Always use dark mode"
+                    text: "FORCEDARKMODE" // Changed by solstice
                 }
                 Label {
                     id: forceDarkModeHint
                     objectName: "forceDarkModeHint"
-                    text: "Only works on compatible applications"
+                    text: "FORCEDARKMODEHINT"
                     wrapMode: Text.WordWrap
                     elide: Text.ElideRight
                     font.pointSize: Kirigami.Theme.smallFont.pointSize
@@ -363,12 +364,12 @@ ApplicationWindow {
                 CheckBox {
                     id: noCache
                     objectName: "noCache"
-                    text: "Disable browser cache"
+                    text: "NOCACHE"
                 }
                 Label {
                     id: noCacheHint
                     objectName: "noCacheHint"
-                    text: "Worsens load times of websites"
+                    text: "NOCACHEHINT"
                     wrapMode: Text.WordWrap
                     elide: Text.ElideRight
                     font.pointSize: Kirigami.Theme.smallFont.pointSize
@@ -500,7 +501,7 @@ ApplicationWindow {
         // Profile Manager Buttons
         Button {
             objectName: "manageBonusesBtn"
-            text: "Manage bonuses in Store... (dummy)"
+            text: "MANAGEBONUSESBTN" // Changed by solstice
             icon {
                 name: "feren-store"
             }
@@ -509,7 +510,8 @@ ApplicationWindow {
             //TODO: OnClicked
         }
         Button {
-            text: "Change browser..."
+            objectName: "changeBrowserBtn"
+            text: "CHANGEBROWSERBTN"
             icon {
                 name: "document-edit"
             }
@@ -518,7 +520,8 @@ ApplicationWindow {
         }
         // Profile Editor Buttons
         Button {
-            text: "Cancel"
+            objectName: "editorCancelBtn"
+            text: "EDITORCANCELBTN"
             icon {
                 name: "dialog-cancel"
             }
@@ -535,8 +538,8 @@ ApplicationWindow {
             }
         }
         Button {
-            text: "Delete profile"
             objectName: "deleteProfileBtn"
+            text: "DELETEPROFILEBTN"
             icon {
                 name: "delete"
                 color: Kirigami.Theme.negativeTextColor
@@ -547,7 +550,7 @@ ApplicationWindow {
         // Browser Select Buttons
         Button {
             objectName: "cancelBrowserSelect"
-            text: "Cancel"
+            text: "CANCELBROWSERSELECT"
             icon {
                 name: "dialog-cancel"
             }
@@ -555,7 +558,8 @@ ApplicationWindow {
             onClicked: pages.currentIndex = 1
         }
         Button {
-            text: "Get a new browser from Store... (dummy)"
+            objectName: "storeBrowsersBtn"
+            text: "STOREBROWSERSBTN"
             icon {
                 name: "feren-store"
             }
@@ -571,7 +575,8 @@ ApplicationWindow {
         }
         // Browser Select Buttons
         Button {
-            text: "Done"
+            objectName: "browserSelectDone"
+            text: "BROWSERSELECTDONE"
             icon {
                 color: Kirigami.Theme.positiveTextColor
             }
@@ -581,7 +586,8 @@ ApplicationWindow {
         }
         // Profile Select Buttons
         Button { //also Profile Management in this button's case
-            text: "Add a profile..."
+            objectName: "profileSelectAdd"
+            text: "PROFILESELECTADD"
             icon {
                 name: "list-add"
             }
@@ -589,7 +595,8 @@ ApplicationWindow {
             onClicked: gotoProfileEditor(true, "");
         }
         Button {
-            text: "Manage profiles..."
+            objectName: "gotoManagerBtn"
+            text: "GOTOMANAGERBTN"
             icon {
                 color: Kirigami.Theme.neutralTextColor
             }
@@ -602,7 +609,7 @@ ApplicationWindow {
         }
         // Profile Management Buttons
         Button {
-            text: "Done"
+            text: "EXITMANAGERBTN"
             objectName: "exitManagerBtn"
             id: exitManagerBtn
             icon {
@@ -619,7 +626,7 @@ ApplicationWindow {
         // Profile Editor Buttons
         Button {
             objectName: "editorDoneBtn"
-            text: "Finish"
+            text: "EDITORDONEBTN"
             icon {
                 name: "dialog-apply"
                 color: Kirigami.Theme.positiveTextColor

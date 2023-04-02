@@ -260,16 +260,47 @@ class SolsticeGUI(QApplication):
         self.errorwnd.dismiss.connect(self.quit)
         self.errorwnd.openStoreBrowsers.connect(self.quit) #TODO
         self.errorwnd.openStoreID.connect(self.quit) #TODO
+        #Set label values
+        self.errorwndLabels()
 
 
     #Labels
     def mainwndLabels(self):
         self.mainwnd.setProperty('title', self.info["name"])
-        self.mainwnd.findChild(QObject, "profilesHeader").setProperty('text', "Who's using %s?" % self.info["name"])
-        self.mainwnd.findChild(QObject, "browsersHeader").setProperty('text', "Choose a browser to launch %s" % self.info["name"])
-        self.mainwnd.findChild(QObject, "manageHeader").setProperty('text', "Manage %s Profiles" % self.info["name"])
-        self.mainwnd.findChild(QObject, "editProfileSubheader").setProperty('text', "Choose your name, and options for your profile.\nOnce you are done. hit Finish below.")
-        #TODO: Add in label changing to translate the labels
+        self.mainwnd.findChild(QObject, "profilesHeader").setProperty('text', _("Who's using %s?") % self.info["name"])
+        self.mainwnd.findChild(QObject, "profilesSubheader").setProperty('text', _("Select your profile from the options below to begin.\nIf you are a new user, press "+'"'+"Add a profile"+'"'+" instead to begin."))
+        self.mainwnd.findChild(QObject, "alwaysUseProfile").setProperty('text', _("Always use this profile"))
+        self.mainwnd.findChild(QObject, "alwaysUseProfileHint").setProperty('text', _('You can manage profiles and select other profiles by right-clicking this application in the Applications Menu and choosing "Manage profiles".'))
+        self.mainwnd.findChild(QObject, "manageHeader").setProperty('text', _("Manage %s Profiles") % self.info["name"])
+        self.mainwnd.findChild(QObject, "manageSubheader").setProperty('text', _("Select a profile from the options below to manage it.\nOnce you are done managing profiles, press Done below."))
+        #editProfileHeader is changed when visiting the page
+        self.mainwnd.findChild(QObject, "editProfileSubheader").setProperty('text', _("Choose your name, and options for your profile.\nOnce you are done. press Finish below."))
+        self.mainwnd.findChild(QObject, "editProfileNameHint").setProperty('text', _("Profile name"))
+        self.mainwnd.findChild(QObject, "forceDarkMode").setProperty('text', _("Always use dark mode"))
+        #forceDarkModeHint is changed by refreshBrowserFeatures
+        self.mainwnd.findChild(QObject, "noCache").setProperty('text', _("Disable browser cache"))
+        #noCacheHint is changed by refreshBrowserFeatures
+        self.mainwnd.findChild(QObject, "browsersHeader").setProperty('text', _("Choose a browser to launch %s") % self.info["name"])
+        #browsersSubheader is changed by gotoBrowserSelect
+        self.mainwnd.findChild(QObject, "manageBonusesBtn").setProperty('text', _("Manage bonuses in Store...") + " (dummy)") #TODO
+        self.mainwnd.findChild(QObject, "changeBrowserBtn").setProperty('text', _("Change browser..."))
+        self.mainwnd.findChild(QObject, "editorCancelBtn").setProperty('text', _("Cancel"))
+        self.mainwnd.findChild(QObject, "deleteProfileBtn").setProperty('text', _("Delete profile"))
+        self.mainwnd.findChild(QObject, "cancelBrowserSelect").setProperty('text', _("Cancel"))
+        self.mainwnd.findChild(QObject, "storeBrowsersBtn").setProperty('text', _("Get a new browser from Store...") + " (dummy)") #TODO
+        self.mainwnd.findChild(QObject, "browserSelectDone").setProperty('text', _("Done"))
+        self.mainwnd.findChild(QObject, "profileSelectAdd").setProperty('text', _("Add a profile..."))
+        self.mainwnd.findChild(QObject, "gotoManagerBtn").setProperty('text', _("Manage profiles..."))
+        self.mainwnd.findChild(QObject, "exitManagerBtn").setProperty('text', _("Done"))
+        self.mainwnd.findChild(QObject, "editorDoneBtn").setProperty('text', _("Finish"))
+
+    def errorwndLabels(self):
+        self.errorwnd.findChild(QObject, "moreInformationBtn").setProperty('text', _("More information"))
+        self.errorwnd.findChild(QObject, "getStoreBrowsersBtn").setProperty('text', _("Get a new browser from Store...") + " (dummy)") #TODO
+        self.errorwnd.findChild(QObject, "genericOk").setProperty('text', _("Ok"))
+        self.errorwnd.findChild(QObject, "unavailableOk").setProperty('text', _("Ok"))
+        self.errorwnd.findChild(QObject, "unavailableDismiss").setProperty('text', _("Dismiss"))
+        self.errorwnd.findChild(QObject, "uninstallStoreBtn").setProperty('text', _("Remove...") + " (dummy)") #TODO
 
 
     #Browser Management and Checks

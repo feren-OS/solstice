@@ -1,5 +1,5 @@
 {
-    "ice-extra-darkreader-chromium": {
+    "solstice-extra-darkreader-chromium": {
         "extensions": {
             "settings": {
                 "eimadpbcbfnmbkopoojfekhnkhdbieeh": {
@@ -33,7 +33,7 @@
             }
         }
     },
-    "ice-extra-youtubedislikes-chromium": {
+    "solstice-extra-youtubedislikes-chromium": {
         "extensions": {
             "settings": {
                 "gebbhagfogifgggkldgodflihgfeippi": {
@@ -68,7 +68,7 @@
             }
         }
     },
-    "ice-extra-imagus-chromium": {
+    "solstice-extra-imagus-chromium": {
         "extensions": {
             "settings": {
                 "immpkjjlgappgfkkfieppnmlhakdmaab": {
@@ -103,7 +103,7 @@
             }
         }
     },
-    "ice-extra-nekocap-chromium": {
+    "solstice-extra-nekocap-chromium": {
         "extensions": {
             "settings": {
                 "gmopgnhbhiniibbiilmbjilcmgaocokj": {
@@ -136,7 +136,7 @@
             }
         }
     },
-    "ice-extra-ublock-chromium": {
+    "solstice-extra-ublock-chromium": {
         "extensions": {
             "settings": {
                 "cjpalhdlnbpafiamejdnhcphjbkeiagm": {
