@@ -8,7 +8,7 @@ import gettext
 gettext.install("solstice-python", "/usr/share/locale", names="ngettext")
 import gi
 from gi.repository import GLib
-import shutil #TODO: remove once icons moved
+from xdg.DesktopEntry import DesktopEntry
 import colorsys
 import collections.abc
 from PIL import Image #TODO: remove once icons moved
@@ -16,8 +16,14 @@ import magic #TODO: remove once icons moved
 import math
 import json
 import ast
+import psutil
+import shutil
+import signal
+import time
 
 class SolsticeUtilsException(Exception):
+    pass
+class ProfileInUseException(Exception):
     pass
 
 def dict_recurupdate(d, u):
@@ -345,6 +351,9 @@ def remove_flatpak_permissions(itemid, itemname, browsertype, browser):
     i = 0
     for line in newcontents:
         if line.startswith("filesystems="):
+            if "{0}/{1};".format(variables.solstice_profiles_directory, itemid) not in line \
+            and GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) + "/" + _("%s Downloads") % itemname + ";" not in line:
+                return #If the Flatpak doesn't have those permissions, don't bother writing to file
             newcontents[i] = newcontents[i].replace("!{0}/{1};".format(variables.solstice_profiles_directory, itemid), "")
             newcontents[i] = newcontents[i].replace("!" + GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) + "/" + _("%s Downloads") % itemname + ";", "")
             newcontents[i] = newcontents[i].replace("{0}/{1};".format(variables.solstice_profiles_directory, itemid), "")
@@ -362,27 +371,23 @@ def set_browser(currentfile, browsertype, itemid, itemname, oldbrowser, newbrows
         set_flatpak_permissions(itemid, itemname, browsertype, newbrowser)
 
     currentchild = ""
-    #Put old shortcut's lines in memory
-    with open(currentfile, 'r') as old:
-        newshortcut = old.readlines()
-    
+    oldshortcut=DesktopEntry()
+    oldshortcut.parse(currentfile)
+
     #Check if it's a parent ID, and if so switch to it
-    for line in newshortcut:
-        if line.startswith("X-Solstice-ParentID="):
-            #currentchild = os.path.basename(currentfile).replace(itemid + "-", "").removesuffix(".desktop")
-            currentchild = remove_suffix(os.path.basename(currentfile).replace(itemid + "-", ""), ".desktop")
-            currentfilelist = currentfile.split("/")
-            currentfilelist[-1] = currentfilelist[-1].replace("-" + currentchild + ".desktop", ".desktop")
-            currentfile = "/".join(currentfilelist)
-            #Put old parent shortcut's lines in memory
-            with open(currentfile, 'r') as old:
-                newshortcut = old.readlines()
+    if oldshortcut.get("X-Solstice-ParentID") != "":
+        #currentchild = os.path.basename(currentfile).replace(itemid + "-", "").removesuffix(".desktop")
+        currentchild = remove_suffix(os.path.basename(currentfile).replace(itemid + "-", ""), ".desktop")
+        currentfilelist = currentfile.split("/")
+        currentfilelist[-1] = currentfilelist[-1].replace("-" + currentchild + ".desktop", ".desktop")
+        currentfile = "/".join(currentfilelist)
+        #Swap out for parent .desktop
+        oldshortcut=DesktopEntry()
+        oldshortcut.parse(currentfile)
 
     #Get childrens' IDs
-    for line in newshortcut:
-        if line.startswith("X-Solstice-Children="):
-            #childids = ast.literal_eval(line.removeprefix("X-Solstice-Children=").removesuffix("\n"))
-            childids = ast.literal_eval(remove_suffix(remove_prefix(line, "X-Solstice-Children="), "\n"))
+    childids = []
+    childids = ast.literal_eval(oldshortcut.get("X-Solstice-Children"))
     updatedidpaths = {}
     #Update childrens' shortcuts
     for i in childids:
@@ -433,3 +438,74 @@ def set_browser_shortcut(currentfile, browsertype, itemid, newbrowser, childid="
 
     #Return the shortcut to relaunch into
     return newpath
+
+def delete_profilefolder(profilepath):
+    if not os.path.isdir(profilepath):
+        raise SolsticeUtilsException(_("The profile %s does not exist") % profilepath.split("/")[-1])
+    else:
+        if os.path.isfile(profilepath + "/.solstice-active-pid"):
+            try:
+                with open(profilepath + "/.solstice-active-pid", 'r') as pidfile:
+                    lastpid = pidfile.readline()
+                lastpid = int(lastpid)
+                try:
+                    target = psutil.Process(lastpid)
+                    for i in target.children(recursive=True):
+                        i.kill() #Kill the process immediately,
+                    target.kill() # so we can remove it
+                    time.sleep(0.4)
+                except:
+                    pass
+            except Exception as e:
+                raise ProfileInUseException(_("Failed to end %s's current session") % profileid)
+
+    try:
+        shutil.rmtree(profilepath)
+    except Exception as e:
+        raise SolsticeUtilsException(_("Failed to delete {0}: {1}").format(profilepath.split("/")[-1], e))
+
+def uninstall_shortcut(itemid): #TODO: Move this into Storium module
+    profilesdir = "{0}/{1}".format(variables.solstice_profiles_directory, itemid)
+    itemnames = []
+    #Delete all profiles, first
+    if os.path.isdir(profilesdir):
+        for i in os.listdir(profilesdir):
+            if os.path.isdir(profilesdir + "/" + i):
+                delete_profilefolder(profilesdir + "/" + i)
+        shutil.rmtree(profilesdir)
+    #Now delete the shortcuts
+    for browsertype in variables.sources: #Iterate through all possible classprefixes
+        for browser in variables.sources[browsertype]:
+            classprefix = variables.sources[browsertype][browser]["classprefix"]
+            possiblefile = os.path.join(os.path.expanduser("~"), ".local/share/applications", classprefix + itemid + ".desktop")
+            if os.path.isfile(possiblefile):
+                try:
+                    entry=DesktopEntry()
+                    entry.parse(possiblefile)
+                except:
+                    continue #Skip if file's invalid
+                #Find the children first, note name,
+                childids = ast.literal_eval(entry.get("X-Solstice-Children"))
+                if entry.getName() not in itemnames:
+                    itemnames.append(entry.getName())
+                #and delete the children
+                for i in childids:
+                    childfilelist = possiblefile.split("/")
+                    childfilelist[-1] = childfilelist[-1].replace(itemid + ".desktop", itemid + "-" + i + ".desktop")
+                    childfile = "/".join(childfilelist)
+                    try:
+                        os.remove(childfile)
+                    except:
+                        pass #Ignore children deletion failures
+                #Now delete the original file
+                try:
+                    os.remove(possiblefile)
+                except Exception as e:
+                    raise SolsticeUtilsException(_("Failed to uninstall shortcuts: %s") % e)
+    #Now revoke Flatpak permissions
+    for browsertype in variables.sources: #Iterate through all possible Flatpaks
+        for browser in variables.sources[browsertype]:
+            if "flatpak" not in variables.sources[browsertype][browser]:
+                continue
+            for name in itemnames:
+                remove_flatpak_permissions(itemid, name, browsertype, browser)

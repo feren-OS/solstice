@@ -7,8 +7,10 @@ ApplicationWindow {
     id: mainwnd
     objectName: "mainwnd"
     visible: true
-    width: 1020
-    height: 600
+    width: 56 * Kirigami.Units.gridUnit
+    height: 32 * Kirigami.Units.gridUnit
+    minimumWidth: 29 * Kirigami.Units.gridUnit
+    minimumHeight: 21 * Kirigami.Units.gridUnit
     title: "APPTITLE" // Changed by solstice
     property var buttonRowMargin: 5
     property bool lastViewedEditor: false
@@ -53,13 +55,19 @@ ApplicationWindow {
                 Label {
                     id: profilesHeader
                     objectName: "profilesHeader"
-                    text: "Who's using APPTITLE?" // Changed by feren-storium-ice
+                    text: "Who's using APPTITLE?" // Changed by solstice
                     font.pixelSize: Kirigami.Theme.defaultFont.pixelSize * 1.6
+                    wrapMode: Text.WordWrap
+                    elide: Text.ElideRight
+                    Layout.preferredWidth: mainwnd.width - 40
                 }
                 Label {
                     id: profilesSubheader
                     objectName: "profilesSubheader"
                     text: "Select your profile from the options below to begin.\nIf you are a new user, hit "+'"'+"Add a profile"+'"'+" instead to begin."
+                    wrapMode: Text.WordWrap
+                    elide: Text.ElideRight
+                    Layout.preferredWidth: mainwnd.width - 40
                 }
             }
 
@@ -170,13 +178,19 @@ ApplicationWindow {
                 Label {
                     id: manageHeader
                     objectName: "manageHeader"
-                    text: "Manage APPTITLE Profiles" // Changed by feren-storium-ice
+                    text: "Manage APPTITLE Profiles" // Changed by solstice
                     font.pixelSize: Kirigami.Theme.defaultFont.pixelSize * 1.6
+                    wrapMode: Text.WordWrap
+                    elide: Text.ElideRight
+                    Layout.preferredWidth: mainwnd.width - 40
                 }
                 Label {
                     id: manageSubheader
                     objectName: "manageSubheader"
                     text: "Select a profile from the options below to manage it.\nOnce you are done managing profiles, hit Done below."
+                    wrapMode: Text.WordWrap
+                    elide: Text.ElideRight
+                    Layout.preferredWidth: mainwnd.width - 40
                 }
             }
 
@@ -255,13 +269,19 @@ ApplicationWindow {
                 Label {
                     id: editProfileHeader
                     objectName: "editProfileHeader"
-                    text: "Create a profile" // Changed by feren-storium-ice
+                    text: "Create a profile" // Changed by solstice
                     font.pixelSize: Kirigami.Theme.defaultFont.pixelSize * 1.6
+                    wrapMode: Text.WordWrap
+                    elide: Text.ElideRight
+                    Layout.preferredWidth: mainwnd.width - 40
                 }
                 Label {
                     id: editProfileSubheader
                     objectName: "editProfileSubheader"
                     text: "Choose your name, and options for your profile.\nOnce you are done. hit Finish below."
+                    wrapMode: Text.WordWrap
+                    elide: Text.ElideRight
+                    Layout.preferredWidth: mainwnd.width - 40
                 }
             }
 
@@ -369,13 +389,19 @@ ApplicationWindow {
                 Label {
                     id: browsersHeader
                     objectName: "browsersHeader"
-                    text: "BROWSERSELECTTEXT" // Changed by feren-storium-ice
+                    text: "BROWSERSELECTTEXT" // Changed by solstice
                     font.pixelSize: Kirigami.Theme.defaultFont.pixelSize * 1.6
+                    wrapMode: Text.WordWrap
+                    elide: Text.ElideRight
+                    Layout.preferredWidth: mainwnd.width - 40
                 }
                 Label {
                     id: browsersSubheader
                     objectName: "browsersSubheader"
                     text: "BROWSERSELECTSUBTEXT"
+                    wrapMode: Text.WordWrap
+                    elide: Text.ElideRight
+                    Layout.preferredWidth: mainwnd.width - 40
                 }
             }
 

@@ -12,11 +12,16 @@ ApplicationWindow {
     title: "ERRORTITLE" // Changed by solstice
     property var buttonRowMargin: 5
     property var creationCancel: QtObject { property bool returnHome: true }
+    maximumHeight: height
+    maximumWidth: width
+    minimumHeight: height
+    minimumWidth: width
 
     //SIGNALS
     signal dismiss()
     signal openStoreBrowsers()
     signal openStoreID(var storeid)
+    signal unavailMoreInformation()
 
     Kirigami.Theme.inherit: true
     color: Kirigami.Theme.backgroundColor
@@ -45,7 +50,7 @@ ApplicationWindow {
             Label {
                 id: genericErrorHeader
                 objectName: "genericErrorHeader"
-                text: "Error" // Changed by feren-storium-ice
+                text: "Error" // Changed by solstice
                 font.pixelSize: Kirigami.Theme.defaultFont.pixelSize * 1.6
                 wrapMode: Text.WordWrap
                 elide: Text.ElideRight
@@ -75,7 +80,7 @@ ApplicationWindow {
             Label {
                 id: noBrowsersHeader
                 objectName: "noBrowsersHeader"
-                text: "NOBROWSERSHEADER" // Changed by feren-storium-ice
+                text: "NOBROWSERSHEADER" // Changed by solstice
                 font.pixelSize: Kirigami.Theme.defaultFont.pixelSize * 1.6
                 wrapMode: Text.WordWrap
                 elide: Text.ElideRight
@@ -98,7 +103,7 @@ ApplicationWindow {
                 objectName: "browserSubstitute"
                 Label {
                     objectName: "browserSubstituteTitle"
-                    text: "BROWSERSUBSTITUTETITLE" // Changed by feren-storium-ice
+                    text: "BROWSERSUBSTITUTETITLE" // Changed by solstice
                     font.pixelSize: Kirigami.Theme.defaultFont.pixelSize * 1.2
                     wrapMode: Text.WordWrap
                     elide: Text.ElideRight
@@ -137,7 +142,7 @@ ApplicationWindow {
             Label {
                 id: unavailableHeader
                 objectName: "unavailableHeader"
-                text: "APPTITLE is no longer available" // Changed by feren-storium-ice
+                text: "NOTAVAILABLEHEADER" // Changed by solstice
                 font.pixelSize: Kirigami.Theme.defaultFont.pixelSize * 1.6
                 wrapMode: Text.WordWrap
                 elide: Text.ElideRight
@@ -146,7 +151,7 @@ ApplicationWindow {
             Label {
                 id: unavailableSubheader
                 objectName: "unavailableSubheader"
-                text: "Unfortunately, APPTITLE has ceased all operations, meaning it is no longer available.\n\nSince APPTITLE is no longer available, would you like to remove APPTITLE from Feren OS?\nNOTE: Once done, you cannot install APPTITLE again."
+                text: "NOTAVAILABLESUBHEADER"
                 wrapMode: Text.WordWrap
                 elide: Text.ElideRight
                 Layout.preferredWidth: errorwnd.width - 40
@@ -157,7 +162,7 @@ ApplicationWindow {
                 icon {
                     name: "internet-web-browser"
                 }
-                onClicked: dismiss(); //TODO
+                onClicked: unavailMoreInformation();
             }
         }
     }
@@ -210,14 +215,14 @@ ApplicationWindow {
             onClicked: dismiss();
         }
         Button {
-            text: "Remove"
-            objectName: "deleteProfileBtn"
+            text: "Remove (dummy)"
+            objectName: "uninstallStoreBtn"
             icon {
                 name: "delete"
                 color: Kirigami.Theme.negativeTextColor
             }
             visible: unavailableError.visible
-            onClicked: deleteProfile();
+            onClicked: dismiss(); //TODO
         }
     }
 }

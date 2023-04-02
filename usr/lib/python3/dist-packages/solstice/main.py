@@ -8,11 +8,8 @@ import subprocess
 import gettext
 gettext.install("solstice-python", "/usr/share/locale", names="ngettext")
 import json
-import shutil
 from datetime import datetime
 import ast
-import signal
-import time
 
 class SolsticeModuleException(Exception):
     pass
@@ -63,18 +60,18 @@ class main:
             raise SolsticeModuleException(_("Corrupt or incompatible data - %s is not a supported browser") % browser)
 
         #Check there's a note about a process having ran, and if so if the process is running
-        if os.path.isfile(profilepath + "/.storium-active-pid"):
-            with open(profilepath + "/.storium-active-pid", 'r') as pidfile:
+        if os.path.isfile(profilepath + "/.solstice-active-pid"):
+            with open(profilepath + "/.solstice-active-pid", 'r') as pidfile:
                 lastpid = pidfile.readline()
             try:
                 lastpid = int(lastpid)
                 if not utils.proc_exists(lastpid):
-                    os.remove(profilepath + "/.storium-active-pid") #The PID doesn't exist
+                    os.remove(profilepath + "/.solstice-active-pid") #The PID doesn't exist
             except:
-                os.remove(profilepath + "/.storium-active-pid")
+                os.remove(profilepath + "/.solstice-active-pid")
         #Tell Solstice that the process's running
-        if not os.path.isfile(profilepath + "/.storium-active-pid"):
-            with open(profilepath + "/.storium-active-pid", 'w') as pidfile:
+        if not os.path.isfile(profilepath + "/.solstice-active-pid"):
+            with open(profilepath + "/.solstice-active-pid", 'w') as pidfile:
                 pidfile.write(str(ssbproc.pid))
 
         if not closecallback == None:
@@ -102,9 +99,9 @@ class main:
             if "flatpak" in variables.sources[iteminfo["browsertype"]][iteminfo["browser"]]:
                 utils.set_flatpak_permissions(iteminfo["id"], iteminfo["name"], iteminfo["browsertype"], iteminfo["browser"])
         else:
-            if os.path.isfile(profilepath + "/.storium-active-pid"):
+            if os.path.isfile(profilepath + "/.solstice-active-pid"):
                 try:
-                    with open(profilepath + "/.storium-active-pid", 'r') as pidfile:
+                    with open(profilepath + "/.solstice-active-pid", 'r') as pidfile:
                         lastpid = pidfile.readline()
                     lastpid = int(lastpid)
                     if utils.proc_exists(lastpid):
@@ -144,28 +141,7 @@ class main:
 
     def delete_profile(self, iteminfo, profileid):
         profilepath = utils.get_profilepath(iteminfo["id"], profileid)
-
-        #Check the profile exists
-        if not os.path.isdir(profilepath):
-            raise SolsticeModuleException(_("The profile %s does not exist") % profilepath.split("/")[-1])
-        else:
-            if os.path.isfile(profilepath + "/.storium-active-pid"):
-                try:
-                    with open(profilepath + "/.storium-active-pid", 'r') as pidfile:
-                        lastpid = pidfile.readline()
-                    lastpid = int(lastpid)
-                    try:
-                        os.kill(lastpid, signal.SIGKILL) #Kill the process immediately, so we can remove it
-                        time.sleep(0.4)
-                    except:
-                        pass
-                except Exception as e:
-                    raise ProfileInUseException(_("Failed to end %s's current session") % profileid)
-
-        try:
-            shutil.rmtree(profilepath)
-        except Exception as e:
-            raise SolsticeModuleException(_("Failed to delete {0}: {1}").format(profilepath.split("/")[-1], e))
+        utils.delete_profilefolder(profilepath)
 
 
     #### PROFILE OPTIONS
