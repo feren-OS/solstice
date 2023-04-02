@@ -7,8 +7,6 @@ import os
 import subprocess
 import gettext
 gettext.install("solstice-python", "/usr/share/locale", names="ngettext")
-import gi
-from gi.repository import GLib
 import json
 import shutil
 from datetime import datetime
@@ -102,11 +100,7 @@ class main:
             utils.create_profile_folder(iteminfo["id"], profileid)
             #If Flatpak, grant access to the profile's directory
             if "flatpak" in variables.sources[iteminfo["browsertype"]][iteminfo["browser"]]:
-                os.system('/usr/bin/flatpak override --user {0} --filesystem="{1}/{2}"'.format(variables.sources[iteminfo["browsertype"]][iteminfo["browser"]]["flatpak"], variables.solstice_profiles_directory, iteminfo["id"]))
-                #NOTE: Flatpak permissions are granted to the profiles folder per application so that the browser cannot read profiles it is not assigned to
-                #...and also let them access their respective Downloads folders
-                os.system('/usr/bin/flatpak override --user {0} --filesystem="{1}"'.format(variables.sources[iteminfo["browsertype"]][iteminfo["browser"]]["flatpak"], GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) + "/" + _("{0} Downloads").format(iteminfo["name"])))
-                #TODO: Move this elsewhere when adding in browser reselection?
+                utils.set_flatpak_permissions(iteminfo["id"], iteminfo["name"], iteminfo["browsertype"], iteminfo["browser"])
         else:
             if os.path.isfile(profilepath + "/.storium-active-pid"):
                 try:
@@ -118,13 +112,12 @@ class main:
                 except Exception as e:
                     print(_("WARNING: Could not determine if the profile {0} is in use: {1}").format(profileid, e))
 
-        extrawebsites = [] #TODO
         if iteminfo["browsertype"] == "chromium":
             from . import chromium
-            chromium.update_profile(iteminfo, extrawebsites, profilename, profilepath, darkmode, nocache)
+            chromium.update_profile(iteminfo, iteminfo["extrawebsites"], profilename, profilepath, darkmode, nocache)
         elif iteminfo["browsertype"] == "firefox":
             from . import firefox
-            firefox.update_profile(iteminfo, extrawebsites, profilename, profilepath, darkmode, nocache)
+            firefox.update_profile(iteminfo, iteminfo["extrawebsites"], profilename, profilepath, darkmode, nocache)
 
         #Make note of the profile name and last updated configs
         profileconfs = {}

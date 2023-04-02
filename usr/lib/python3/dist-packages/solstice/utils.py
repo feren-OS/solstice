@@ -6,6 +6,8 @@ from . import variables
 import os
 import gettext
 gettext.install("solstice-python", "/usr/share/locale", names="ngettext")
+import gi
+from gi.repository import GLib
 import shutil #TODO: remove once icons moved
 import colorsys
 import collections.abc
@@ -263,7 +265,7 @@ def complete_item_information(desktopinfo):
                     "color": "#4ba9fb",
                     "accentonwindow": True,
                     "chromicolor": "-5919045"}
-    itemsrequired = ["name", "wmclass", "website", "browser", "browsertype", "lastupdated"]
+    itemsrequired = ["name", "wmclass", "website", "browser", "browsertype", "extrawebsites", "lastupdated"]
     for item in itemsrequired:
         if item not in desktopinfo or desktopinfo[item] == "":
             raise SolsticeUtilsException(_("Corrupt or overdated .desktop file - %s is missing") % item)
@@ -330,7 +332,35 @@ def remove_suffix(text, suffix):
         return text[:-len(suffix)]
     return text
 
-def set_browser(currentfile, browsertype, itemid, newbrowser):
+def set_flatpak_permissions(itemid, itemname, browsertype, browser):
+    os.system('/usr/bin/flatpak override --user {0} --filesystem="{1}/{2}"'.format(variables.sources[browsertype][browser]["flatpak"], variables.solstice_profiles_directory, itemid))
+    #NOTE: Flatpak permissions are granted to the profiles folder per application so that the browser cannot read profiles it is not assigned to
+    #...and also let them access their respective Downloads folders
+    os.system('/usr/bin/flatpak override --user {0} --filesystem="{1}"'.format(variables.sources[browsertype][browser]["flatpak"], GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) + "/" + _("{0} Downloads").format(itemname)))
+
+def remove_flatpak_permissions(itemid, itemname, browsertype, browser):
+    targetfile = os.path.expanduser("~") + "/.local/share/flatpak/overrides/" + variables.sources[browsertype][browser]["flatpak"]
+    with open(targetfile, "rt") as fp:
+        newcontents = fp.readlines()
+    i = 0
+    for line in newcontents:
+        if line.startswith("filesystems="):
+            newcontents[i] = newcontents[i].replace("!{0}/{1};".format(variables.solstice_profiles_directory, itemid), "")
+            newcontents[i] = newcontents[i].replace("!" + GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) + "/" + _("%s Downloads") % itemname + ";", "")
+            newcontents[i] = newcontents[i].replace("{0}/{1};".format(variables.solstice_profiles_directory, itemid), "")
+            newcontents[i] = newcontents[i].replace(GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) + "/" + _("%s Downloads") % itemname + ";", "")
+        i += 1
+    with open(targetfile, "w") as fp:
+        fp.write("".join(newcontents))
+
+def set_browser(currentfile, browsertype, itemid, itemname, oldbrowser, newbrowser):
+    #If the old browser was a Flatpak, remove its permissions
+    if "flatpak" in variables.sources[browsertype][oldbrowser]:
+        remove_flatpak_permissions(itemid, itemname, browsertype, oldbrowser)
+    #If the new browser is a Flatpak, grant it permissions
+    if "flatpak" in variables.sources[browsertype][newbrowser]:
+        set_flatpak_permissions(itemid, itemname, browsertype, newbrowser)
+
     currentchild = ""
     #Put old shortcut's lines in memory
     with open(currentfile, 'r') as old:
@@ -380,18 +410,18 @@ def set_browser_shortcut(currentfile, browsertype, itemid, newbrowser, childid="
         newfilename = variables.sources[browsertype][newbrowser]["classprefix"] + itemid + "-" + childid
     newpath = os.path.join(os.path.dirname(currentfile), newfilename + ".desktop")
 
-    linescounted = 0
+    i = 0
     for line in newshortcut:
         if line.startswith("X-Solstice-Browser="):
-            newshortcut[linescounted] = "X-Solstice-Browser=" + newbrowser + "\n"
+            newshortcut[i] = "X-Solstice-Browser=" + newbrowser + "\n"
         elif line.startswith("StartupWMClass="):
-            newshortcut[linescounted] = "StartupWMClass=" + newfilename + "\n"
+            newshortcut[i] = "StartupWMClass=" + newfilename + "\n"
         elif line.startswith("Exec="):
             if line.endswith(" --force-manager\n"):
-                newshortcut[linescounted] = 'Exec=/usr/bin/solstice "' + newpath + '" --force-manager\n'
+                newshortcut[i] = 'Exec=/usr/bin/solstice "' + newpath + '" --force-manager\n'
             else:
-                newshortcut[linescounted] = 'Exec=/usr/bin/solstice "' + newpath + '"\n'
-        linescounted += 1
+                newshortcut[i] = 'Exec=/usr/bin/solstice "' + newpath + '"\n'
+        i += 1
     
     os.remove(currentfile) #Remove old shortcut
     #Write new shortcut

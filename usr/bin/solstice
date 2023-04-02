@@ -132,6 +132,10 @@ class DesktopFileInformation:
             self.info["bonusids"] = []
         self.info["nohistory"] = self.strToBool(entry.get("X-Solstice-NoHistory"))
         self.info["googlehangouts"] = self.strToBool(entry.get("X-Solstice-GoogleHangouts"))
+        try:
+            self.info["extrawebsites"] = ast.literal_eval("X-Solstice-ExtraWebsites")
+        except:
+            self.info["extrawebsites"] = []
         self.info["bg"] = entry.get("X-Solstice-BG")
         self.info["bgdark"] = entry.get("X-Solstice-BG-Dark")
         self.info["accent"] = entry.get("X-Solstice-Accent")
@@ -179,6 +183,10 @@ class SolsticeGUI(QApplication):
         self.setApplicationName(guiwmclass)
 
         if self.info == {}: #Corrupt file
+            self.genericError(_("Incompatible file - Solstice"), _("Corrupt or incompatible file"), _("The shortcut you attempted to open is either corrupt or is too new for this version of Solstice.\n\nPlease reinstall the application you were trying to launch from Store."))
+            return
+        if self.browsertype not in variables.sources or self.browser not in variables.sources[self.browsertype]: #Invalid browser
+            print(_("Failed to load shortcut: %s") % _("Invalid browser"))
             self.genericError(_("Incompatible file - Solstice"), _("Corrupt or incompatible file"), _("The shortcut you attempted to open is either corrupt or is too new for this version of Solstice.\n\nPlease reinstall the application you were trying to launch from Store."))
             return
         
@@ -329,7 +337,7 @@ class SolsticeGUI(QApplication):
         self.mainwnd.findChild(QObject, "pages").setProperty('currentIndex', 3)
 
     def setBrowser(self, newbrowser):
-        newpath = utils.set_browser(sys.argv[1], self.browsertype, self.info["id"], newbrowser)
+        newpath = utils.set_browser(sys.argv[1], self.browsertype, self.info["id"], self.info["name"], self.browser, newbrowser)
 
         #Reload with new file
         commandtorun = list(sys.argv)
@@ -548,11 +556,21 @@ class SolsticeGUI(QApplication):
 
         #Check lastupdated of profile against shortcut's lastupdated
         if utils.get_profile_outdated(profileid, self.info["id"], self.info["lastupdated"], self.browser) == True:
-            self.updateProfile(profileid) #Update the profile if the shortcut's outdated
-            #TODO: Add exception catches to show error dialog
+            try:
+                self.updateProfile(profileid) #Update the profile if the shortcut's outdated
+            except Exception as e:
+                if e.__class__.__name__ != "ProfileInUseException": #skip if profile's in use
+                    print(_("Failed to update profile: %s") % e)
+                    self.genericError(_("Failed to update profile - %s") % self.info["name"], _("Failed to update profile"), _("An error occurred when trying to update this profile.\nPlease view the 'solstice' logs in ~/.xsession-errors and consider reporting this issue to Solstice's developers.\n\nThe application will now abort."))
+                    return
 
         #Start the requested profile
-        self.main.run_profile(self.info["id"], profileid, self.info["browser"], self.info["browsertype"], self.info["website"], self.info["wmclass"], self.info["nohistory"], self.closeCallback if not auto else None)
+        try:
+            self.main.run_profile(self.info["id"], profileid, self.info["browser"], self.info["browsertype"], self.info["website"], self.info["wmclass"], self.info["nohistory"], self.closeCallback if not auto else None)
+        except Exception as e:
+            print(_("Failed to load profile: %s") % e)
+            self.genericError(_("Failed to load profile - %s") % self.info["name"], _("Failed to load profile"), _("An error occurred when trying to load this profile.\nPlease view the 'solstice' logs in ~/.xsession-errors and consider reporting this issue to Solstice's developers.\n\nThe application will now abort."))
+            return
 
         self.quit()
 
