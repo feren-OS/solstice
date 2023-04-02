@@ -30,10 +30,9 @@ def update_profile(iteminfo, extrawebsites, profilename, profilepath, darkmode, 
         defaultprefs = json.loads(fp.read())["general"]
 
     #Don't override certain settings in existing profiles
-    if "vivaldi" in result: #Restore on startup preference
-        if "session" in result["vivaldi"]:
-            if "restore_on_startup" in result["vivaldi"]["session"]:
-                defaultprefs["vivaldi"]["session"].pop("restore_on_startup")
+    if "session" in result: #Restore on startup preference
+        if "restore_on_startup" in result["session"]:
+            defaultprefs["session"].pop("restore_on_startup")
     if "webkit" in result: #Font preferences
         if "webprefs" in result["webkit"]:
             if "fonts" in result["webkit"]["webprefs"]:
@@ -186,6 +185,8 @@ def set_profile_darkmode(profilepath, value, patchvar=False, vartopatch={}):
                 defaultprefs["vivaldi"]["themes"].pop("current")
         if "theme" in result["vivaldi"]:
             if "schedule" in result["vivaldi"]["theme"]:
+                if "enabled" in result["vivaldi"]["theme"]["schedule"]:
+                    defaultprefs["vivaldi"]["theme"]["schedule"].pop("enabled")
                 if "o_s" in result["vivaldi"]["theme"]["schedule"]:
                     for i in "dark", "light":
                         if i in result["vivaldi"]["theme"]["schedule"]["o_s"] and\

@@ -104,21 +104,28 @@ class DesktopFileInformation:
 
         parentid = entry.get("X-Solstice-ParentID")
         if parentid != '': #Child shortcuts have parent IDs, meaning we need some data from their parent shortcut's configs
+            self.info["parentid"] = parentid
             self.info["name"] = entry.getName()
-            self.info["wmclass"] = entry.getStartupWMClass()
+            self.info["solwmclass"] = entry.getStartupWMClass()
             self.info["website"] = entry.get("X-Solstice-Website")
+            desktopfilelist = desktopfile.split("/")
+            desktopfilelist[-1] = desktopfilelist[-1].replace(entry.get("X-Solstice-ID"), parentid)
+            desktopfile = "/".join(desktopfilelist)
+            del desktopfilelist
             try:
                 entry.parse(desktopfile)
             except Exception as e:
                 raise SolsticeGUIException(_("Corrupt or missing parent .desktop file: %s") % e)
         else: #Parent shortcuts
             self.info["name"] = entry.getName()
-            self.info["wmclass"] = entry.getStartupWMClass()
+            self.info["solwmclass"] = entry.getStartupWMClass()
             self.info["website"] = entry.get("X-Solstice-Website")
 
+        self.info["wmclass"] = entry.getStartupWMClass()
         self.info["browser"] = entry.get("X-Solstice-Browser")
         self.info["browsertype"] = entry.get("X-Solstice-BrowserType")
         self.info["id"] = entry.get("X-Solstice-ID")
+        self.info["storeid"] = entry.get("X-Solstice-StoreID")
         try:
             self.info["bonusids"] = ast.literal_eval(entry.get("X-Solstice-BonusIDs"))
         except:
@@ -163,7 +170,7 @@ class SolsticeGUI(QApplication):
             browserCheck = self.browserCheck() #It's used again later in the code
             if browserCheck == True:
                 self.autoProfileLoad() #If a profile is set to autolaunch, launch it
-            guiwmclass = self.info["wmclass"]
+            guiwmclass = self.info["solwmclass"]
         else: #Instead run this code if the file is corrupt
             guiwmclass = "solstice"
 
@@ -174,6 +181,10 @@ class SolsticeGUI(QApplication):
         if self.info == {}: #Corrupt file
             self.genericError(_("Incompatible file - Solstice"), _("Corrupt or incompatible file"), _("The shortcut you attempted to open is either corrupt or is too new for this version of Solstice.\n\nPlease reinstall the application you were trying to launch from Store."))
             return
+        
+        #Set up QML windows
+        self.maineng = QQmlApplicationEngine()
+        self.maineng.quit.connect(self.quit)
 
         self.openMainWindow()
         #Set label values, and the window title
@@ -191,14 +202,21 @@ class SolsticeGUI(QApplication):
 
     #GUI spawning
     def openMainWindow(self):
-        #Set up QML windows
-        self.maineng = QQmlApplicationEngine()
-        self.maineng.quit.connect(self.quit)
         #Load models
         self.profilesmodel = ProfilesModel()
         self.maineng.rootContext().setContextProperty('ProfilesModel', self.profilesmodel)
         self.browsersmodel = BrowsersModel()
         self.maineng.rootContext().setContextProperty('BrowsersModel', self.browsersmodel)
+        #Load condition-variables
+        if "storeid" in self.info:
+            self.maineng.rootContext().setContextProperty('fromStore', self.info["storeid"] != "")
+        else:
+            self.maineng.rootContext().setContextProperty('fromStore', False)
+        if os.path.isfile("/usr/bin/feren-store"):
+            self.maineng.rootContext().setContextProperty('storeAvailable', True)
+        else:
+            self.maineng.rootContext().setContextProperty('storeAvailable', False)
+        self.maineng.rootContext().setContextProperty('bonusesAvailable', False) #changed later
         #Load QML
         self.maineng.load('/usr/lib/solstice/gui.qml')
         self.mainwnd = self.maineng.rootObjects()[0]
@@ -212,15 +230,17 @@ class SolsticeGUI(QApplication):
         #Load value of autolaunch checkbox
         self.mainwnd.findChild(QObject, "alwaysUseProfile").setProperty('checked', not self.autoload == "")
 
-        #TEMP, TODO
-        self.gotoBrowserSelect()
-
     def openErrorWindow(self):
         if self.mainwnd != None:
             self.mainwnd.hide()
         #Set up QML windows
         self.erroreng = QQmlApplicationEngine()
         self.erroreng.quit.connect(self.quit)
+        #Load condition-variables
+        if os.path.isfile("/usr/bin/feren-store"):
+            self.erroreng.rootContext().setContextProperty('storeAvailable', True)
+        else:
+            self.erroreng.rootContext().setContextProperty('storeAvailable', False)
         #Load QML
         self.erroreng.load('/usr/lib/solstice/guierror.qml')
         self.errorwnd = self.erroreng.rootObjects()[0]
@@ -309,34 +329,7 @@ class SolsticeGUI(QApplication):
         self.mainwnd.findChild(QObject, "pages").setProperty('currentIndex', 3)
 
     def setBrowser(self, newbrowser):
-        newfilename = variables.sources[self.browsertype][newbrowser]["classprefix"] + self.info["id"]
-        newpath = os.path.join(os.path.dirname(sys.argv[1]), newfilename + ".desktop")
-
-        #Create new shortcut
-        with open(sys.argv[1], 'r') as old:
-            newshortcut = old.readlines()
-
-        linescounted = 0
-        for line in newshortcut:
-            if line.startswith("X-Solstice-Browser="):
-                newshortcut[linescounted] = "X-Solstice-Browser=" + newbrowser + "\n"
-            elif line.startswith("StartupWMClass="):
-                newshortcut[linescounted] = "StartupWMClass=" + newfilename + "\n"
-            elif line.startswith("Exec="):
-                if line.endswith(" --force-manager\n"):
-                    newshortcut[linescounted] = 'Exec=/usr/bin/solstice "' + newpath + '" --force-manager\n'
-                else:
-                    newshortcut[linescounted] = 'Exec=/usr/bin/solstice "' + newpath + '"\n'
-            linescounted += 1
-        
-        os.remove(sys.argv[1]) #Remove old shortcut
-        #TODO: Account for if we're running on a child shortcut
-        #Write new shortcut
-        with open(newpath, 'w') as fp:
-            fp.write(''.join(newshortcut))
-
-        #Mark as executable too
-        subprocess.Popen(["/usr/bin/chmod", "+x", newpath])
+        newpath = utils.set_browser(sys.argv[1], self.browsertype, self.info["id"], newbrowser)
 
         #Reload with new file
         commandtorun = list(sys.argv)
@@ -345,6 +338,11 @@ class SolsticeGUI(QApplication):
         self.quit()
 
     def refreshBrowserFeatures(self):
+        #But can it do bonuses?
+        if utils.is_feature_available(self.browsertype, self.browser, "bonusesavailable"):
+            self.maineng.rootContext().setContextProperty('bonusesAvailable', True)
+        else:
+            self.maineng.rootContext().setContextProperty('bonusesAvailable', False)
         #Dark mode option
         if utils.is_feature_available(self.browsertype, self.browser, "darkmodeavailable"):
             self.mainwnd.findChild(QObject, "forceDarkMode").setProperty('enabled', True)
@@ -392,7 +390,7 @@ class SolsticeGUI(QApplication):
                 self.errorwnd.findChild(QObject, "browserSubstituteTitle").setProperty('text', _("{0} was chosen for {1}").format(variables.sources[self.browsertype][self.browser]["name"], self.info["name"]))
                 self.errorwnd.findChild(QObject, "browserSubstituteDesc").setProperty('text', _("Would you like to install {0} to allow {1} to run?").format(variables.sources[self.browsertype][self.browser]["name"], self.info["name"]))
                 self.errorwnd.findChild(QObject, "getStoreBrowserBtn").setProperty('text', _("View %s in Store... (dummy)") % variables.sources[self.browsertype][self.browser]["name"])
-                self.errorwnd.findChild(QObject, "getStoreBrowserBtn").setProperty('visible', True)
+                self.errorwnd.findChild(QObject, "getStoreBrowserBtn").setProperty('visible', os.path.isfile("/usr/bin/feren-store"))
 
     def websiteUnavailableError(self, perma=False, announcement=""):
         #FIXME: Currently goes unused (would this even be feasible, now it's DC'd from Store?)
@@ -459,22 +457,6 @@ class SolsticeGUI(QApplication):
                     profiles.append({"pname": readablename, "profileid": i})
         #Refresh profiles list in profilesmodel
         self.profilesmodel.setData(profiles)
-
-    def getProfileOutdated(self, profileid):
-        profilepath = utils.get_profilepath(self.info["id"], profileid)
-        if not os.path.isfile("%s/.solstice-settings" % profilepath):
-            return True #lastupdated is in said file
-        with open("%s/.solstice-settings" % profilepath, 'r') as fp:
-            profileconfs = json.loads(fp.read())
-        if "lastupdated" not in profileconfs:
-            return True #not having lastupdated means it's outdated by definition
-        try:
-            if ast.literal_eval(profileconfs["lastupdated"]) < ast.literal_eval(self.info["lastupdated"]):
-                return True #profile's last update was earlier than the shortcut's
-            else:
-                return False #profile is up to date
-        except:
-            return True #this usually means they aren't numbers, thus outdated by definition
 
 
     #Profile management
@@ -566,7 +548,7 @@ class SolsticeGUI(QApplication):
 
         #Check lastupdated of profile against shortcut's lastupdated
         if utils.get_profile_outdated(profileid, self.info["id"], self.info["lastupdated"], self.browser) == True:
-            self.updateProfile(profileid) #Update the profile if the shortcut's younger
+            self.updateProfile(profileid) #Update the profile if the shortcut's outdated
             #TODO: Add exception catches to show error dialog
 
         #Start the requested profile

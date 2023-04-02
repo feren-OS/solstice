@@ -176,7 +176,7 @@ ApplicationWindow {
             icon {
                 name: "feren-store"
             }
-            visible: noBrowsersError.visible
+            visible: noBrowsersError.visible && storeAvailable
             onClicked: openStoreBrowsers();
         }
 

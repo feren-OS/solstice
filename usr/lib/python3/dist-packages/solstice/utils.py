@@ -226,7 +226,7 @@ def get_profile_settings(itemid, profileid):
 def get_profile_outdated(profileid, itemid, shortcutlastupdated, browserid):
     profilepath = get_profilepath(itemid, profileid)
     if not os.path.isfile("%s/.solstice-settings" % profilepath):
-        return True #lastupdated is in said file
+        return True #lastupdated* is in said file
     with open("%s/.solstice-settings" % profilepath, 'r') as fp:
         profileconfs = json.loads(fp.read())
     if "lastupdatedshortcut" not in profileconfs:
@@ -239,9 +239,9 @@ def get_profile_outdated(profileid, itemid, shortcutlastupdated, browserid):
         if int(profileconfs["lastupdatedshortcut"]) < int(shortcutlastupdated):
             return True #profile's last update was earlier than the shortcut's
         else:
-            if int(profileconfs["lastupdatedsolstice"]) < variables.solstice_lastupdated:
+            if int(profileconfs["lastupdatedsolstice"]) < int(variables.solstice_lastupdated):
                 return True #profile's last update was earlier than Solstice's was
-            elif int(profileconfs["lastbrowser"]) != browserid:
+            elif profileconfs["lastbrowser"] != browserid:
                 return True #profile's last browser wasn't the current one
             else:
                 return False #profile is up to date
@@ -252,7 +252,7 @@ def complete_item_information(desktopinfo):
     #Adds fallback values for any missing values
     fallbackpalette = False
     fallbackchromi = False
-    defaultitems = {"extraids": [],
+    defaultitems = {"Children": [],
                     "nohistory": False,
                     "googlehangouts": False,
                     "bonusids": [],
@@ -319,3 +319,87 @@ def is_feature_available(browsertype, browser, key): #use for sources[browsertyp
     if key not in variables.sources[browsertype][browser]:
         return False #Default to unavailable
     return variables.sources[browsertype][browser][key]
+
+def remove_prefix(text, prefix):
+    if text.startswith(prefix):
+        return text[len(prefix):]
+    return text
+
+def remove_suffix(text, suffix):
+    if text.endswith(suffix):
+        return text[:-len(suffix)]
+    return text
+
+def set_browser(currentfile, browsertype, itemid, newbrowser):
+    currentchild = ""
+    #Put old shortcut's lines in memory
+    with open(currentfile, 'r') as old:
+        newshortcut = old.readlines()
+    
+    #Check if it's a parent ID, and if so switch to it
+    for line in newshortcut:
+        if line.startswith("X-Solstice-ParentID="):
+            #currentchild = os.path.basename(currentfile).replace(itemid + "-", "").removesuffix(".desktop")
+            currentchild = remove_suffix(os.path.basename(currentfile).replace(itemid + "-", ""), ".desktop")
+            currentfilelist = currentfile.split("/")
+            currentfilelist[-1] = currentfilelist[-1].replace("-" + currentchild + ".desktop", ".desktop")
+            currentfile = "/".join(currentfilelist)
+            #Put old parent shortcut's lines in memory
+            with open(currentfile, 'r') as old:
+                newshortcut = old.readlines()
+
+    #Get childrens' IDs
+    for line in newshortcut:
+        if line.startswith("X-Solstice-Children="):
+            #childids = ast.literal_eval(line.removeprefix("X-Solstice-Children=").removesuffix("\n"))
+            childids = ast.literal_eval(remove_suffix(remove_prefix(line, "X-Solstice-Children="), "\n"))
+    updatedidpaths = {}
+    #Update childrens' shortcuts
+    for i in childids:
+        childfilelist = currentfile.split("/")
+        childfilelist[-1] = childfilelist[-1].replace(itemid + ".desktop", itemid + "-" + i + ".desktop")
+        childfile = "/".join(childfilelist)
+        updatedidpaths[i] = set_browser_shortcut(childfile, browsertype, itemid, newbrowser, i)
+    #Then update the main shortcut
+    updatedidpaths[itemid] = set_browser_shortcut(currentfile, browsertype, itemid, newbrowser)
+
+    if currentchild == "": #If this was summoned for the parent shortcut...
+        return updatedidpaths[itemid] #Return new shortcut path
+    else: #Otherwise...
+        return updatedidpaths[currentchild] #Return child shortcut path
+            
+def set_browser_shortcut(currentfile, browsertype, itemid, newbrowser, childid=""):
+    #Put old shortcut's lines into memory
+    with open(currentfile, 'r') as old:
+        newshortcut = old.readlines()
+
+    #Generate a new name for the shortcut
+    if childid == "":
+        newfilename = variables.sources[browsertype][newbrowser]["classprefix"] + itemid
+    else:
+        newfilename = variables.sources[browsertype][newbrowser]["classprefix"] + itemid + "-" + childid
+    newpath = os.path.join(os.path.dirname(currentfile), newfilename + ".desktop")
+
+    linescounted = 0
+    for line in newshortcut:
+        if line.startswith("X-Solstice-Browser="):
+            newshortcut[linescounted] = "X-Solstice-Browser=" + newbrowser + "\n"
+        elif line.startswith("StartupWMClass="):
+            newshortcut[linescounted] = "StartupWMClass=" + newfilename + "\n"
+        elif line.startswith("Exec="):
+            if line.endswith(" --force-manager\n"):
+                newshortcut[linescounted] = 'Exec=/usr/bin/solstice "' + newpath + '" --force-manager\n'
+            else:
+                newshortcut[linescounted] = 'Exec=/usr/bin/solstice "' + newpath + '"\n'
+        linescounted += 1
+    
+    os.remove(currentfile) #Remove old shortcut
+    #Write new shortcut
+    with open(newpath, 'w') as fp:
+        fp.write(''.join(newshortcut))
+
+    #Mark as executable too
+    os.system('/usr/bin/chmod +x "%s"' % newpath)
+
+    #Return the shortcut to relaunch into
+    return newpath

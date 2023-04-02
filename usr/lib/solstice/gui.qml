@@ -473,11 +473,13 @@ ApplicationWindow {
 
         // Profile Manager Buttons
         Button {
+            objectName: "manageBonusesBtn"
             text: "Manage bonuses in Store... (dummy)"
             icon {
                 name: "feren-store"
             }
-            visible: pages.currentIndex == 1 ? true : false
+            visible: pages.currentIndex == 1 ? fromStore && storeAvailable : false
+            enabled: bonusesAvailable
             //TODO: OnClicked
         }
         Button {
@@ -531,7 +533,7 @@ ApplicationWindow {
             icon {
                 name: "feren-store"
             }
-            visible: pages.currentIndex == 3 ? true : false
+            visible: pages.currentIndex == 3 ? storeAvailable : false
             //TODO: OnClicked
         }
 
