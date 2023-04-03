@@ -288,7 +288,7 @@
                 "search": { "display": 2 },
                 "show_qr_generator": false
             },
-            "appearance": { "css_ui_mods_directory": "/usr/share/feren-storium/modules/packagemgmt-ice/vivaldicss" },
+            "appearance": { "css_ui_mods_directory": "/usr/share/solstice/vivaldicss" },
             "autofill": { "server_assist": false },
             "bookmarks": { "version": "24" },
             "panels": {
