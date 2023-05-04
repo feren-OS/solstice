@@ -4,13 +4,20 @@
         :root {
             --in-content-page-color: WINDOWFGLIGHT !important;
             --in-content-page-background: WINDOWBGLIGHT !important;
-            --in-content-link-color: COLORBG !important;
+            --in-content-link-color: COLORBGLIGHT !important;
             --in-content-button-text-color: WINDOWFGLIGHT !important;
             --in-content-button-background: color-mix(in srgb, currentColor 13%, transparent) !important;
             --in-content-button-text-color-hover: WINDOWFGLIGHT !important;
             --in-content-button-background-hover: color-mix(in srgb, currentColor 17%, transparent) !important;
             --in-content-button-text-color-active: WINDOWFGLIGHT !important;
             --in-content-button-background-active: color-mix(in srgb, currentColor 30%, transparent) !important;
+
+            --in-content-primary-button-background: COLORBGLIGHT !important;
+            --in-content-primary-button-text-color: COLORFGLIGHT !important;
+            --in-content-primary-button-background-hover: color-mix(in srgb, COLORBGLIGHT 82%, #FFF) !important;
+            --in-content-primary-button-text-color-hover: COLORFGLIGHT !important;
+            --in-content-primary-button-background-active: color-mix(in srgb, COLORBGLIGHT 64%, #FFF) !important;
+            --in-content-primary-button-text-color-active: COLORFGLIGHT !important;
         }
     }
     @media (prefers-color-scheme: dark) {
@@ -18,23 +25,21 @@
         :root {
             --in-content-page-color: WINDOWFGDARK !important;
             --in-content-page-background: WINDOWBGDARK !important;
-            --in-content-link-color: COLORBG !important;
+            --in-content-link-color: COLORADAPTIVEBGDARK !important;
             --in-content-button-text-color: WINDOWFGDARK !important;
             --in-content-button-background: color-mix(in srgb, currentColor 13%, transparent) !important;
             --in-content-button-text-color-hover: WINDOWFGDARK !important;
             --in-content-button-background-hover: color-mix(in srgb, currentColor 17%, transparent) !important;
             --in-content-button-text-color-active: WINDOWFGDARK !important;
             --in-content-button-background-active: color-mix(in srgb, currentColor 30%, transparent) !important;
+
+            --in-content-primary-button-background: COLORADAPTIVEBGDARK !important;
+            --in-content-primary-button-text-color: COLORADAPTIVEFGDARK !important;
+            --in-content-primary-button-background-hover: color-mix(in srgb, COLORADAPTIVEBGDARK 82%, #FFF) !important;
+            --in-content-primary-button-text-color-hover: COLORADAPTIVEFGDARK !important;
+            --in-content-primary-button-background-active: color-mix(in srgb, COLORADAPTIVEBGDARK 64%, #FFF) !important;
+            --in-content-primary-button-text-color-active: COLORADAPTIVEFGDARK !important;
         }
-    }
-    :host,
-    :root {
-        --in-content-primary-button-background: COLORBG !important;
-        --in-content-primary-button-text-color: COLORFG !important;
-        --in-content-primary-button-background-hover: color-mix(in srgb, COLORBG 82%, #FFF) !important;
-        --in-content-primary-button-text-color-hover: COLORFG !important;
-        --in-content-primary-button-background-active: color-mix(in srgb, COLORBG 64%, #FFF) !important;
-        --in-content-primary-button-text-color-active: COLORFG !important;
     }
 }
 @-moz-document url-prefix('about:neterror') {
@@ -43,13 +48,20 @@
         :root {
             --in-content-page-color: WINDOWFGLIGHT !important;
             --in-content-page-background: WINDOWBGLIGHT !important;
-            --in-content-link-color: COLORBG !important;
+            --in-content-link-color: COLORADAPTIVEBGLIGHT !important;
             --in-content-button-text-color: WINDOWFGLIGHT !important;
             --in-content-button-background: color-mix(in srgb, currentColor 13%, transparent) !important;
             --in-content-button-text-color-hover: WINDOWFGLIGHT !important;
             --in-content-button-background-hover: color-mix(in srgb, currentColor 17%, transparent) !important;
             --in-content-button-text-color-active: WINDOWFGLIGHT !important;
             --in-content-button-background-active: color-mix(in srgb, currentColor 30%, transparent) !important;
+
+            --in-content-primary-button-background: COLORADAPTIVEBGLIGHT !important;
+            --in-content-primary-button-text-color: COLORADAPTIVEFGLIGHT !important;
+            --in-content-primary-button-background-hover: color-mix(in srgb, COLORADAPTIVEBGLIGHT 82%, #FFF) !important;
+            --in-content-primary-button-text-color-hover: COLORADAPTIVEFGLIGHT !important;
+            --in-content-primary-button-background-active: color-mix(in srgb, COLORADAPTIVEBGLIGHT 64%, #FFF) !important;
+            --in-content-primary-button-text-color-active: COLORADAPTIVEFGLIGHT !important;
         }
     }
     @media (prefers-color-scheme: dark) {
@@ -57,23 +69,21 @@
         :root {
             --in-content-page-color: WINDOWFGDARK !important;
             --in-content-page-background: WINDOWBGDARK !important;
-            --in-content-link-color: COLORBG !important;
+            --in-content-link-color: COLORADAPTIVEBGDARK !important;
             --in-content-button-text-color: WINDOWFGDARK !important;
             --in-content-button-background: color-mix(in srgb, currentColor 13%, transparent) !important;
             --in-content-button-text-color-hover: WINDOWFGDARK !important;
             --in-content-button-background-hover: color-mix(in srgb, currentColor 17%, transparent) !important;
             --in-content-button-text-color-active: WINDOWFGDARK !important;
             --in-content-button-background-active: color-mix(in srgb, currentColor 30%, transparent) !important;
+
+            --in-content-primary-button-background: COLORADAPTIVEBGDARK !important;
+            --in-content-primary-button-text-color: COLORADAPTIVEFGDARK !important;
+            --in-content-primary-button-background-hover: color-mix(in srgb, COLORADAPTIVEBGDARK 82%, #FFF) !important;
+            --in-content-primary-button-text-color-hover: COLORADAPTIVEFGDARK !important;
+            --in-content-primary-button-background-active: color-mix(in srgb, COLORADAPTIVEBGDARK 64%, #FFF) !important;
+            --in-content-primary-button-text-color-active: COLORADAPTIVEFGDARK !important;
         }
-    }
-    :host,
-    :root {
-        --in-content-primary-button-background: COLORBG !important;
-        --in-content-primary-button-text-color: COLORFG !important;
-        --in-content-primary-button-background-hover: color-mix(in srgb, COLORBG 82%, #FFF) !important;
-        --in-content-primary-button-text-color-hover: COLORFG !important;
-        --in-content-primary-button-background-active: color-mix(in srgb, COLORBG 64%, #FFF) !important;
-        --in-content-primary-button-text-color-active: COLORFG !important;
     }
 }
 @-moz-document url-prefix('about:httpsonlyerror') {
@@ -82,13 +92,20 @@
         :root {
             --in-content-page-color: WINDOWFGLIGHT !important;
             --in-content-page-background: WINDOWBGLIGHT !important;
-            --in-content-link-color: COLORBG !important;
+            --in-content-link-color: COLORADAPTIVEBGLIGHT !important;
             --in-content-button-text-color: WINDOWFGLIGHT !important;
             --in-content-button-background: color-mix(in srgb, currentColor 13%, transparent) !important;
             --in-content-button-text-color-hover: WINDOWFGLIGHT !important;
             --in-content-button-background-hover: color-mix(in srgb, currentColor 17%, transparent) !important;
             --in-content-button-text-color-active: WINDOWFGLIGHT !important;
             --in-content-button-background-active: color-mix(in srgb, currentColor 30%, transparent) !important;
+
+            --in-content-primary-button-background: COLORADAPTIVEBGLIGHT !important;
+            --in-content-primary-button-text-color: COLORADAPTIVEFGLIGHT !important;
+            --in-content-primary-button-background-hover: color-mix(in srgb, COLORADAPTIVEBGLIGHT 82%, #FFF) !important;
+            --in-content-primary-button-text-color-hover: COLORADAPTIVEFGLIGHT !important;
+            --in-content-primary-button-background-active: color-mix(in srgb, COLORADAPTIVEBGLIGHT 64%, #FFF) !important;
+            --in-content-primary-button-text-color-active: COLORADAPTIVEFGLIGHT !important;
         }
     }
     @media (prefers-color-scheme: dark) {
@@ -96,23 +113,21 @@
         :root {
             --in-content-page-color: WINDOWFGDARK !important;
             --in-content-page-background: WINDOWBGDARK !important;
-            --in-content-link-color: COLORBG !important;
+            --in-content-link-color: COLORADAPTIVEBGDARK !important;
             --in-content-button-text-color: WINDOWFGDARK !important;
             --in-content-button-background: color-mix(in srgb, currentColor 13%, transparent) !important;
             --in-content-button-text-color-hover: WINDOWFGDARK !important;
             --in-content-button-background-hover: color-mix(in srgb, currentColor 17%, transparent) !important;
             --in-content-button-text-color-active: WINDOWFGDARK !important;
             --in-content-button-background-active: color-mix(in srgb, currentColor 30%, transparent) !important;
+
+            --in-content-primary-button-background: COLORADAPTIVEBGDARK !important;
+            --in-content-primary-button-text-color: COLORADAPTIVEFGDARK !important;
+            --in-content-primary-button-background-hover: color-mix(in srgb, COLORADAPTIVEBGDARK 82%, #FFF) !important;
+            --in-content-primary-button-text-color-hover: COLORADAPTIVEFGDARK !important;
+            --in-content-primary-button-background-active: color-mix(in srgb, COLORADAPTIVEBGDARK 64%, #FFF) !important;
+            --in-content-primary-button-text-color-active: COLORADAPTIVEFGDARK !important;
         }
-    }
-    :host,
-    :root {
-        --in-content-primary-button-background: COLORBG !important;
-        --in-content-primary-button-text-color: COLORFG !important;
-        --in-content-primary-button-background-hover: color-mix(in srgb, COLORBG 82%, #FFF) !important;
-        --in-content-primary-button-text-color-hover: COLORFG !important;
-        --in-content-primary-button-background-active: color-mix(in srgb, COLORBG 64%, #FFF) !important;
-        --in-content-primary-button-text-color-active: COLORFG !important;
     }
 }
 
@@ -148,12 +163,18 @@
 }
 
 @media (prefers-color-scheme: light) {
+    :root {
+        --in-content-accent-color: COLORBGLIGHT !important;
+    }
     html,
     body {
         scrollbar-color: WINDOWFGLIGHT WINDOWBGLIGHT;
     }
 }
 @media (prefers-color-scheme: dark) {
+    :root {
+        --in-content-accent-color: COLORBGDARK !important;
+    }
     html,
     body {
         scrollbar-color: WINDOWFGDARK WINDOWBGDARK;

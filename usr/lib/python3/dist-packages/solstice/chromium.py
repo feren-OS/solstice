@@ -72,7 +72,7 @@ def update_profile(iteminfo, extrawebsites, profilename, profilepath, darkmode, 
     result = chromi_set_bonuses(result, iteminfo["bonusids"])
 
     #Add theme colours to SSB (Vivaldi) and Chromium
-    result = chromi_set_colors(result, iteminfo["bg"], iteminfo["bgdark"], iteminfo["accent"], iteminfo["accentdark"], iteminfo["color"], iteminfo["accentonwindow"], iteminfo["chromicolor"])
+    result = chromi_set_colors(result, iteminfo["bg"], iteminfo["bgdark"], iteminfo["accent"], iteminfo["accentdark"], iteminfo["color"], iteminfo["colordark"], iteminfo["accentonwindow"], iteminfo["chromicolor"])
 
     #Add the Start Page Bookmark
     chromi_add_startpage(profilepath, iteminfo["name"], iteminfo["website"])
@@ -302,7 +302,7 @@ def chromi_set_bonuses(preferencedict, bonuses=[]):
 
 
 #Theme colouring
-def chromi_set_colors(preferencedict, bg, bgdark, accent, accentdark, color, accentonwindow, chromicolor):
+def chromi_set_colors(preferencedict, bg, bgdark, accent, accentdark, color, colordark, accentonwindow, chromicolor):
     #dict, string, string, string, string, string, bool
 
     #TODO: Figure out doing themes for Chrome to colour the windows by their website colours
@@ -319,7 +319,7 @@ def chromi_set_colors(preferencedict, bg, bgdark, accent, accentdark, color, acc
     preferencedict["vivaldi"]["themes"]["system"][1]["colorBg"] = bgdark
     preferencedict["vivaldi"]["themes"]["system"][2]["colorBg"] = bgprivate
     preferencedict["vivaldi"]["themes"]["system"][0]["colorHighlightBg"] = color
-    preferencedict["vivaldi"]["themes"]["system"][1]["colorHighlightBg"] = color
+    preferencedict["vivaldi"]["themes"]["system"][1]["colorHighlightBg"] = colordark
     preferencedict["vivaldi"]["themes"]["system"][2]["colorHighlightBg"] = color
     preferencedict["vivaldi"]["themes"]["system"][0]["colorWindowBg"] = accent if accentonwindow else bg
     preferencedict["vivaldi"]["themes"]["system"][1]["colorWindowBg"] = accentdark if accentonwindow else bgdark

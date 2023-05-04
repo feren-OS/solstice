@@ -269,6 +269,7 @@ def complete_item_information(desktopinfo):
                     "accent": "#4ba9fb",
                     "accentdark": "#1a192d",
                     "color": "#4ba9fb",
+                    "colordark": "#4ba9fb",
                     "accentonwindow": True,
                     "chromicolor": "-5919045"}
     itemsrequired = ["name", "wmclass", "website", "browser", "browsertype", "extrawebsites", "lastupdated"]
@@ -287,6 +288,8 @@ def complete_item_information(desktopinfo):
         desktopinfo.pop("accentdark")
         desktopinfo.pop("accentonwindow")
         print(_("W: %s is missing colour palette, falling back to Solstice palette") % desktopinfo["name"])
+    if "colordark" not in desktopinfo or desktopinfo["colordark"] == "":
+        desktopinfo.pop("colordark") #Don't warn as colordark is an optional accent colour extension
     if "color" not in desktopinfo or desktopinfo["color"] == "":
         desktopinfo.pop("color")
         print(_("W: %s is missing accent colour, falling back to Solstice accent colour") % desktopinfo["name"])
@@ -301,7 +304,10 @@ def complete_item_information(desktopinfo):
     #Add in fallback values for missing values
     for item in defaultitems:
         if item not in desktopinfo or desktopinfo[item] == "":
-            desktopinfo[item] = defaultitems[item]
+            if item == "colordark" and "color" in desktopinfo:
+                desktopinfo[item] = desktopinfo["color"]
+            else:
+                desktopinfo[item] = defaultitems[item]
     return desktopinfo
 
 def is_browser_available(browser, browsertype):

@@ -38,7 +38,7 @@ def update_profile(iteminfo, extrawebsites, profilename, profilepath, darkmode, 
     except Exception as e:
         raise SolsticeFirefoxException(_("Configuring user.js failed: %s") % e)
 
-    firefox_set_ui(profilepath, iteminfo["bg"], iteminfo["bgdark"], iteminfo["accent"], iteminfo["accentdark"], iteminfo["color"], iteminfo["accentonwindow"])
+    firefox_set_ui(profilepath, iteminfo["bg"], iteminfo["bgdark"], iteminfo["accent"], iteminfo["accentdark"], iteminfo["color"], iteminfo["colordark"], iteminfo["accentonwindow"])
 
     #FIXME: Permissions hasn't been done yet as it requires effectively having a whole SQLite writer just to do it
 
@@ -102,7 +102,7 @@ def set_profile_nocache(profilepath, value, patchvar=False, vartopatch=[]):
 
 
 #Colourise the Firefox interface
-def firefox_set_ui(profilepath, bg, bgdark, accent, accentdark, color, accentonwindow):
+def firefox_set_ui(profilepath, bg, bgdark, accent, accentdark, color, colordark, accentonwindow):
     #string, string, string, string, string, string, boolean
     if not os.path.isdir(profilepath):
         raise SolsticeChromiumException(_("The profile %s does not exist") % profilepath.split("/")[-1])
@@ -146,11 +146,23 @@ def firefox_set_ui(profilepath, bg, bgdark, accent, accentdark, color, accentonw
     else:
         privatetabfg = "white"
     # Accents
-    colorbg = color
-    if utils.color_is_light(colorbg) == True:
+    if utils.color_is_light(color) == True:
         colorfg = "black"
     else:
         colorfg = "white"
+    if utils.color_is_light(colordark) == True:
+        colorfgdark = "black"
+    else:
+        colorfgdark = "white"
+    # Buttons
+    if color == lightbg:
+        coloradaptivebg, coloradaptivefg = colorfg, color
+    else:
+        coloradaptivebg, coloradaptivefg = color, colorfg
+    if colordark == darkbg:
+        coloradaptivebgdark, coloradaptivefgdark = colorfgdark, colordark
+    else:
+        coloradaptivebgdark, coloradaptivefgdark = colordark, colorfgdark
     # Write to CSS files
     for i in ["userContent.css", "ice.css"]:
         with open(profilepath + "/chrome/" + i, 'r') as fp:
@@ -176,8 +188,14 @@ def firefox_set_ui(profilepath, bg, bgdark, accent, accentdark, color, accentonw
                 .replace("TABFGPRIVATE", privatetabfg)\
                 .replace("TABFG02PRIVATE", privatefgrgb + "0.2)")\
                 .replace("TABFG03PRIVATE", privatefgrgb + "0.3)")\
-                .replace("COLORBG", colorbg)\
-                .replace("COLORFG", colorfg)
+                .replace("COLORADAPTIVEBGLIGHT", coloradaptivebg)\
+                .replace("COLORADAPTIVEFGLIGHT", coloradaptivefg)\
+                .replace("COLORADAPTIVEBGDARK", coloradaptivebgdark)\
+                .replace("COLORADAPTIVEFGDARK", coloradaptivefgdark)\
+                .replace("COLORBGLIGHT", color)\
+                .replace("COLORFGLIGHT", colorfg)\
+                .replace("COLORBGDARK", colordark)\
+                .replace("COLORFGDARK", colorfgdark)
             linescounted += 1
 
         try:

@@ -141,6 +141,7 @@ class DesktopFileInformation:
         self.info["accent"] = entry.get("X-Solstice-Accent")
         self.info["accentdark"] = entry.get("X-Solstice-Accent-Dark")
         self.info["color"] = entry.get("X-Solstice-Color")
+        self.info["colordark"] = entry.get("X-Solstice-Color-Dark")
         self.info["accentonwindow"] = self.strToBool(entry.get("X-Solstice-AccentWindow"))
         self.info["chromicolor"] = entry.get("X-Solstice-ChromiColor")
         self.info["lastupdated"] = entry.get("X-Solstice-LastUpdate")
