@@ -1,13 +1,4 @@
 {
-    "disable-googlesignon": {
-        "vivaldi": {
-            "privacy": {
-                "google_component_extensions": {
-                    "crypto_token": false
-                }
-            }
-        }
-    },
     "disable-googlehangouts": {
         "brave": {
             "hangouts_enabled": false
@@ -34,6 +25,13 @@
                 "show_trash_can": false
             },
             "toolbars": { "navigation": ["AddressField", "DownloadButton", "Extensions", "UpdateButton"] }
+        }
+    },
+    "disable-workspaces": {
+        "vivaldi": {
+            "workspaces": {
+                "enabled": false
+            }
         }
     }
 

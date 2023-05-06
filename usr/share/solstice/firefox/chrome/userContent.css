@@ -29,10 +29,12 @@
     #searchbarGroup,
     #searchSuggestionsGroup,
     #oneClickSearchProvidersGroup,
-    #locationBarGroup,
     #browserPrivacyCategory,
     #trackingGroup,
     #historyGroup,
+    #locationBarGroup,
+    #dataCollectionCategory,
+    #dataCollectionGroup,
     #popupPolicy,
     #popupPolicyButton,
     #httpsOnlyBox {

@@ -132,6 +132,7 @@ class DesktopFileInformation:
             self.info["bonusids"] = []
         self.info["nohistory"] = self.strToBool(entry.get("X-Solstice-NoHistory"))
         self.info["googlehangouts"] = self.strToBool(entry.get("X-Solstice-GoogleHangouts"))
+        self.info["workspaces"] = self.strToBool(entry.get("X-Solstice-Workspaces"))
         try:
             self.info["extrawebsites"] = ast.literal_eval(entry.get("X-Solstice-ExtraWebsites"))
         except:

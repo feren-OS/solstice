@@ -260,9 +260,9 @@ def complete_item_information(desktopinfo):
     #Adds fallback values for any missing values
     fallbackpalette = False
     fallbackchromi = False
-    defaultitems = {"Children": [],
-                    "nohistory": False,
+    defaultitems = {"nohistory": False,
                     "googlehangouts": False,
+                    "workspaces": False,
                     "bonusids": [],
                     "bg": "#ffffff",
                     "bgdark": "#000000",

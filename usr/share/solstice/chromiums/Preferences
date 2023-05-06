@@ -316,7 +316,7 @@
             "homepage_cache": "",
             "menu": { "icon_type": 1 },
             "popups": { "show_in_tab": true },
-            "privacy": { "google_component_extensions": { "web_store": false, "crypto_token": true } },
+            "privacy": { "google_component_extensions": { "hangout_services": true, "web_store": false } },
             "settings": { "in_tab": true },
             "startpage": { "navigation": 2, "speed_dial": { "add_button_visible": false, "allow_dnd": false, "columns": 99, "controls_visible": false, "delete_visible": false, "favicon_visible": true, "titles_visible": 0, "width": 320 } },
             "startup": { "check_is_default": false, "has_seen_feature": 1, "last_seen_version": "99.0.0001.02" },
@@ -406,7 +406,8 @@
                 ]
             },
             "toolbars": { "navigation": ["Back", "Reload", "AddressField", "DownloadButton", "Extensions", "UpdateButton"] },
-            "windows": { "show_window_close_confirmation_dialog": false, "use_native_decoration": false }
+            "windows": { "show_window_close_confirmation_dialog": false, "use_native_decoration": false },
+            "workspaces": { "enabled": true }
         },
         "webkit": {
             "webprefs": {

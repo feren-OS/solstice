@@ -66,7 +66,7 @@ def update_profile(iteminfo, extrawebsites, profilename, profilepath, darkmode, 
     result = chromi_set_sitepermissions(result, iteminfo["id"], iteminfo["website"], extrawebsites)
 
     #Toggle features for the SSB
-    result = chromi_set_privacyfeatures(result, iteminfo["nohistory"], iteminfo["googlehangouts"])
+    result = chromi_set_additionalfeatures(result, iteminfo["nohistory"], iteminfo["googlehangouts"], iteminfo["workspaces"])
 
     #Add bonuses to SSB
     result = chromi_set_bonuses(result, iteminfo["bonusids"])
@@ -255,7 +255,7 @@ def chromi_set_sitepermissions(preferencedict, itemid, ogwebsite, extrawebsites)
 
 
 #Vivaldi and Brave settings
-def chromi_set_privacyfeatures(preferencedict, nohistory=False, allowgooglehangouts=False):
+def chromi_set_additionalfeatures(preferencedict, nohistory=False, allowgooglehangouts=False, allowworkspaces=False):
     #dict, bool, bool, bool
 
     #First, open the Preferences file
@@ -264,6 +264,8 @@ def chromi_set_privacyfeatures(preferencedict, nohistory=False, allowgooglehango
 
     if not allowgooglehangouts: #Disable Google Hangouts if unneeded
         preferencedict = utils.dict_recurupdate(preferencedict, preferencesjson["disable-googlehangouts"])
+    if not allowworkspaces: #Disable Workspaces if unneeded
+        preferencedict = utils.dict_recurupdate(preferencedict, preferencesjson["disable-workspaces"])
     if nohistory: #Disable History if the SSB provides History itself
         preferencedict = utils.dict_recurupdate(preferencedict, preferencesjson["disable-history"])
 
