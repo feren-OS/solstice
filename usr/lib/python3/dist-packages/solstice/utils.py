@@ -11,8 +11,6 @@ from gi.repository import GLib
 from xdg.DesktopEntry import DesktopEntry
 import colorsys
 import collections.abc
-from PIL import Image #TODO: remove once icons moved
-import magic #TODO: remove once icons moved
 import math
 import json
 import ast
@@ -132,49 +130,6 @@ def proc_exists(pid):
     except:
         return False
     return True
-
-def export_icon_file(itemid, iconsource): #TODO: Move to Storium module's code
-    try:
-        #Make sure necessary directories exist
-        for i in [os.path.expanduser("~") + "/.local", os.path.expanduser("~") + "/.local/share", os.path.expanduser("~") + "/.local/share/icons", os.path.expanduser("~") + "/.local/share/icons/hicolor"]:
-            if not os.path.isdir(i):
-                os.mkdir(i)
-
-        mimetype = magic.Magic(mime=True).from_file(iconsource)
-        if mimetype == "image/png" or mimetype == "image/vnd.microsoft.icon" or mimetype == "image/jpeg" or mimetype == "image/bmp": #PNG, JPG, BMP or ICO
-            iconfile = Image.open(iconsource)
-            #Get and store the image's size, first
-            imagesize = iconfile.size[1]
-
-            #Now downsize the icon to each size:
-            for i in [[512, "512x512"], [256, "256x256"], [128, "128x128"], [64, "64x64"], [48, "48x48"], [32, "32x32"], [24, "24x24"], [16, "16x16"]]:
-                #...if it is large enough
-                if imagesize < i[0]:
-                    continue
-
-                #Create the directory if it doesn't exist
-                for ii in [os.path.expanduser("~") + "/.local/share/icons/hicolor/" + i[1], os.path.expanduser("~") + "/.local/share/icons/hicolor/" + i[1] + "/apps"]:
-                    if not os.path.isdir(ii):
-                        os.mkdir(ii)
-
-                targetpath = os.path.expanduser("~") + "/.local/share/icons/hicolor/" + i[1] + "/apps/solstice-" + itemid + ".png"
-                if imagesize != i[0]:
-                    iconfile.resize((i[0], i[0]))
-                    iconfile.save(targetpath, "PNG")
-                else:
-                    shutil.copy(iconsource, targetpath)
-        elif mimetype == "image/svg+xml": #SVG
-            #Create the directory if it doesn't exist
-            for ii in [os.path.expanduser("~") + "/.local/share/icons/hicolor/scalable", os.path.expanduser("~") + "/.local/share/icons/hicolor/scalable/apps"]:
-                if not os.path.isdir(ii):
-                    os.mkdir(ii)
-
-            #Copy the SVG over
-            targetpath = os.path.expanduser("~") + "/.local/share/icons/hicolor/scalable/apps/solstice-" + itemid + ".svg"
-            shutil.copy(iconsource, targetpath)
-
-    except Exception as e:
-        raise SolsticeUtilsException(_("Exporting icon failed: %s") % e)
 
 def profileid_generate(profilesdir, profilename):
     name = profilename.replace(" ", "").replace("\\", "").replace("/", "").replace("?", "").replace("*", "").replace("+", "").replace("%", "").lower()
