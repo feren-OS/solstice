@@ -4,10 +4,11 @@
 @-moz-document url('chrome://browser/content/browser.xhtml') {
 
     :root {
-        --toolbar-btn-width: calc((var(--toolbar-start-end-padding) * 2) +
-            (16px * 4) +
-            (var(--toolbarbutton-outer-padding) * 2 * 4) +
-            (var(--toolbarbutton-inner-padding) * 2 * 4));
+        --toolbar-btn-count: 3;
+        --sol-toolbar-width: calc((var(--toolbar-start-end-padding) * 2) +
+            (16px * (var(--toolbar-btn-count) + 1)) +
+            (var(--toolbarbutton-outer-padding) * 2 * (var(--toolbar-btn-count) + 1)) +
+            (var(--toolbarbutton-inner-padding) * 2 * (var(--toolbar-btn-count) + 1)));
     }
 
     window,
@@ -36,11 +37,6 @@
     #customization-reset-button,
     #customization-uidensity-menuitem-touch,
     #customization-lwtheme-link,
-    #wrapper-back-button,
-    #wrapper-stop-reload-button,
-    #wrapper-new-tab-button,
-    #wrapper-alltabs-button,
-    #wrapper-downloads-button,
     #context-forward,
     #context-bookmarkpage,
     #context_bookmarkSelectedTabs,
@@ -53,12 +49,14 @@
     #viewToolbarsMenuSeparator,
     #toolbarItemsMenuSeparator,
     .customize-context-moveToPanel,
-    .customize-context-removeFromToolbar {
+    .customize-context-removeFromToolbar,
+    toolbarpaletteitem:not(#wrapper-urlbar-container) {
         display: none !important;
     }
     #urlbar-container {
         max-width: 0px !important;
         min-width: 0px !important;
+        margin-inline: 0 !important;
     }
     #customization-uidensity-menuitem-compact {
         list-style-image: url("chrome://browser/skin/customizableui/density-normal.svg") !important;
@@ -73,13 +71,13 @@
     }
     #nav-bar-customization-target {
         max-width: calc((16px * 2) +
-            (var(--toolbarbutton-outer-padding) * 2 * 2) +
-            (var(--toolbarbutton-inner-padding) * 2 * 2) +
+            (var(--toolbarbutton-outer-padding) * var(--toolbar-btn-count)^2) +
+            (var(--toolbarbutton-inner-padding) * var(--toolbar-btn-count)^2) +
             var(--toolbarbutton-outer-padding) + var(--toolbarbutton-inner-padding)) !important;
             /* NOTE: Extra padding to make the menu button properly positioned */
         min-width: calc((16px * 2) +
-            (var(--toolbarbutton-outer-padding) * 2 * 2) +
-            (var(--toolbarbutton-inner-padding) * 2 * 2) +
+            (var(--toolbarbutton-outer-padding) * var(--toolbar-btn-count)^2) +
+            (var(--toolbarbutton-inner-padding) * var(--toolbar-btn-count)^2) +
             var(--toolbarbutton-inner-padding)) !important;
     }
 
@@ -88,12 +86,12 @@
 
     /* move tabs bar over */
     #TabsToolbar {
-        margin-left: var(--toolbar-btn-width) !important;
+        margin-left: var(--sol-toolbar-width) !important;
     }
 
     /* move entire nav bar  */
     #nav-bar {
-        margin: calc((var(--urlbar-min-height) * -1) - 8px) calc(100vw - var(--toolbar-btn-width) + var(--toolbar-start-end-padding)) 0 0 !important;
+        margin: calc((var(--urlbar-min-height) * -1) - 8px) calc(100vw - var(--sol-toolbar-width) + var(--toolbar-start-end-padding)) 0 0 !important;
     }
     toolbarbutton {
         fill: var(--lwt-text-color) !important; /* use titlebar text colour */
@@ -127,15 +125,11 @@
         #context-sep-navigation {
             display: none !important;
         }
-        :root {
-            --toolbar-btn-width: calc((var(--toolbar-start-end-padding) * 2) +
-                (16px * 2) +
-                (var(--toolbarbutton-outer-padding) * 2 * 2) +
-                (var(--toolbarbutton-inner-padding) * 2 * 2));
+        #unified-extensions-button { /* Taken from browser-shared.css line 184*/
+            padding-inline-start: var(--toolbar-start-end-padding) !important;
         }
-        #nav-bar-customization-target {
-            max-width: var(--toolbarbutton-inner-padding) !important;
-            min-width: var(--toolbarbutton-inner-padding) !important;
+        :root {
+            --toolbar-btn-count: 1;
         }
     }
 
