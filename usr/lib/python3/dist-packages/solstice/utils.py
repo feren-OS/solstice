@@ -307,10 +307,12 @@ def set_flatpak_permissions(itemid, itemname, browsertype, browser):
 
 def remove_flatpak_permissions(itemid, itemname, browsertype, browser):
     targetfile = os.path.expanduser("~") + "/.local/share/flatpak/overrides/" + variables.sources[browsertype][browser]["flatpak"]
+    if not os.path.isfile(targetfile):
+        return #No file means no permissions set
     with open(targetfile, "rt") as fp:
         newcontents = fp.readlines()
     i = 0
-    for line in newcontents:
+    for line in newcontents: #FIXME: Wouldn't X - Y("Downloads") change if the language changes?
         if line.startswith("filesystems="):
             if "{0}/{1};".format(variables.solstice_profiles_directory, itemid) not in line \
             and GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) + "/" + _("%s Downloads") % itemname + ";" not in line:
@@ -424,49 +426,3 @@ def delete_profilefolder(profilepath):
         shutil.rmtree(profilepath)
     except Exception as e:
         raise SolsticeUtilsException(_("Failed to delete {0}: {1}").format(profilepath.split("/")[-1], e))
-
-def uninstall_shortcut(itemid): #TODO: Move this into Storium module
-    profilesdir = "{0}/{1}".format(variables.solstice_profiles_directory, itemid)
-    itemnames = []
-    #Delete all profiles, first
-    if os.path.isdir(profilesdir):
-        for i in os.listdir(profilesdir):
-            if os.path.isdir(profilesdir + "/" + i):
-                delete_profilefolder(profilesdir + "/" + i)
-        shutil.rmtree(profilesdir)
-    #Now delete the shortcuts
-    for browsertype in variables.sources: #Iterate through all possible classprefixes
-        for browser in variables.sources[browsertype]:
-            classprefix = variables.sources[browsertype][browser]["classprefix"]
-            possiblefile = os.path.join(os.path.expanduser("~"), ".local/share/applications", classprefix + itemid + ".desktop")
-            if os.path.isfile(possiblefile):
-                try:
-                    entry=DesktopEntry()
-                    entry.parse(possiblefile)
-                except:
-                    continue #Skip if file's invalid
-                #Find the children first, note name,
-                childids = ast.literal_eval(entry.get("X-Solstice-Children"))
-                if entry.getName() not in itemnames:
-                    itemnames.append(entry.getName())
-                #and delete the children
-                for i in childids:
-                    childfilelist = possiblefile.split("/")
-                    childfilelist[-1] = childfilelist[-1].replace(itemid + ".desktop", itemid + "-" + i + ".desktop")
-                    childfile = "/".join(childfilelist)
-                    try:
-                        os.remove(childfile)
-                    except:
-                        pass #Ignore children deletion failures
-                #Now delete the original file
-                try:
-                    os.remove(possiblefile)
-                except Exception as e:
-                    raise SolsticeUtilsException(_("Failed to uninstall shortcuts: %s") % e)
-    #Now revoke Flatpak permissions
-    for browsertype in variables.sources: #Iterate through all possible Flatpaks
-        for browser in variables.sources[browsertype]:
-            if "flatpak" not in variables.sources[browsertype][browser]:
-                continue
-            for name in itemnames:
-                remove_flatpak_permissions(itemid, name, browsertype, browser)

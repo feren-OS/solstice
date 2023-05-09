@@ -26,7 +26,7 @@ def update_profile(iteminfo, extrawebsites, profilename, profilepath, darkmode, 
     if os.path.isfile(PreferencesFile): #Load old Preferences into variable if one exists
         with open(PreferencesFile, 'r') as fp:
             result = json.loads(fp.read())
-    with open("/usr/share/solstice/chromiums/Preferences", 'r') as fp: #Also load default browser preferences, so we can patch
+    with open("/usr/share/solstice/chromium/Preferences", 'r') as fp: #Also load default browser preferences, so we can patch
         defaultprefs = json.loads(fp.read())["general"]
 
     #Don't override certain settings in existing profiles
@@ -166,7 +166,7 @@ def set_profile_darkmode(profilepath, value, patchvar=False, vartopatch={}):
         result = vartopatch
 
     defaultprefs = {}
-    with open("/usr/share/solstice/chromiums/Preferences", 'r') as fp: #Also load default theme preferences, so we can patch
+    with open("/usr/share/solstice/chromium/Preferences", 'r') as fp: #Also load default theme preferences, so we can patch
         defaultprefs = json.loads(fp.read())["darkoption"]
 
     #Override values if dark mode is enabled
@@ -259,7 +259,7 @@ def chromi_set_additionalfeatures(preferencedict, nohistory=False, allowgoogleha
     #dict, bool, bool, bool
 
     #First, open the Preferences file
-    with open("/usr/share/solstice/chromiums/preferences.json", 'r') as fp:
+    with open("/usr/share/solstice/chromium/preferences.json", 'r') as fp:
         preferencesjson = json.loads(fp.read())
 
     if not allowgooglehangouts: #Disable Google Hangouts if unneeded
@@ -278,7 +278,7 @@ def chromi_set_bonuses(preferencedict, bonuses=[]):
     #dict, list
 
     #First, open the Extras file
-    with open("/usr/share/solstice/chromiums/bonuses.json", 'r') as fp:
+    with open("/usr/share/solstice/chromium/bonuses.json", 'r') as fp:
         bonusesjson = json.loads(fp.read())
 
     #First, add the bonuses that were chosen
@@ -307,7 +307,7 @@ def chromi_set_bonuses(preferencedict, bonuses=[]):
 def chromi_set_colors(preferencedict, bg, bgdark, accent, accentdark, color, colordark, accentonwindow, chromicolor):
     #dict, string, string, string, string, string, bool
 
-    #TODO: Figure out doing themes for Chrome to colour the windows by their website colours
+    #TODO: Figure out automating themes for Chrome to colour the windows by their 'color' colours
 
     #Vivaldi
     bgprivate = utils.color_filter(color, -70.0)
@@ -352,7 +352,7 @@ def chromi_update_local_state(profilepath):
     if os.path.isfile(LocalStateFile): #Load old Preferences into variable if one exists
         with open(LocalStateFile, 'r') as fp:
             result = json.loads(fp.read())
-    with open("/usr/share/solstice/chromiums/Local State", 'r') as fp: #Also load default local state, so we can patch
+    with open("/usr/share/solstice/chromium/Local State", 'r') as fp: #Also load default local state, so we can patch
         result = utils.dict_recurupdate(result, json.loads(fp.read()))
 
     #Remove profile cache from Local State
@@ -373,7 +373,7 @@ def chromi_add_startpage(profilepath, name, website):
         raise SolsticeChromiumException(_("The profile %s does not exist") % profilepath.split("/")[-1])
 
     #First, open default Bookmarks file
-    with open("/usr/share/solstice/chromiums/Bookmarks", 'r') as fp:
+    with open("/usr/share/solstice/chromium/Bookmarks", 'r') as fp:
         result = json.loads(fp.read())
 
     #Then tweak the values

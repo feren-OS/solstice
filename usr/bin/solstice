@@ -155,8 +155,10 @@ class DesktopFileInformation:
     def strToBool(self, string):
         if string == "true":
             return True
-        else:
+        elif string == "false":
             return False
+        else:
+            return "" #Fallback for utils.complete_item_information filling
 
 class SolsticeGUI(QApplication):
     def __init__(self, infoclass):
@@ -474,8 +476,9 @@ class SolsticeGUI(QApplication):
         #Don't autoload if overridden or there is no configured profile
         if "--force-manager" in sys.argv or self.autoload == "":
             return
-        self.openProfile(self.autoload, True, True)
-        sys.exit(0) #End the code here
+        if os.path.isfile(self.profilesdir + "/" + self.autoload + variables.sources[self.browsertype][self.browser]["expected-file"]):
+            if self.openProfile(self.autoload, True, True): #True means successful opening
+                sys.exit(0) #End the code here
 
     def getAutoProfileLoad(self):
         result = ""
@@ -621,7 +624,7 @@ class SolsticeGUI(QApplication):
     def openProfile(self, profileid, alwaysuse, auto=False):
         if not os.path.isfile(sys.argv[1]):
             self.quit() #Exit if uninstalled
-            return
+            return True
 
         #Set autostart if alwaysuse is True
         if auto == False: #Don't change autoload if autoloading
@@ -641,7 +644,7 @@ class SolsticeGUI(QApplication):
                 if e.__class__.__name__ != "ProfileInUseException": #skip if profile's in use
                     print(_("Failed to update profile: %s") % e)
                     self.genericError(_("Failed to update profile - %s") % self.info["name"], _("Failed to update profile"), _("An error occurred when trying to update this profile.\nPlease view the 'solstice' logs in ~/.xsession-errors and consider reporting this issue to Solstice's developers.\n\nThe application will now exit."))
-                    return
+                    return False
 
         #Start the requested profile
         try:
@@ -649,9 +652,10 @@ class SolsticeGUI(QApplication):
         except Exception as e:
             print(_("Failed to load profile: %s") % e)
             self.genericError(_("Failed to load profile - %s") % self.info["name"], _("Failed to load profile"), _("An error occurred when trying to load this profile.\nPlease view the 'solstice' logs in ~/.xsession-errors and consider reporting this issue to Solstice's developers.\n\nThe application will now exit."))
-            return
+            return False
 
         self.quit()
+        return True
 
     #Callback to close mainwnd
     def closeCallback(self):
