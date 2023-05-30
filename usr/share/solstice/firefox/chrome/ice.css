@@ -130,6 +130,50 @@
         }
     }
 }
+@-moz-document url-prefix('about:tabcrashed') {
+    @media (prefers-color-scheme: light) {
+        :host,
+        :root {
+            --in-content-page-color: WINDOWFGLIGHT !important;
+            --in-content-page-background: WINDOWBGLIGHT !important;
+            --in-content-link-color: COLORBGLIGHT !important;
+            --in-content-button-text-color: WINDOWFGLIGHT !important;
+            --in-content-button-background: color-mix(in srgb, currentColor 13%, transparent) !important;
+            --in-content-button-text-color-hover: WINDOWFGLIGHT !important;
+            --in-content-button-background-hover: color-mix(in srgb, currentColor 17%, transparent) !important;
+            --in-content-button-text-color-active: WINDOWFGLIGHT !important;
+            --in-content-button-background-active: color-mix(in srgb, currentColor 30%, transparent) !important;
+
+            --in-content-primary-button-background: COLORBGLIGHT !important;
+            --in-content-primary-button-text-color: COLORFGLIGHT !important;
+            --in-content-primary-button-background-hover: color-mix(in srgb, COLORBGLIGHT 82%, #FFF) !important;
+            --in-content-primary-button-text-color-hover: COLORFGLIGHT !important;
+            --in-content-primary-button-background-active: color-mix(in srgb, COLORBGLIGHT 64%, #FFF) !important;
+            --in-content-primary-button-text-color-active: COLORFGLIGHT !important;
+        }
+    }
+    @media (prefers-color-scheme: dark) {
+        :host,
+        :root {
+            --in-content-page-color: WINDOWFGDARK !important;
+            --in-content-page-background: WINDOWBGDARK !important;
+            --in-content-link-color: COLORADAPTIVEBGDARK !important;
+            --in-content-button-text-color: WINDOWFGDARK !important;
+            --in-content-button-background: color-mix(in srgb, currentColor 13%, transparent) !important;
+            --in-content-button-text-color-hover: WINDOWFGDARK !important;
+            --in-content-button-background-hover: color-mix(in srgb, currentColor 17%, transparent) !important;
+            --in-content-button-text-color-active: WINDOWFGDARK !important;
+            --in-content-button-background-active: color-mix(in srgb, currentColor 30%, transparent) !important;
+
+            --in-content-primary-button-background: COLORADAPTIVEBGDARK !important;
+            --in-content-primary-button-text-color: COLORADAPTIVEFGDARK !important;
+            --in-content-primary-button-background-hover: color-mix(in srgb, COLORADAPTIVEBGDARK 82%, #FFF) !important;
+            --in-content-primary-button-text-color-hover: COLORADAPTIVEFGDARK !important;
+            --in-content-primary-button-background-active: color-mix(in srgb, COLORADAPTIVEBGDARK 64%, #FFF) !important;
+            --in-content-primary-button-text-color-active: COLORADAPTIVEFGDARK !important;
+        }
+    }
+}
 
 @-moz-document url-prefix('about:newtab') {
     @media (prefers-color-scheme: light) {

@@ -311,6 +311,9 @@ def chromi_set_colors(preferencedict, bg, bgdark, accent, accentdark, color, col
 
     #Vivaldi
     bgprivate = utils.color_filter(color, -70.0)
+    # Ensure 'colour' usage doesn't camoflague in the tab/dialogs colour
+    coloradaptive = ("#000000" if utils.color_is_light(color) else "#FFFFFF") if color == bg else color
+    coloradaptivedark = ("#000000" if utils.color_is_light(colordark) else "#FFFFFF") if colordark == bgdark else colordark
     preferencedict["vivaldi"]["themes"]["system"][0]["accentOnWindow"] = accentonwindow
     preferencedict["vivaldi"]["themes"]["system"][1]["accentOnWindow"] = accentonwindow
     preferencedict["vivaldi"]["themes"]["system"][2]["accentOnWindow"] = False
@@ -320,8 +323,8 @@ def chromi_set_colors(preferencedict, bg, bgdark, accent, accentdark, color, col
     preferencedict["vivaldi"]["themes"]["system"][0]["colorBg"] = bg
     preferencedict["vivaldi"]["themes"]["system"][1]["colorBg"] = bgdark
     preferencedict["vivaldi"]["themes"]["system"][2]["colorBg"] = bgprivate
-    preferencedict["vivaldi"]["themes"]["system"][0]["colorHighlightBg"] = color
-    preferencedict["vivaldi"]["themes"]["system"][1]["colorHighlightBg"] = colordark
+    preferencedict["vivaldi"]["themes"]["system"][0]["colorHighlightBg"] = coloradaptive
+    preferencedict["vivaldi"]["themes"]["system"][1]["colorHighlightBg"] = coloradaptivedark
     preferencedict["vivaldi"]["themes"]["system"][2]["colorHighlightBg"] = color
     preferencedict["vivaldi"]["themes"]["system"][0]["colorWindowBg"] = accent if accentonwindow else bg
     preferencedict["vivaldi"]["themes"]["system"][1]["colorWindowBg"] = accentdark if accentonwindow else bgdark
