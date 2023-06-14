@@ -14,4 +14,4 @@ with open("/usr/share/solstice/info/unavailable.json", 'r') as fp:
 #Developer options
 applications_directory = os.path.expanduser("~") + "/.local/share/applications"
 solstice_profiles_directory = os.path.expanduser("~") + "/.local/share/solstice"
-solstice_lastupdated = 20230531
+solstice_lastupdated = 20230614

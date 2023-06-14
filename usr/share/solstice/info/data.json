@@ -61,6 +61,21 @@
             "bonusesavailable": true,
             "expected-file": "/Local State"
         },
+        "ulaa-browser": {
+            "name": "Ulaa",
+            "icon": "ulaa-browser",
+            "required-file": ["/usr/bin/ulaa-browser"],
+            "classprefix": "solstice:",
+            "command": ["/usr/bin/ulaa-browser", "--app=%WEBSITEURL%", "--class=%WINCLASS%", "--user-data-dir=%PROFILEDIR%"],
+            "darkmodeprefix": [],
+            "darkmodesuffix": ["--force-dark-mode"],
+            "nocacheprefix": [],
+            "nocachesuffix": ["--media-cache-size=0", "--disk-cache-size=0", "--disk-cache-dir=/dev/null"],
+            "darkmodeavailable": true,
+            "nocacheavailable": true,
+            "bonusesavailable": true,
+            "expected-file": "/Local State"
+        },
         "ungoogled-chromium-flatpak": {
             "name": "Ungoogled Chromium",
             "icon": "com.github.Eloston.UngoogledChromium",

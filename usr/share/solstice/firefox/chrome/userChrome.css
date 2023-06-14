@@ -108,6 +108,8 @@
     #appMenu_feedbackPage,
     #appMenu_helpSafeMode,
     #appMenu_troubleShooting,
+    #appMenu_menu_HelpPopup_reportPhishingtoolmenu,
+    #appMenu_helpSwitchDevice,
     #downloadsFooterButtons {
         display: none !important;
     }
