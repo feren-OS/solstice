@@ -7,7 +7,7 @@
             --in-content-text-color: WINDOWFGLIGHT !important;
             --in-content-background-color: WINDOWBGLIGHT !important;
             --in-content-link-color: COLORADAPTIVEBGLIGHT !important;
-            --in-content-accent-color: COLORBGLIGHT !important;
+            --in-content-accent-color: COLORADAPTIVEBGLIGHT !important;
 
             --in-content-primary-button-background: COLORADAPTIVEBGLIGHT !important;
             --in-content-primary-button-text-color: COLORADAPTIVEFGLIGHT !important;
@@ -53,7 +53,7 @@
             --in-content-text-color: WINDOWFGDARK !important;
             --in-content-background-color: WINDOWBGDARK !important;
             --in-content-link-color: COLORADAPTIVEBGDARK !important;
-            --in-content-accent-color: COLORBGDARK !important;
+            --in-content-accent-color: COLORADAPTIVEBGDARK !important;
 
             --in-content-primary-button-background: COLORADAPTIVEBGDARK !important;
             --in-content-primary-button-text-color: COLORADAPTIVEFGDARK !important;
@@ -121,6 +121,10 @@
     }
     .dialogClose:active {
         background-color: color-mix(in srgb, currentColor 21%, transparent) !important;
+    }
+    button.category:not(:hover):not(:active):not(.selected):not([selected]),
+    richlistitem.category:not(:hover):not(:active):not(.selected):not([selected]) { /* Improve contrast for selected */
+        color: color-mix(in srgb, currentColor 65%, transparent) !important;
     }
 }
 
