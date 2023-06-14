@@ -32,6 +32,10 @@
             --icon-info-color: WINDOWFGLIGHT !important;
             --secondary-text-color: color-mix(in srgb, WINDOWFGLIGHT 65%, transparent) !important;
         }
+        html,
+        body {
+            scrollbar-color: WINDOWFGLIGHT WINDOWBGLIGHT !important;
+        }
         #protection-settings {
             color: COLORADAPTIVEBGLIGHT !important;
             fill: COLORADAPTIVEBGLIGHT !important;
@@ -77,6 +81,10 @@
             --card-separator-color: color-mix(in srgb, WINDOWFGDARK 17%, transparent) !important;
             --icon-info-color: WINDOWFGDARK !important;
             --secondary-text-color: color-mix(in srgb, WINDOWFGDARK 65%, transparent) !important;
+        }
+        html,
+        body {
+            scrollbar-color: WINDOWFGDARK WINDOWBGDARK !important;
         }
         #protection-settings {
             color: COLORADAPTIVEBGDARK !important;
