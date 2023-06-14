@@ -7,12 +7,6 @@
             --in-content-text-color: WINDOWFGLIGHT !important;
             --in-content-background-color: WINDOWBGLIGHT !important;
             --in-content-link-color: COLORADAPTIVEBGLIGHT !important;
-            --in-content-button-text-color: WINDOWFGLIGHT !important;
-            --in-content-button-background: color-mix(in srgb, WINDOWFGLIGHT 13%, transparent) !important;
-            --in-content-button-text-color-hover: WINDOWFGLIGHT !important;
-            --in-content-button-background-hover: color-mix(in srgb, WINDOWFGLIGHT 17%, transparent) !important;
-            --in-content-button-text-color-active: WINDOWFGLIGHT !important;
-            --in-content-button-background-active: color-mix(in srgb, WINDOWFGLIGHT 30%, transparent) !important;
             --in-content-accent-color: COLORBGLIGHT !important;
 
             --in-content-primary-button-background: COLORADAPTIVEBGLIGHT !important;
@@ -21,11 +15,6 @@
             --in-content-primary-button-text-color-hover: COLORADAPTIVEFGLIGHT !important;
             --in-content-primary-button-background-active: color-mix(in srgb, COLORADAPTIVEBGLIGHT 64%, #FFF) !important;
             --in-content-primary-button-text-color-active: COLORADAPTIVEFGLIGHT !important;
-
-            --button-background-color: color-mix(in srgb, WINDOWFGLIGHT 10%, transparent) !important;
-            --button-hover-background-color: color-mix(in srgb, WINDOWFGLIGHT 20%, transparent) !important;
-            --button-active-background-color: color-mix(in srgb, WINDOWFGLIGHT 30%, transparent) !important;
-            --button-color: WINDOWFGLIGHT !important;
             --primary-button-background-color: COLORADAPTIVEBGLIGHT !important;
             --primary-button-color: COLORADAPTIVEFGLIGHT !important;
             --primary-button-hover-background-color: color-mix(in srgb, COLORADAPTIVEBGLIGHT 82%, #FFF) !important;
@@ -40,7 +29,6 @@
             --in-content-border-color: color-mix(in srgb, WINDOWFGLIGHT 17%, transparent) !important;
             --card-outline-color: color-mix(in srgb, WINDOWFGLIGHT 20%, transparent) !important;
             --card-separator-color: color-mix(in srgb, WINDOWFGLIGHT 17%, transparent) !important;
-            --sidebar-background-hover: color-mix(in srgb, WINDOWFGLIGHT 20%, transparent) !important;
             --icon-info-color: WINDOWFGLIGHT !important;
             --secondary-text-color: color-mix(in srgb, WINDOWFGLIGHT 65%, transparent) !important;
         }
@@ -65,12 +53,6 @@
             --in-content-text-color: WINDOWFGDARK !important;
             --in-content-background-color: WINDOWBGDARK !important;
             --in-content-link-color: COLORADAPTIVEBGDARK !important;
-            --in-content-button-text-color: WINDOWFGDARK !important;
-            --in-content-button-background: color-mix(in srgb, WINDOWFGDARK 13%, transparent) !important;
-            --in-content-button-text-color-hover: WINDOWFGDARK !important;
-            --in-content-button-background-hover: color-mix(in srgb, WINDOWFGDARK 17%, transparent) !important;
-            --in-content-button-text-color-active: WINDOWFGDARK !important;
-            --in-content-button-background-active: color-mix(in srgb, WINDOWFGDARK 30%, transparent) !important;
             --in-content-accent-color: COLORBGDARK !important;
 
             --in-content-primary-button-background: COLORADAPTIVEBGDARK !important;
@@ -79,11 +61,6 @@
             --in-content-primary-button-text-color-hover: COLORADAPTIVEFGDARK !important;
             --in-content-primary-button-background-active: color-mix(in srgb, COLORADAPTIVEBGDARK 64%, #FFF) !important;
             --in-content-primary-button-text-color-active: COLORADAPTIVEFGDARK !important;
-
-            --button-background-color: color-mix(in srgb, WINDOWFGDARK 10%, transparent) !important;
-            --button-hover-background-color: color-mix(in srgb, WINDOWFGDARK 20%, transparent) !important;
-            --button-active-background-color: color-mix(in srgb, WINDOWFGDARK 30%, transparent) !important;
-            --button-color: WINDOWFGDARK !important;
             --primary-button-background-color: COLORADAPTIVEBGDARK !important;
             --primary-button-color: COLORADAPTIVEFGDARK !important;
             --primary-button-hover-background-color: color-mix(in srgb, COLORADAPTIVEBGDARK 82%, #FFF) !important;
@@ -98,7 +75,6 @@
             --in-content-border-color: color-mix(in srgb, WINDOWFGDARK 17%, transparent) !important;
             --card-outline-color: color-mix(in srgb, WINDOWFGDARK 20%, transparent) !important;
             --card-separator-color: color-mix(in srgb, WINDOWFGDARK 17%, transparent) !important;
-            --sidebar-background-hover: color-mix(in srgb, WINDOWFGDARK 20%, transparent) !important;
             --icon-info-color: WINDOWFGDARK !important;
             --secondary-text-color: color-mix(in srgb, WINDOWFGDARK 65%, transparent) !important;
         }
@@ -114,6 +90,21 @@
             color: color-mix(in srgb, COLORADAPTIVEBGDARK 64%, #FFF) !important;
             fill: color-mix(in srgb, COLORADAPTIVEBGDARK 64%, #FFF) !important;
         }
+    }
+    :host,
+    :root {
+        --in-content-button-text-color: currentColor !important;
+        --in-content-button-background: color-mix(in srgb, currentColor 13%, transparent) !important;
+        --in-content-button-text-color-hover: currentColor !important;
+        --in-content-button-background-hover: color-mix(in srgb, currentColor 17%, transparent) !important;
+        --in-content-button-text-color-active: currentColor !important;
+        --in-content-button-background-active: color-mix(in srgb, currentColor 30%, transparent) !important;
+        --button-background-color: color-mix(in srgb, currentColor 10%, transparent) !important;
+        --button-hover-background-color: color-mix(in srgb, currentColor 20%, transparent) !important;
+        --button-active-background-color: color-mix(in srgb, currentColor 30%, transparent) !important;
+        --button-color: currentColor !important;
+
+        --sidebar-background-hover: color-mix(in srgb, currentColor 20%, transparent) !important;
     }
     .dialogBox { /* common-shared.css:8, Firefox 114, since the dialogs appear to be hardcoded inside these */
         background-color: #fff !important;
