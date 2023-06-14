@@ -48,6 +48,16 @@
             color: color-mix(in srgb, COLORADAPTIVEBGLIGHT 64%, #FFF) !important;
             fill: color-mix(in srgb, COLORADAPTIVEBGLIGHT 64%, #FFF) !important;
         }
+        .dialogBox { /* common-shared.css:8, Firefox 114, since the dialogs appear to be hardcoded inside these */
+            background-color: #fff !important;
+            color: rgb(21, 20, 26) !important;
+        }
+        .dialogTitleBar {
+            border-color: #d7d7db !important;
+        }
+        .dialogClose {
+            color: rgb(21, 20, 26) !important;
+        }
     }
     @media (prefers-color-scheme: dark) {
         :host,
@@ -98,6 +108,16 @@
             color: color-mix(in srgb, COLORADAPTIVEBGDARK 64%, #FFF) !important;
             fill: color-mix(in srgb, COLORADAPTIVEBGDARK 64%, #FFF) !important;
         }
+        .dialogBox { /* common-shared.css:122, Firefox 114 */
+            background-color: #42414d !important;
+            color: rgb(251,251,254) !important;
+        }
+        .dialogTitleBar { /* preferences.css:625, Firefox 114 */
+            border-color: rgba(249,249,250,0.2) !important;
+        }
+        .dialogClose {
+            color: rgb(251,251,254) !important;
+        }
     }
     :host,
     :root {
@@ -114,17 +134,7 @@
 
         --sidebar-background-hover: color-mix(in srgb, currentColor 20%, transparent) !important;
     }
-    .dialogBox { /* common-shared.css:8, Firefox 114, since the dialogs appear to be hardcoded inside these */
-        background-color: #fff !important;
-        color: rgb(21, 20, 26) !important;
-    }
-    .dialogTitleBar {
-        border-color: #d7d7db !important;
-    }
-    .dialogClose {
-        color: rgb(21, 20, 26) !important;
-    }
-    .dialogClose:hover {
+    .dialogClose:hover { /* common-shared.css:8, Firefox 114, since the dialogs appear to be hardcoded inside these */
         background-color: color-mix(in srgb, currentColor 14%, transparent) !important;
     }
     .dialogClose:active {
