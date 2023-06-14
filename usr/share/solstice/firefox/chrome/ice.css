@@ -36,6 +36,10 @@
         body {
             scrollbar-color: WINDOWFGLIGHT WINDOWBGLIGHT !important;
         }
+        button.category:not(:hover):not(:active):not(.selected):not([selected]),
+        richlistitem.category:not(:hover):not(:active):not(.selected):not([selected]) { /* Special condition for adaptivebg - light */
+            color: color-mix(in srgb, currentColor 65%, transparent) !important;
+        }
         #protection-settings {
             color: COLORADAPTIVEBGLIGHT !important;
             fill: COLORADAPTIVEBGLIGHT !important;
@@ -96,6 +100,10 @@
         body {
             scrollbar-color: WINDOWFGDARK WINDOWBGDARK !important;
         }
+        button.category:not(:hover):not(:active):not(.selected):not([selected]),
+        richlistitem.category:not(:hover):not(:active):not(.selected):not([selected]) { /* Special condition for adaptivebg - dark */
+            color: color-mix(in srgb, currentColor 65%, transparent) !important;
+        }
         #protection-settings {
             color: COLORADAPTIVEBGDARK !important;
             fill: COLORADAPTIVEBGDARK !important;
@@ -139,10 +147,6 @@
     }
     .dialogClose:active {
         background-color: color-mix(in srgb, currentColor 21%, transparent) !important;
-    }
-    button.category:not(:hover):not(:active):not(.selected):not([selected]),
-    richlistitem.category:not(:hover):not(:active):not(.selected):not([selected]) { /* Improve contrast for selected */
-        color: color-mix(in srgb, currentColor 65%, transparent) !important;
     }
 }
 

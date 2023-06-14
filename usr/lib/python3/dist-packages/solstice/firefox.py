@@ -196,6 +196,18 @@ def firefox_set_ui(profilepath, bg, bgdark, accent, accentdark, color, colordark
                 .replace("COLORFGLIGHT", colorfg)\
                 .replace("COLORBGDARK", colordark)\
                 .replace("COLORFGDARK", colorfgdark)
+            if "/* Special condition for adaptivebg - light */" in result[linescounted]:
+                if coloradaptivebg == color: #If colours aren't flipped to maintain contrast,
+                    result[linescounted-1] = "" #then disable the contrast improver
+                    result[linescounted] = ""
+                    result[linescounted+1] = ""
+                    result[linescounted+2] = ""
+            elif "/* Special condition for adaptivebg - dark */" in result[linescounted]:
+                if coloradaptivebgdark == colordark:
+                    result[linescounted-1] = ""
+                    result[linescounted] = ""
+                    result[linescounted+1] = ""
+                    result[linescounted+2] = ""
             linescounted += 1
 
         try:
