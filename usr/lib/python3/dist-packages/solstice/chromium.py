@@ -312,8 +312,8 @@ def chromi_set_colors(preferencedict, bg, bgdark, accent, accentdark, color, col
     #Vivaldi
     bgprivate = utils.color_filter(color, -70.0)
     # Ensure 'colour' usage doesn't camoflague in the tab/dialogs colour
-    coloradaptive = ("#000000" if utils.color_is_light(color) else "#FFFFFF") if color == bg else color
-    coloradaptivedark = ("#000000" if utils.color_is_light(colordark) else "#FFFFFF") if colordark == bgdark else colordark
+    coloradaptive = ("#000000" if utils.color_is_light(color) else "#FFFFFF") if not utils.are_colours_different(color, bg) else color
+    coloradaptivedark = ("#000000" if utils.color_is_light(colordark) else "#FFFFFF") if not utils.are_colours_different(colordark, bgdark) else colordark
     preferencedict["vivaldi"]["themes"]["system"][0]["accentOnWindow"] = accentonwindow
     preferencedict["vivaldi"]["themes"]["system"][1]["accentOnWindow"] = accentonwindow
     preferencedict["vivaldi"]["themes"]["system"][2]["accentOnWindow"] = False

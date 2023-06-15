@@ -119,47 +119,47 @@ def firefox_set_ui(profilepath, bg, bgdark, accent, accentdark, color, colordark
         lighttabbg, darktabbg = accent, accentdark
     # Foregrounds
     if utils.color_is_light(lightbg) == True:
-        lightfg, lightfgrgb = "black", "rgba(0, 0, 0, "
+        lightfg, lightfgrgb = "#000000", "rgba(0, 0, 0, "
     else:
-        lightfg, lightfgrgb = "white", "rgba(255, 255, 255, "
+        lightfg, lightfgrgb = "#FFFFFF", "rgba(255, 255, 255, "
     if utils.color_is_light(darkbg) == True:
-        darkfg, darkfgrgb = "black", "rgba(0, 0, 0, "
+        darkfg, darkfgrgb = "#000000", "rgba(0, 0, 0, "
     else:
-        darkfg, darkfgrgb = "white", "rgba(255, 255, 255, "
+        darkfg, darkfgrgb = "#FFFFFF", "rgba(255, 255, 255, "
     if utils.color_is_light(lighttabbg) == True:
-        lighttabfg = "black"
+        lighttabfg = "#000000"
     else:
-        lighttabfg = "white"
+        lighttabfg = "#FFFFFF"
     if utils.color_is_light(darktabbg) == True:
-        darktabfg = "black"
+        darktabfg = "#000000"
     else:
-        darktabfg = "white"
+        darktabfg = "#FFFFFF"
     # Private
     privatebg = utils.color_filter(color, -70.0)
     privatetabbg = utils.color_filter(color, -46.0)
     if utils.color_is_light(privatebg) == True:
-        privatefg, privatefgrgb = "black", "rgba(0, 0, 0, "
+        privatefg, privatefgrgb = "#000000", "rgba(0, 0, 0, "
     else:
-        privatefg, privatefgrgb = "white", "rgba(255, 255, 255, "
+        privatefg, privatefgrgb = "#FFFFFF", "rgba(255, 255, 255, "
     if utils.color_is_light(privatetabbg) == True:
-        privatetabfg = "black"
+        privatetabfg = "#000000"
     else:
-        privatetabfg = "white"
+        privatetabfg = "#FFFFFF"
     # Accents
     if utils.color_is_light(color) == True:
-        colorfg = "black"
+        colorfg = "#000000"
     else:
-        colorfg = "white"
+        colorfg = "#FFFFFF"
     if utils.color_is_light(colordark) == True:
-        colorfgdark = "black"
+        colorfgdark = "#000000"
     else:
-        colorfgdark = "white"
+        colorfgdark = "#FFFFFF"
     # Buttons
-    if color == lightbg:
+    if not utils.are_colours_different(color, lightbg):
         coloradaptivebg, coloradaptivefg = colorfg, color
     else:
         coloradaptivebg, coloradaptivefg = color, colorfg
-    if colordark == darkbg:
+    if not utils.are_colours_different(colordark, darkbg):
         coloradaptivebgdark, coloradaptivefgdark = colorfgdark, colordark
     else:
         coloradaptivebgdark, coloradaptivefgdark = colordark, colorfgdark
@@ -197,13 +197,13 @@ def firefox_set_ui(profilepath, bg, bgdark, accent, accentdark, color, colordark
                 .replace("COLORBGDARK", colordark)\
                 .replace("COLORFGDARK", colorfgdark)
             if "/* Special condition for adaptivebg - light */" in result[linescounted]:
-                if coloradaptivebg == color and lightfg != color: #If colours aren't flipped to maintain contrast,
+                if coloradaptivebg == color and utils.are_colours_different(lightfg, color): #If colours aren't flipped to maintain contrast,
                     result[linescounted-1] = "" #then disable the contrast improver
                     result[linescounted] = ""
                     result[linescounted+1] = ""
                     result[linescounted+2] = ""
             elif "/* Special condition for adaptivebg - dark */" in result[linescounted]:
-                if coloradaptivebgdark == colordark and darkfg != colordark:
+                if coloradaptivebgdark == colordark and utils.are_colours_different(darkfg, colordark):
                     result[linescounted-1] = ""
                     result[linescounted] = ""
                     result[linescounted+1] = ""
