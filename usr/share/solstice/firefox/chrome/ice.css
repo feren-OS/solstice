@@ -8,7 +8,7 @@
             --in-content-background-color: WINDOWBGLIGHT !important;
             --in-content-link-color: COLORADAPTIVEBGLIGHT !important;
             --in-content-accent-color: COLORADAPTIVEBGLIGHT !important;
-            --in-content-accent-color-active: color-mix(in srgb, COLORADAPTIVEBGLIGHT 82%, #FFF) !important;
+            --in-content-accent-color-active: color-mix(in srgb, COLORADAPTIVEBGLIGHT 82%, currentColor) !important;
 
             --in-content-primary-button-background: COLORADAPTIVEBGLIGHT !important;
             --in-content-primary-button-text-color: COLORADAPTIVEFGLIGHT !important;
@@ -88,6 +88,7 @@
             --in-content-background-color: WINDOWBGDARK !important;
             --in-content-link-color: COLORADAPTIVEBGDARK !important;
             --in-content-accent-color: COLORADAPTIVEBGDARK !important;
+            --in-content-accent-color-active: color-mix(in srgb, COLORADAPTIVEBGDARK 82%, currentColor) !important;
 
             --in-content-primary-button-background: COLORADAPTIVEBGDARK !important;
             --in-content-primary-button-text-color: COLORADAPTIVEFGDARK !important;
