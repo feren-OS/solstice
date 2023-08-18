@@ -127,6 +127,23 @@
             "bonusesavailable": false,
             "flatpak": "io.gitlab.librewolf-community",
             "expected-file": "/user.js"
+        },
+        "floorp-flatpak": {
+            "name": "Floorp",
+            "subtitle": "Follows the application's palette",
+            "icon": "one.ablaze.floorp",
+            "required-file": ["/var/lib/flatpak/app/one.ablaze.floorp/current/active/files/bin/floorp"],
+            "classprefix": "solstice:",
+            "command": ["/usr/bin/flatpak", "run", "one.ablaze.floorp", "%WEBSITEURL%", "--class", "%WINCLASS%", "--profile", "%PROFILEDIR%", "--no-remote"],
+            "darkmodeprefix": [],
+            "darkmodesuffix": [],
+            "nocacheprefix": [],
+            "nocachesuffix": [],
+            "darkmodeavailable": false,
+            "nocacheavailable": true,
+            "bonusesavailable": false,
+            "flatpak": "one.ablaze.floorp",
+            "expected-file": "/user.js"
         }
     },
     "epiphany": {

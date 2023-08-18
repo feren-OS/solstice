@@ -153,4 +153,12 @@
         --button-bgcolor: color-mix(in srgb, currentColor 13%, transparent) !important;
         --button-hover-bgcolor: color-mix(in srgb, currentColor 17%, transparent) !important;
     }
+
+    /* Floorp */
+    #workspace-button,
+    #sidebar2-box,
+    #sidebar-select-box,
+    #statusBar {
+        display: none !important;
+    }
 }

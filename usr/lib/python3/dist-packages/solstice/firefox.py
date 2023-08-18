@@ -6,6 +6,8 @@ from . import utils
 import os
 import gettext
 gettext.install("solstice-python", "/usr/share/locale", names="ngettext")
+import gi
+from gi.repository import GLib
 import shutil
 
 class SolsticeFirefoxException(Exception):
@@ -27,7 +29,9 @@ def update_profile(iteminfo, extrawebsites, profilename, profilepath, darkmode, 
             result = fp.read().splitlines()
         linescounted = 0
         for line in result:
-            result[linescounted] = result[linescounted].replace("WEBSITEHERE", iteminfo["website"]).replace("NAMEHERE", iteminfo["name"]).replace("CLEARHISTORY", utils.boolean_to_jsonbool(iteminfo["nohistory"] == True))
+            result[linescounted] = result[linescounted].replace("WEBSITEHERE", iteminfo["website"])\
+                .replace("NAMEHERE", iteminfo["name"]).replace("CLEARHISTORY", utils.boolean_to_jsonbool(iteminfo["nohistory"] == True))\
+                .replace("DOWNLOADSDIRHERE", GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) + "/" + _("{0} Downloads").format(iteminfo["name"]))
             linescounted += 1
 
         #Set no cache preference
@@ -215,3 +219,17 @@ def firefox_set_ui(profilepath, bg, bgdark, accent, accentdark, color, colordark
                 fp.write('\n'.join(result))
         except Exception as e:
             raise SolsticeFirefoxException(_("Writing {0} failed: {1}").format(i, e))
+    #Write to user.js file
+    try:
+        with open(profilepath + "/user.js", 'r') as fp:
+            result = fp.read().splitlines()
+        linescounted = 0
+        for line in result:
+            result[linescounted] = result[linescounted].replace("BGCOLORHERE", lightbg)\
+                .replace("FGCOLORHERE", lightfg).replace("LINKCOLORHERE", coloradaptivebg)
+            linescounted += 1
+
+        with open(profilepath + "/user.js", 'w') as fp:
+            fp.write('\n'.join(result))
+    except Exception as e:
+        raise SolsticeFirefoxException(_("Writing user.js failed: %s") % e)

@@ -4,6 +4,8 @@
 @-moz-document url-prefix('about:preferences') {
     #category-more-from-mozilla,
     #policies-container,
+    [data-l10n-id="preferences-data-migration-header"],
+    #dataMigration,
     #startupGroup,
     #startupPageBox,
     #alwaysCheckDefault,
@@ -12,7 +14,9 @@
     #colorsGroup,
     #languageAndAppearanceCategory,
     #fontsGroup,
-    #downloadsGroup #saveWhere #chooseFolder,
+    #downloadsGroup #saveWhere,
+    #applicationsGroup,
+    [data-l10n-id="browsing-cfr-recommendations-learn-more"],
     #warnCloseMultiple,
     #warnOnQuitKey,
     #updatesCategory,
@@ -67,6 +71,10 @@
     .top-sites-list .top-site-outer:not(:first-child) {
         display: none !important;
     }
+    /* Floorp */
+    .releasenote {
+        display: none !important;
+    }
 }
 
 @-moz-document url-prefix('about:privatebrowsing') {
@@ -77,6 +85,29 @@
 
 @-moz-document url-prefix('about:blocked') {
     #ignore_warning_link {
+        display: none !important;
+    }
+}
+
+/* Floorp */
+@-moz-document url-prefix('about:preferences') {
+    #floorpWorkspace,
+    #floorpWorkspaceSettings,
+    [data-l10n-id="workspace-warring"],
+    #notes-preferences,
+    #enable-notes-sync,
+    [data-l10n-id="notes-sync-description"],
+    [data-l10n-id="notes-backup-option"],
+    #backUpNotesOption,
+    #designGroup,
+    [data-l10n-id="vertical-tabbar"],
+    [data-l10n-id="native-tabbar-tip"],
+    #hoverVerticalTab,
+    #tabbbarGroup,
+    #bookmarkBarGroup,
+    #navBarGroup,
+    #category-BSB,
+    #ProfilesButton {
         display: none !important;
     }
 }
