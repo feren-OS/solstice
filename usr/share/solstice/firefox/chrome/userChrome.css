@@ -158,7 +158,8 @@
     #workspace-button,
     #sidebar2-box,
     #sidebar-select-box,
-    #statusBar {
+    #statusBar,
+    #toggle_statusBar {
         display: none !important;
     }
 }
