@@ -154,6 +154,11 @@
         --button-hover-bgcolor: color-mix(in srgb, currentColor 17%, transparent) !important;
     }
 
+    /* Bug fixes */
+    /*#navigator-toolbox-background { /* Random line below the tab bar */
+    /*    appearance: none !important;
+    }*/  /* breaks shadows */
+
     /* Floorp */
     #workspace-button,
     #sidebar2-box,

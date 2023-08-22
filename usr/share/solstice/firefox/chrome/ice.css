@@ -179,6 +179,11 @@
     .dialogClose:active {
         background-color: color-mix(in srgb, currentColor 21%, transparent) !important;
     }
+    html,
+    body {
+        background-color: var(--in-content-page-background);
+        color: var(--in-content-page-color);
+    }
 }
 
 @-moz-document url-prefix('about:newtab') {
