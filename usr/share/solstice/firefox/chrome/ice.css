@@ -51,6 +51,9 @@
         body {
             scrollbar-color: WINDOWFGLIGHT WINDOWBGLIGHT !important;
         }
+        hr {
+            background-color: WINDOWFGLIGHT !important;
+        }
         button.category:not(:hover):not(:active):not(.selected):not([selected]),
         richlistitem.category:not(:hover):not(:active):not(.selected):not([selected]) { /* Special condition for adaptivebg - light */
             color: color-mix(in srgb, currentColor 65%, transparent) !important;
@@ -129,6 +132,9 @@
         html,
         body {
             scrollbar-color: WINDOWFGDARK WINDOWBGDARK !important;
+        }
+        hr {
+            background-color: WINDOWFGDARK !important;
         }
         button.category:not(:hover):not(:active):not(.selected):not([selected]),
         richlistitem.category:not(:hover):not(:active):not(.selected):not([selected]) { /* Special condition for adaptivebg - dark */
@@ -241,6 +247,7 @@
             --toolbar-color: TABFGLIGHT !important;
             --lwt-selected-tab-background-color: TABBGLIGHT !important;
             --lwt-tab-text: TABFGLIGHT !important;
+            --toolbarbutton-icon-fill-attention: COLORADAPTIVEBGLIGHT !important;
             --chrome-content-separator-color: WINDOWBGLIGHT !important;
             --toolbarbutton-hover-background: TABFG02LIGHT !important;
             --toolbarbutton-active-background: TABFG03LIGHT !important;
@@ -257,6 +264,7 @@
             --toolbar-color: TABFGDARK !important;
             --lwt-selected-tab-background-color: TABBGDARK !important;
             --lwt-tab-text: TABFGDARK !important;
+            --toolbarbutton-icon-fill-attention: COLORADAPTIVEBGDARK !important;
             --chrome-content-separator-color: WINDOWBGDARK !important;
             --toolbarbutton-hover-background: TABFG02DARK !important;
             --toolbarbutton-active-background: TABFG03DARK !important;
