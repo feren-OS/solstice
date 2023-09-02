@@ -147,18 +147,6 @@ def get_profilepath(itemid, profileid):
     return "{0}/{1}/{2}".format(variables.solstice_profiles_directory, itemid, profileid)
 
 def create_profile_folder(itemid, profileid):
-    if not os.path.isdir(variables.solstice_profiles_directory): #Make sure the profiles directory even exists
-        try:
-            os.mkdir(variables.solstice_profiles_directory)
-        except Exception as e:
-            raise SolsticeUtilsException(_("Failed to create the user's Solstice Profiles folder: %s") % e)
-
-    if not os.path.isdir(variables.solstice_profiles_directory + "/%s" % itemid): #Now create the directory for this website application's profiles to go
-        try:
-            os.mkdir(variables.solstice_profiles_directory + "/%s" % itemid)
-        except Exception as e:
-            raise SolsticeUtilsException(_("Failed to create the application's Solstice Profiles folder: %s") % e)
-
     if os.path.isdir("{0}/{1}/{2}".format(variables.solstice_profiles_directory, itemid, profileid)): #Fail if profile exists
         raise SolsticeUtilsException(_("The profile %s already exists") % profileid)
     else:
@@ -186,7 +174,7 @@ def get_profile_settings(itemid, profileid):
         result["darkmode"] = False
     return result["readablename"], result["nocache"], result["darkmode"]
 
-def get_profile_outdated(profileid, itemid, shortcutlastupdated, browserid):
+def get_profile_outdated(profileid, itemid, shortcutlastupdated, browserid, downloadsdir):
     profilepath = get_profilepath(itemid, profileid)
     if not os.path.isfile("%s/.solstice-settings" % profilepath):
         return True #lastupdated* is in said file
@@ -198,6 +186,8 @@ def get_profile_outdated(profileid, itemid, shortcutlastupdated, browserid):
         return True #not having lastupdatedsolstice also does
     if "lastbrowser" not in profileconfs:
         return True #not having lastbrowser also does
+    if "lastdownloadsdir" not in profileconfs:
+        return True #not having lastdownloadsdir also does
     try:
         if int(profileconfs["lastupdatedshortcut"]) < int(shortcutlastupdated):
             return True #profile's last update was earlier than the shortcut's
@@ -206,6 +196,8 @@ def get_profile_outdated(profileid, itemid, shortcutlastupdated, browserid):
                 return True #profile's last update was earlier than Solstice's was
             elif profileconfs["lastbrowser"] != browserid:
                 return True #profile's last browser wasn't the current one
+            elif profileconfs["lastdownloadsdir"] != downloadsdir:
+                return True #profile's downloads directory isn't the current one
             else:
                 return False #profile is up to date
     except:
@@ -300,12 +292,28 @@ def remove_suffix(text, suffix):
     return text
 
 def set_flatpak_permissions(itemid, itemname, browsertype, browser):
-    os.system('/usr/bin/flatpak override --user {0} --filesystem="{1}/{2}"'.format(variables.sources[browsertype][browser]["flatpak"], variables.solstice_profiles_directory, itemid))
     #NOTE: Flatpak permissions are granted to the profiles folder per application so that the browser cannot read profiles it is not assigned to
-    #...and also let them access their respective Downloads folders
-    os.system('/usr/bin/flatpak override --user {0} --filesystem="{1}"'.format(variables.sources[browsertype][browser]["flatpak"], GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) + "/" + _("{0} Downloads").format(itemname)))
+    os.system('/usr/bin/flatpak override --user {0} --filesystem="{1}/{2}"'.format(variables.sources[browsertype][browser]["flatpak"], variables.solstice_profiles_directory, itemid))
+    #Allow access to the downloads folders
+    itemconfs = {}
+    if os.path.isfile("{0}/{1}/.solstice-settings".format(variables.solstice_profiles_directory, itemid)):
+        with open("{0}/{1}/.solstice-settings".format(variables.solstice_profiles_directory, itemid), 'r') as fp:
+            itemconfs = json.loads(fp.read())
+    if itemconfs == {}:
+        raise SolsticeUtilsException(_("No Downloads folder has been set."))
+    os.system('/usr/bin/flatpak override --user {0} --filesystem="{1}/{2}"'.format(variables.sources[browsertype][browser]["flatpak"], itemconfs["lastdownloadsdir"], itemconfs["downloadsname"]))
 
 def remove_flatpak_permissions(itemid, itemname, browsertype, browser):
+    #Obtain downloads folder location before continuing
+    itemconfs = {}
+    if os.path.isfile("{0}/{1}/.solstice-settings".format(variables.solstice_profiles_directory, itemid)):
+        with open("{0}/{1}/.solstice-settings".format(variables.solstice_profiles_directory, itemid), 'r') as fp:
+            itemconfs = json.loads(fp.read())
+    if itemconfs == {}:
+        #Fallback
+        itemconfs["lastdownloadsdir"] = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD)
+        itemconfs["downloadsname"] = _("{0} Downloads").format(itemname)
+    #Now remove the permissions
     targetfile = os.path.expanduser("~") + "/.local/share/flatpak/overrides/" + variables.sources[browsertype][browser]["flatpak"]
     if not os.path.isfile(targetfile):
         return #No file means no permissions set
@@ -315,12 +323,15 @@ def remove_flatpak_permissions(itemid, itemname, browsertype, browser):
     for line in newcontents: #FIXME: Wouldn't X - Y("Downloads") change if the language changes?
         if line.startswith("filesystems="):
             if "{0}/{1};".format(variables.solstice_profiles_directory, itemid) not in line \
-            and GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) + "/" + _("%s Downloads") % itemname + ";" not in line:
+            and itemconfs["lastdownloadsdir"] + "/" + itemconfs["downloadsname"] + ";" not in line \
+            and GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) + "/" + itemconfs["downloadsname"] + ";" not in line:
                 return #If the Flatpak doesn't have those permissions, don't bother writing to file
             newcontents[i] = newcontents[i].replace("!{0}/{1};".format(variables.solstice_profiles_directory, itemid), "")
-            newcontents[i] = newcontents[i].replace("!" + GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) + "/" + _("%s Downloads") % itemname + ";", "")
+            newcontents[i] = newcontents[i].replace("!" +  itemconfs["lastdownloadsdir"] + "/" + itemconfs["downloadsname"] + ";", "")
+            newcontents[i] = newcontents[i].replace("!" + GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) + "/" + itemconfs["downloadsname"] + ";", "") #Fallback
             newcontents[i] = newcontents[i].replace("{0}/{1};".format(variables.solstice_profiles_directory, itemid), "")
-            newcontents[i] = newcontents[i].replace(GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) + "/" + _("%s Downloads") % itemname + ";", "")
+            newcontents[i] = newcontents[i].replace(itemconfs["lastdownloadsdir"] + "/" + itemconfs["downloadsname"] + ";", "")
+            newcontents[i] = newcontents[i].replace(GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) + "/" + itemconfs["downloadsname"] + ";", "") #Fallback
         i += 1
     with open(targetfile, "w") as fp:
         fp.write("".join(newcontents))

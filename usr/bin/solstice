@@ -7,6 +7,8 @@ import sys
 import subprocess
 import gettext
 gettext.install("solstice-gui", "/usr/share/locale", names="ngettext")
+import gi
+from gi.repository import GLib
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtQml import * #Needs python3-pyqt5.qtquick
@@ -172,12 +174,8 @@ class SolsticeGUI(QApplication):
 
         if self.info != {}: #Don't run this code if the file is corrupt
             self.profilesdir = "{0}/{1}".format(variables.solstice_profiles_directory, self.info["id"])
-            self.autoload = self.getAutoProfileLoad() #Multiple parts of code get this value
             self.browser = self.info["browser"]
             self.browsertype = self.info["browsertype"]
-            browserCheck = self.browserCheck() #It's used again later in the code
-            if browserCheck == True:
-                self.autoProfileLoad() #If a profile is set to autolaunch, launch it
             guiwmclass = self.info["solwmclass"]
         else: #Instead run this code if the file is corrupt
             guiwmclass = "solstice"
@@ -197,6 +195,35 @@ class SolsticeGUI(QApplication):
             url = utils.shorten_url(self.info["website"])
             self.websiteUnavailableError(variables.unavailable[url]["perma"], variables.unavailable[url]["announcement"])
             return
+
+        #Check the application's settings, and if missing or incorrect update them
+        try:
+            if os.path.isdir(self.profilesdir):
+                essentialvalues = ["lastdownloadsdir", "downloadsname"]
+                if os.path.isfile("%s/.solstice-settings" % self.profilesdir):
+                    with open("%s/.solstice-settings" % self.profilesdir, 'r') as fp:
+                        itemconfs = json.loads(fp.read())
+                    for i in essentialvalues:
+                        if i not in itemconfs:
+                            self.main.update_item_settings(self.info)
+                        if i == "lastdownloadsdir" and i in itemconfs and itemconfs["lastdownloadsdir"] != GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD):
+                            self.main.update_item_settings(self.info)
+                else:
+                    self.main.update_item_settings(self.info)
+            else:
+                self.main.update_item_settings(self.info)
+            #Reload settings once updated
+            with open("%s/.solstice-settings" % self.profilesdir, 'r') as fp:
+                self.itemconfs = json.loads(fp.read())
+        except Exception as e:
+            self.genericError(_("Failed to load settings - %s") % self.info["name"], _("Failed to load settings"), _("An error occurred when attempting to load this application's settings:\n%s\n\nPlease reinstall the application you were trying to launch from Store.") % e)
+            return
+
+        #Load automatically selected profile if there's one
+        self.autoload = self.getAutoProfileLoad() #Multiple parts of code get this value
+        browserCheck = self.browserCheck() #It's used again later in the code
+        if browserCheck == True:
+            self.autoProfileLoad() #If a profile is set to autolaunch, launch it
         
         #Set up QML windows
         self.maineng = QQmlApplicationEngine()
@@ -230,7 +257,7 @@ class SolsticeGUI(QApplication):
             self.maineng.rootContext().setContextProperty('storeAvailable', True)
         else:
             self.maineng.rootContext().setContextProperty('storeAvailable', False)
-        self.maineng.rootContext().setContextProperty('bonusesAvailable', False) #changed later
+        self.maineng.rootContext().setContextProperty('bonusesAvailable', False)
         #Load QML
         self.maineng.load('/usr/lib/solstice/gui.qml')
         self.mainwnd = self.maineng.rootObjects()[0]
@@ -381,12 +408,12 @@ class SolsticeGUI(QApplication):
             return
 
     def setBrowser(self, newbrowser):
-        try:
-            newpath = utils.set_browser(sys.argv[1], self.browsertype, self.info["id"], self.info["name"], self.browser, newbrowser)
-        except Exception as e:
-            print(_("Failed to change browser: %s") % e)
-            self.genericError(_("Failed to change browser - %s") % self.info["name"], _("Failed to change browser"), _("An error occurred when trying to change the current browser.\nPlease view the 'solstice' logs in ~/.xsession-errors and consider reporting this issue to Solstice's developers.\n\nThe application will now exit."))
-            return
+        #try:
+        newpath = utils.set_browser(sys.argv[1], self.browsertype, self.info["id"], self.info["name"], self.browser, newbrowser)
+        # except Exception as e:
+        #     print(_("Failed to change browser: %s") % e)
+        #     self.genericError(_("Failed to change browser - %s") % self.info["name"], _("Failed to change browser"), _("An error occurred when trying to change the current browser.\n%s\n\nThe application will now exit.") % e)
+        #     return
 
         #Reload with new file
         commandtorun = list(sys.argv)
@@ -481,33 +508,23 @@ class SolsticeGUI(QApplication):
                 sys.exit(0) #End the code here
 
     def getAutoProfileLoad(self):
-        result = ""
-        #Shortened name to make the multiple times the code uses it shorter too
-        solauto = "%s/.solstice-autolaunch" % self.profilesdir
-        if not os.path.isfile(solauto):
+        if "autolaunch" in self.itemconfs:
+            return self.itemconfs["autolaunch"]
+        else:
             return ""
-        with open(solauto, 'r') as fp:
-            result = fp.readline()
-        if not os.path.isdir(utils.get_profilepath(self.info["id"], result)):
-            return ""
-        return result
 
     def setAutoProfileLoad(self, value):
-        solauto = "%s/.solstice-autolaunch" % self.profilesdir
-        if value == "" and os.path.isfile(solauto):
-            try:
-                os.remove(solauto)
-            except Exception as e:
-                raise SolsticeGUIException(_("Could not disable automatic profile launching: %s") % e)
-            return #Prevent code after this
-        elif value == "":
-            return #from running if ""
-        #Shortened name to make the multiple times the code uses it shorter too
+        with open("%s/.solstice-settings" % self.profilesdir, 'r') as fp:
+            self.itemconfs = json.loads(fp.read())
+        if value == "":
+            self.itemconfs.remove("autolaunch")
+        else:
+            self.itemconfs["autolaunch"] = value
         try:
-            with open(solauto, 'w') as fp:
-                fp.write(value)
-        except Exception as e:
-            raise SolsticeGUIException(_("Could not configure automatic profile launching: %s") % e)
+            with open("%s/.solstice-settings" % self.profilesdir, 'w') as fp:
+                fp.write(json.dumps(self.itemconfs, separators=(',', ':')))
+        except Exception as exceptionstr:
+            raise SolsticeModuleException(_("Failed to write to .solstice-settings to configure automatic profile launching"))
 
 
     #Profile(s) Checks
@@ -591,7 +608,7 @@ class SolsticeGUI(QApplication):
 
     def updateProfile(self, profileid):
         profilename, nocache, darkmode = utils.get_profile_settings(self.info["id"], profileid) #Getting necessary values
-        self.main.update_profile(self.info, profilename, profileid, darkmode, nocache)
+        self.main.update_profile(self.info, profilename, profileid, darkmode, nocache, self.itemconfs["lastdownloadsdir"], self.itemconfs["downloadsname"])
 
     def gotoProfiles(self):
         if self.profilesmodel.profiles == []: #Jump to profile creator if there are no profiles
@@ -637,13 +654,13 @@ class SolsticeGUI(QApplication):
                 print(_("W: Could not change autostart preference: %s") % e) #Warn in output, but continue
 
         #Check lastupdated of profile against shortcut's lastupdated
-        if utils.get_profile_outdated(profileid, self.info["id"], self.info["lastupdated"], self.browser) == True:
+        if utils.get_profile_outdated(profileid, self.info["id"], self.info["lastupdated"], self.browser, self.itemconfs["lastdownloadsdir"]) == True:
             try:
-                self.updateProfile(profileid) #Update the profile if the shortcut's outdated
+                self.updateProfile(profileid) #Update the profile if the shortcut's newer
             except Exception as e:
                 if e.__class__.__name__ != "ProfileInUseException": #skip if profile's in use
                     print(_("Failed to update profile: %s") % e)
-                    self.genericError(_("Failed to update profile - %s") % self.info["name"], _("Failed to update profile"), _("An error occurred when trying to update this profile.\nPlease view the 'solstice' logs in ~/.xsession-errors and consider reporting this issue to Solstice's developers.\n\nThe application will now exit."))
+                    self.genericError(_("Failed to update profile - %s") % self.info["name"], _("Failed to update profile"), _("An error occurred when trying to update this profile:\n%s\n\nThe application will now exit.") % e)
                     return False
 
         #Start the requested profile
@@ -651,7 +668,7 @@ class SolsticeGUI(QApplication):
             self.main.run_profile(self.info["id"], profileid, self.info["browser"], self.info["browsertype"], self.info["website"], self.info["wmclass"], self.info["nohistory"], self.closeCallback if not auto else None)
         except Exception as e:
             print(_("Failed to load profile: %s") % e)
-            self.genericError(_("Failed to load profile - %s") % self.info["name"], _("Failed to load profile"), _("An error occurred when trying to load this profile.\nPlease view the 'solstice' logs in ~/.xsession-errors and consider reporting this issue to Solstice's developers.\n\nThe application will now exit."))
+            self.genericError(_("Failed to load profile - %s") % self.info["name"], _("Failed to load profile"), _("An error occurred when trying to load this profile.\n%s\n\nThe application will now exit.") % e)
             return False
 
         self.quit()

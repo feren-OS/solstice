@@ -13,7 +13,7 @@ import json
 class SolsticeChromiumException(Exception):
     pass
 
-def update_profile(iteminfo, extrawebsites, profilename, profilepath, darkmode, nocache):
+def update_profile(iteminfo, extrawebsites, profilename, profilepath, darkmode, nocache, downloadsdir, downloadsname):
     #dict, list, string, string, bool, bool
     if not os.path.isdir("%s/Default" % profilepath):
         try:
@@ -48,7 +48,7 @@ def update_profile(iteminfo, extrawebsites, profilename, profilepath, darkmode, 
     result["custom_links"]["list"][0]["title"] = iteminfo["name"]
     result["custom_links"]["list"][0]["url"] = iteminfo["website"]
     result["session"]["startup_urls"] = [iteminfo["website"]]
-    result["download"]["default_directory"] = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) + "/" + _("{0} Downloads").format(iteminfo["name"])
+    result["download"]["default_directory"] = downloadsdir + "/" + downloadsname
     result["ntp"]["custom_background_dict"]["attribution_line_1"] = _("{0} - {1}").format(profilename, iteminfo["name"])
     result["vivaldi"]["homepage"] = iteminfo["website"]
     result["vivaldi"]["homepage_cache"] = iteminfo["website"]
@@ -76,6 +76,18 @@ def update_profile(iteminfo, extrawebsites, profilename, profilepath, darkmode, 
 
     #Add the Start Page Bookmark
     chromi_add_startpage(profilepath, iteminfo["name"], iteminfo["website"])
+
+    #Add in CSS and custom CSS
+    result["vivaldi"]["appearance"]["css_ui_mods_directory"] = "%s/CSS/vivaldi" % profilepath
+    # Normal CSS
+    shutil.rmtree("%s/CSS" % profilepath)
+    if iteminfo["browsertype"] == "chromium" and iteminfo["browser"] == "vivaldi":
+        os.mkdir("%s/CSS" % profilepath)
+        os.mkdir("%s/CSS/vivaldi" % profilepath)
+        shutil.copyfile("/usr/share/solstice/vivaldicss/browser.css", "%s/CSS/vivaldi/main.css" % profilepath)
+    # Custom CSS
+    if os.path.isfile(os.path.expanduser("~") + "/.config/solstice/vivaldi.css"):
+        shutil.copyfile(os.path.expanduser("~") + "/.config/solstice/vivaldi.css", "%s/CSS/vivaldi/custom.css" % profilepath)
 
     #Save to the Preferences file
     try:

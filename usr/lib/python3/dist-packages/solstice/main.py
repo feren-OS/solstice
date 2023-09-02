@@ -7,6 +7,8 @@ import os
 import subprocess
 import gettext
 gettext.install("solstice-python", "/usr/share/locale", names="ngettext")
+import gi
+from gi.repository import GLib
 import json
 from datetime import datetime
 import ast
@@ -89,17 +91,83 @@ class main:
                 shutil.rmtree(profilepath + "/Default/Sessions")
 
 
+    def update_item_settings(self, iteminfo):
+        if not os.path.isdir(variables.solstice_profiles_directory): #Make sure the profiles directory even exists
+            try:
+                os.mkdir(variables.solstice_profiles_directory)
+            except Exception as e:
+                raise SolsticeUtilsException(_("Failed to create the user's Solstice Profiles folder: %s") % e)
+
+        if not os.path.isdir(variables.solstice_profiles_directory + "/%s" % iteminfo["id"]): #Now create the directory for this website application's profiles to go
+            try:
+                os.mkdir(variables.solstice_profiles_directory + "/%s" % iteminfo["id"])
+                #If Flatpak, grant access to the profiles directory
+                if "flatpak" in variables.sources[iteminfo["browsertype"]][iteminfo["browser"]]:
+                    utils.set_flatpak_permissions(iteminfo["id"], iteminfo["name"], iteminfo["browsertype"], iteminfo["browser"])
+            except Exception as e:
+                raise SolsticeUtilsException(_("Failed to create the application's Solstice Profiles folder: %s") % e)
+
+        #Update the item's .solstice-settings
+        itemconfs = {}
+        changesmade = False
+        itemprofilesfldr = variables.solstice_profiles_directory + "/" + iteminfo["id"]
+        if os.path.isfile("%s/.solstice-settings" % itemprofilesfldr):
+            with open("%s/.solstice-settings" % itemprofilesfldr, 'r') as fp:
+                itemconfs = json.loads(fp.read())
+
+        targetdir = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD)
+        if "lastdownloadsdir" in itemconfs:
+            olddir = itemconfs["lastdownloadsdir"]
+            if itemconfs["lastdownloadsdir"] != targetdir:
+                itemconfs["lastdownloadsdir"] = targetdir
+                changesmade = True
+        else:
+            olddir = None
+            itemconfs["lastdownloadsdir"] = targetdir
+            changesmade = True
+        if "downloadsname" not in itemconfs:
+            #downloadsname can only be set once and never changed after unless uninstalled
+            itemconfs["downloadsname"] = _("{0} Downloads").format(iteminfo["name"])
+            changesmade = True
+
+        if changesmade == True: #Save changes if changes were made
+            try:
+                with open("%s/.solstice-settings" % itemprofilesfldr, 'w') as fp:
+                    fp.write(json.dumps(itemconfs, separators=(',', ':')))
+            except Exception as exceptionstr:
+                raise SolsticeModuleException(_("Failed to write to .solstice-settings"))
+
+            #Check if this config is for a Flatpak, and if so update the permissions on it
+            if "flatpak" in variables.sources[iteminfo["browsertype"]][iteminfo["browser"]]:
+                #Remove old Downloads directory permissions
+                targetfile = os.path.expanduser("~") + "/.local/share/flatpak/overrides/" + variables.sources[iteminfo["browsertype"]][iteminfo["browser"]]["flatpak"]
+                if not os.path.isfile(targetfile):
+                    return #No file means no permissions set
+                with open(targetfile, "rt") as fp:
+                    newcontents = fp.readlines()
+                if olddir != None: #Skip if there's no old downloads directory
+                    i = 0
+                    for line in newcontents:
+                        if line.startswith("filesystems="):
+                            if olddir + "/" + itemconfs["downloadsname"] + ";" not in line:
+                                return #If the Flatpak doesn't have those permissions, don't bother writing to file
+                            newcontents[i] = newcontents[i].replace("!{0}/{1};".format(olddir, itemconfs["downloadsname"]), "")
+                            newcontents[i] = newcontents[i].replace("{0}/{1};".format(olddir, itemconfs["downloadsname"]), "")
+                        i += 1
+                    with open(targetfile, "w") as fp:
+                        fp.write("".join(newcontents))
+                #Then add in the new directory permissions
+                os.system('/usr/bin/flatpak override --user {0} --filesystem="{1}/{2}"'.format(variables.sources[iteminfo["browsertype"]][iteminfo["browser"]]["flatpak"], targetdir, itemconfs["downloadsname"]))
+
+
     #### PROFILE CREATION / UPDATING
-    def update_profile(self, iteminfo, profilename, profileid, darkmode, nocache):
+    def update_profile(self, iteminfo, profilename, profileid, darkmode, nocache, downloadsdir, downloadsname):
         #NOTE: Also used to generate a new profile
         profilepath = utils.get_profilepath(iteminfo["id"], profileid)
 
         #Generate profile directory if it does not exist yet
         if not os.path.isdir(profilepath):
             utils.create_profile_folder(iteminfo["id"], profileid)
-            #If Flatpak, grant access to the profile's directory
-            if "flatpak" in variables.sources[iteminfo["browsertype"]][iteminfo["browser"]]:
-                utils.set_flatpak_permissions(iteminfo["id"], iteminfo["name"], iteminfo["browsertype"], iteminfo["browser"])
         else:
             if os.path.isfile(profilepath + "/.solstice-active-pid"):
                 try:
@@ -109,14 +177,17 @@ class main:
                     if utils.proc_exists(lastpid):
                         raise ProfileInUseException(_("The profile %s is currently in use, so cannot be updated") % profileid)
                 except Exception as e:
-                    print(_("WARNING: Could not determine if the profile {0} is in use: {1}").format(profileid, e))
+                    if e.__class__.__name__ != "ProfileInUseException":
+                        print(_("WARNING: Could not determine if the profile {0} is in use: {1}").format(profileid, e))
+                    else:
+                        raise ProfileInUseException(e)
 
         if iteminfo["browsertype"] == "chromium":
             from . import chromium
-            chromium.update_profile(iteminfo, iteminfo["extrawebsites"], profilename, profilepath, darkmode, nocache)
+            chromium.update_profile(iteminfo, iteminfo["extrawebsites"], profilename, profilepath, darkmode, nocache, downloadsdir, downloadsname)
         elif iteminfo["browsertype"] == "firefox":
             from . import firefox
-            firefox.update_profile(iteminfo, iteminfo["extrawebsites"], profilename, profilepath, darkmode, nocache)
+            firefox.update_profile(iteminfo, iteminfo["extrawebsites"], profilename, profilepath, darkmode, nocache, downloadsdir, downloadsname)
 
         #Make note of the profile name and last updated configs
         profileconfs = {}
@@ -134,6 +205,7 @@ class main:
         profileconfs["lastupdatedshortcut"] = int(iteminfo["lastupdated"])
         profileconfs["lastupdatedsolstice"] = int(variables.solstice_lastupdated)
         profileconfs["lastbrowser"] = iteminfo["browser"]
+        profileconfs["lastdownloadsdir"] = downloadsdir
 
         try:
             with open("%s/.solstice-settings" % profilepath, 'w') as fp:

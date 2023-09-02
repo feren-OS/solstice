@@ -13,7 +13,7 @@ import shutil
 class SolsticeFirefoxException(Exception):
     pass
 
-def update_profile(iteminfo, extrawebsites, profilename, profilepath, darkmode, nocache):
+def update_profile(iteminfo, extrawebsites, profilename, profilepath, darkmode, nocache, downloadsdir, downloadsname):
     if not os.path.isdir("%s/chrome" % profilepath):
         try:
             os.mkdir("%s/chrome" % profilepath)
@@ -31,7 +31,7 @@ def update_profile(iteminfo, extrawebsites, profilename, profilepath, darkmode, 
         for line in result:
             result[linescounted] = result[linescounted].replace("WEBSITEHERE", iteminfo["website"])\
                 .replace("NAMEHERE", iteminfo["name"]).replace("CLEARHISTORY", utils.boolean_to_jsonbool(iteminfo["nohistory"] == True))\
-                .replace("DOWNLOADSDIRHERE", GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) + "/" + _("{0} Downloads").format(iteminfo["name"]))
+                .replace("DOWNLOADSDIRHERE", downloadsdir + "/" + downloadsname)
             linescounted += 1
 
         #Set no cache preference
@@ -219,3 +219,19 @@ def firefox_set_ui(profilepath, bg, bgdark, accent, accentdark, color, colordark
                 fp.write('\n'.join(result))
         except Exception as e:
             raise SolsticeFirefoxException(_("Writing {0} failed: {1}").format(i, e))
+
+    #Add in custom CSS
+    if os.path.isfile(os.path.expanduser("~") + "/.config/solstice/firefox.css"):
+        shutil.copyfile(os.path.expanduser("~") + "/.config/solstice/firefox.css", profilepath + "/chrome/custom.css")
+        with open(profilepath + "/chrome/userChrome.css", 'r') as fp:
+            result = fp.readlines()
+        result.insert(2, '@import url("custom.css");\n')
+        with open(profilepath + "/chrome/userChrome.css", 'w') as fp:
+            fp.write("".join(result))
+    if os.path.isfile(os.path.expanduser("~") + "/.config/solstice/firefoxContent.css"):
+        shutil.copyfile(os.path.expanduser("~") + "/.config/solstice/firefoxContent.css", profilepath + "/chrome/customContent.css")
+        with open(profilepath + "/chrome/userContent.css", 'r') as fp:
+            result = fp.readlines()
+        result.insert(2, '@import url("customContent.css");\n')
+        with open(profilepath + "/chrome/userContent.css", 'w') as fp:
+            fp.write("".join(result))
