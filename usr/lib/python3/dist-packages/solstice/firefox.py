@@ -228,6 +228,8 @@ def firefox_set_ui(profilepath, bg, bgdark, accent, accentdark, color, colordark
         result.insert(2, '@import url("custom.css");\n')
         with open(profilepath + "/chrome/userChrome.css", 'w') as fp:
             fp.write("".join(result))
+    elif os.path.isfile(profilepath + "/chrome/custom.css"):
+        shutil.remove(profilepath + "/chrome/custom.css")
     if os.path.isfile(os.path.expanduser("~") + "/.config/solstice/firefoxContent.css"):
         shutil.copyfile(os.path.expanduser("~") + "/.config/solstice/firefoxContent.css", profilepath + "/chrome/customContent.css")
         with open(profilepath + "/chrome/userContent.css", 'r') as fp:
@@ -235,3 +237,5 @@ def firefox_set_ui(profilepath, bg, bgdark, accent, accentdark, color, colordark
         result.insert(2, '@import url("customContent.css");\n')
         with open(profilepath + "/chrome/userContent.css", 'w') as fp:
             fp.write("".join(result))
+    elif os.path.isfile(profilepath + "/chrome/customContent.css"):
+        shutil.remove(profilepath + "/chrome/customContent.css")

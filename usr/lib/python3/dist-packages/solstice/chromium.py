@@ -9,6 +9,7 @@ gettext.install("solstice-python", "/usr/share/locale", names="ngettext")
 import gi
 from gi.repository import GLib
 import json
+import shutil
 
 class SolsticeChromiumException(Exception):
     pass
@@ -80,7 +81,8 @@ def update_profile(iteminfo, extrawebsites, profilename, profilepath, darkmode, 
     #Add in CSS and custom CSS
     result["vivaldi"]["appearance"]["css_ui_mods_directory"] = "%s/CSS/vivaldi" % profilepath
     # Normal CSS
-    shutil.rmtree("%s/CSS" % profilepath)
+    if os.path.isdir("%s/CSS" % profilepath):
+        shutil.rmtree("%s/CSS" % profilepath)
     if iteminfo["browsertype"] == "chromium" and iteminfo["browser"] == "vivaldi":
         os.mkdir("%s/CSS" % profilepath)
         os.mkdir("%s/CSS/vivaldi" % profilepath)
