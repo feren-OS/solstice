@@ -65,7 +65,7 @@ def set_profile_darkmode(profilepath, value, patchvar=False, vartopatch={}):
     if not os.path.isdir(profilepath):
         raise SolsticeFirefoxException(_("The profile %s does not exist") % profilepath.split("/")[-1])
 
-    raise SolsticeFirefoxException(_("Dark Mode is not available in Mozilla Firefox and its forks. Developers: Make sure your program checks for the 'darkmodeavailable' value in metadata.") % profilepath.split("/")[-1])
+    raise SolsticeFirefoxException(_("Dark Mode is not available in Mozilla Firefox and its forks. Developers: Make sure your program checks for the 'darkmodeavailable' value in metadata."))
 
 
 #No Cache

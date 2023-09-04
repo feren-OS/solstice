@@ -255,8 +255,9 @@ class main:
                 from . import chromium
                 chromium.set_profile_darkmode(profilepath, value)
             elif browsertype == "firefox":
-                from . import firefox
-                firefox.set_profile_darkmode(profilepath, value)
+                pass #Not available in Firefox currently
+                #from . import firefox
+                #firefox.set_profile_darkmode(profilepath, value)
 
         if returnonly:
             return
