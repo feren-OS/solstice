@@ -84,8 +84,14 @@
 }
 
 @-moz-document url-prefix('about:blocked') {
-    #ignore_warning_link {
+    #seeDetailsButton,
+    #learn_more,
+    #ignore_warning_link,
+    #errorInnerDescription {
         display: none !important;
+    }
+    .button-container button { /* Undo border styling in about:blocked */
+        border-color: var(--in-content-primary-button-border-color) !important;
     }
 }
 

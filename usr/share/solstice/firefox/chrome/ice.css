@@ -1,4 +1,8 @@
 @-moz-document url-prefix("about:") {
+    /* Make headers more readable */
+    h1 {
+        font-weight: 300 !important;
+    }
     @media (prefers-color-scheme: light) {
         :host,
         :root {
@@ -189,6 +193,21 @@
     body {
         background-color: var(--in-content-page-background);
         color: var(--in-content-page-color);
+    }
+}
+
+@-moz-document url-prefix('about:blocked') {
+    @media (prefers-color-scheme: light) {
+        #errorTitle,
+        #errorTitleText {
+            color: var(--red-70) !important;
+        }
+    }
+    @media (prefers-color-scheme: dark) {
+        #errorTitle,
+        #errorTitleText {
+            color: var(--red-40) !important;
+        }
     }
 }
 

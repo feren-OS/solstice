@@ -564,7 +564,7 @@ class SolsticeGUI(QApplication):
             if self.lastedited == "": #New profile
                 profileid = utils.profileid_generate(self.profilesdir, self.mainwnd.findChild(QObject, "editProfileName").property('text'))
                 #'Update' profile to give it its initial configurations
-                self.main.update_profile(self.info, newname, profileid, darkmode, nocache)
+                self.main.update_profile(self.info, newname, profileid, darkmode, nocache, self.itemconfs["lastdownloadsdir"], self.itemconfs["downloadsname"])
             else:
                 outdated = utils.get_profile_outdated(self.lastedited, self.info["id"], self.info["lastupdated"], self.browser, self.itemconfs["lastdownloadsdir"])
                 self.main.batch_set_profilesettings(self.browsertype, utils.get_profilepath(self.info["id"], self.lastedited), self.info["name"], newname, outdated, darkmode, nocache)
