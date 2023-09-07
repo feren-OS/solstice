@@ -408,12 +408,12 @@ class SolsticeGUI(QApplication):
             return
 
     def setBrowser(self, newbrowser):
-        #try:
-        newpath = utils.set_browser(sys.argv[1], self.browsertype, self.info["id"], self.info["name"], self.browser, newbrowser)
-        # except Exception as e:
-        #     print(_("Failed to change browser: %s") % e)
-        #     self.genericError(_("Failed to change browser - %s") % self.info["name"], _("Failed to change browser"), _("An error occurred when trying to change the current browser.\n%s\n\nThe application will now exit.") % e)
-        #     return
+        try:
+            newpath = utils.set_browser(sys.argv[1], self.browsertype, self.info["id"], self.info["name"], self.browser, newbrowser)
+        except Exception as e:
+            print(_("Failed to change browser: %s") % e)
+            self.genericError(_("Failed to change browser - %s") % self.info["name"], _("Failed to change browser"), _("An error occurred when trying to change the current browser.\n%s\n\nThe application will now exit.") % e)
+            return
 
         #Reload with new file
         commandtorun = list(sys.argv)
@@ -509,9 +509,19 @@ class SolsticeGUI(QApplication):
 
     def getAutoProfileLoad(self):
         if "autolaunch" in self.itemconfs:
-            return self.itemconfs["autolaunch"]
-        else:
-            return ""
+            if self.itemconfs["autolaunch"] == "":
+                return ""
+            if os.path.isdir(utils.get_profilepath(self.info["id"], self.itemconfs["autolaunch"])):
+                result = self.itemconfs["autolaunch"]
+                #Check if there's more than one profile, first
+                for i in os.listdir(self.profilesdir):
+                    if i == result:
+                        continue
+                    if os.path.isdir(self.profilesdir + "/" + i):
+                        if os.path.isfile(self.profilesdir + "/" + i + variables.sources[self.browsertype][self.browser]["expected-file"]):
+                            return "" #More than one profile exists, so don't autostart
+                return result
+        return ""
 
     def setAutoProfileLoad(self, value):
         with open("%s/.solstice-settings" % self.profilesdir, 'r') as fp:
