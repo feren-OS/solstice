@@ -527,7 +527,7 @@ class SolsticeGUI(QApplication):
         with open("%s/.solstice-settings" % self.profilesdir, 'r') as fp:
             self.itemconfs = json.loads(fp.read())
         if value == "":
-            self.itemconfs.remove("autolaunch")
+            self.itemconfs.pop("autolaunch")
         else:
             self.itemconfs["autolaunch"] = value
         try:
