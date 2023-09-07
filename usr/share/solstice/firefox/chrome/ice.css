@@ -229,6 +229,24 @@
         }
     }
 }
+@-moz-document url-prefix('about:home') {
+    @media (prefers-color-scheme: light) {
+        body {
+            --newtab-background-color: WINDOWBGLIGHT !important;
+            --newtab-background-color-secondary: TABBGLIGHT !important;
+            --newtab-text-primary-color: WINDOWFGLIGHT !important;
+            --newtab-element-hover-color: color-mix(in srgb, WINDOWFGLIGHT 17%, var(--newtab-background-color)) !important;
+        }
+    }
+    @media (prefers-color-scheme: dark) {
+        body {
+            --newtab-background-color: WINDOWBGDARK !important;
+            --newtab-background-color-secondary: TABBGDARK !important;
+            --newtab-text-primary-color: WINDOWFGDARK !important;
+            --newtab-element-hover-color: color-mix(in srgb, WINDOWFGDARK 17%, var(--newtab-background-color)) !important;
+        }
+    }
+}
 
 @-moz-document url-prefix('about:privatebrowsing') {
     :root {

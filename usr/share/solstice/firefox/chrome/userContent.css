@@ -76,6 +76,20 @@
         display: none !important;
     }
 }
+@-moz-document url-prefix('about:home') {
+    .personalize-button,
+    .context-menu-button,
+    .icon-pin-small {
+        display: none !important;
+    }
+    .top-sites-list .top-site-outer:not(:first-child) {
+        display: none !important;
+    }
+    /* Floorp */
+    .releasenote {
+        display: none !important;
+    }
+}
 
 @-moz-document url-prefix('about:privatebrowsing') {
     .search-inner-wrapper {
