@@ -167,6 +167,15 @@ def firefox_set_ui(profilepath, bg, bgdark, accent, accentdark, color, colordark
         coloradaptivebgdark, coloradaptivefgdark = colorfgdark, colordark
     else:
         coloradaptivebgdark, coloradaptivefgdark = colordark, colorfgdark
+    # Special case for infobar icons
+    if not utils.are_colours_different(color, lighttabbg):
+        coloradaptivetabbg, coloradaptivetabfg = colorfg, color
+    else:
+        coloradaptivetabbg, coloradaptivetabfg = color, colorfg
+    if not utils.are_colours_different(colordark, darktabbg):
+        coloradaptivetabbgdark, coloradaptivetabfgdark = colorfgdark, colordark
+    else:
+        coloradaptivetabbgdark, coloradaptivetabfgdark = colordark, colorfgdark
     # Write to CSS files
     for i in ["userContent.css", "ice.css"]:
         with open(profilepath + "/chrome/" + i, 'r') as fp:
@@ -174,6 +183,18 @@ def firefox_set_ui(profilepath, bg, bgdark, accent, accentdark, color, colordark
         linescounted = 0
         for line in result:
             result[linescounted] = result[linescounted]\
+                .replace("COLORADAPTIVEBGLIGHT", coloradaptivebg)\
+                .replace("COLORADAPTIVEFGLIGHT", coloradaptivefg)\
+                .replace("COLORADAPTIVEBGDARK", coloradaptivebgdark)\
+                .replace("COLORADAPTIVEFGDARK", coloradaptivefgdark)\
+                .replace("COLORADAPTIVETABBGLIGHT", coloradaptivetabbg)\
+                .replace("COLORADAPTIVETABFGLIGHT", coloradaptivetabfg)\
+                .replace("COLORADAPTIVETABBGDARK", coloradaptivetabbgdark)\
+                .replace("COLORADAPTIVETABFGDARK", coloradaptivetabfgdark)\
+                .replace("COLORBGLIGHT", color)\
+                .replace("COLORFGLIGHT", colorfg)\
+                .replace("COLORBGDARK", colordark)\
+                .replace("COLORFGDARK", colorfgdark)\
                 .replace("WINDOWBGLIGHT", lightbg)\
                 .replace("WINDOWFGLIGHT", lightfg)\
                 .replace("TABBGLIGHT", lighttabbg)\
@@ -191,15 +212,7 @@ def firefox_set_ui(profilepath, bg, bgdark, accent, accentdark, color, colordark
                 .replace("TABBGPRIVATE", privatetabbg)\
                 .replace("TABFGPRIVATE", privatetabfg)\
                 .replace("TABFG02PRIVATE", privatefgrgb + "0.2)")\
-                .replace("TABFG03PRIVATE", privatefgrgb + "0.3)")\
-                .replace("COLORADAPTIVEBGLIGHT", coloradaptivebg)\
-                .replace("COLORADAPTIVEFGLIGHT", coloradaptivefg)\
-                .replace("COLORADAPTIVEBGDARK", coloradaptivebgdark)\
-                .replace("COLORADAPTIVEFGDARK", coloradaptivefgdark)\
-                .replace("COLORBGLIGHT", color)\
-                .replace("COLORFGLIGHT", colorfg)\
-                .replace("COLORBGDARK", colordark)\
-                .replace("COLORFGDARK", colorfgdark)
+                .replace("TABFG03PRIVATE", privatefgrgb + "0.3)")
             if "/* Special condition for adaptivebg - light */" in result[linescounted]:
                 if coloradaptivebg == color and utils.are_colours_different(lightfg, color): #If colours aren't flipped to maintain contrast,
                     result[linescounted-1] = "" #then disable the contrast improver

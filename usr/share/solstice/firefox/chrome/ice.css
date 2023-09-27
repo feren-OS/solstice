@@ -58,6 +58,10 @@
         hr {
             background-color: WINDOWFGLIGHT !important;
         }
+        ::-moz-selection {
+            color: COLORADAPTIVETABFGLIGHT !important;
+            background: COLORADAPTIVETABBGLIGHT !important;
+        }
         button.category:not(:hover):not(:active):not(.selected):not([selected]),
         richlistitem.category:not(:hover):not(:active):not(.selected):not([selected]) { /* Special condition for adaptivebg - light */
             color: color-mix(in srgb, currentColor 65%, transparent) !important;
@@ -139,6 +143,10 @@
         }
         hr {
             background-color: WINDOWFGDARK !important;
+        }
+        ::-moz-selection {
+            color: COLORADAPTIVETABFGDARK !important;
+            background: COLORADAPTIVETABBGDARK !important;
         }
         button.category:not(:hover):not(:active):not(.selected):not([selected]),
         richlistitem.category:not(:hover):not(:active):not(.selected):not([selected]) { /* Special condition for adaptivebg - dark */
@@ -289,6 +297,9 @@
             --toolbarbutton-hover-background: TABFG02LIGHT !important;
             --toolbarbutton-active-background: TABFG03LIGHT !important;
             --tabpanel-background-color: WINDOWBGLIGHT !important;
+            --tab-loading-fill: COLORADAPTIVETABBGLIGHT !important;
+            --message-bar-background-color: TABBGLIGHT !important;
+            --message-bar-text-color: TABFGLIGHT !important;
         }
     }
 
@@ -306,6 +317,9 @@
             --toolbarbutton-hover-background: TABFG02DARK !important;
             --toolbarbutton-active-background: TABFG03DARK !important;
             --tabpanel-background-color: WINDOWBGDARK !important;
+            --tab-loading-fill: COLORADAPTIVETABBGDARK !important;
+            --message-bar-background-color: TABBGDARK !important;
+            --message-bar-text-color: TABFGDARK !important;
         }
     }
 
@@ -353,6 +367,21 @@
             background-color: color-mix(in srgb, currentColor 30%, transparent) !important;
             color: WINDOWFGLIGHT !important;
         }
+        .notificationbox-stack {
+            background-color: WINDOWBGLIGHT !important;
+        }
+        .icon {
+            color: COlORADAPTIVETABBGLIGHT !important;
+        }
+        .container button {
+            color: TABFGLIGHT !important;
+        }
+        .container button:hover {
+            color: TABFGLIGHT !important;
+        }
+        .container button:active {
+            color: TABFGLIGHT !important;
+        }
         /* Floorp */
         .browserContainer { border-color: WINDOWBGLIGHT !important; }
     }
@@ -382,7 +411,34 @@
             background-color: color-mix(in srgb, currentColor 30%, transparent) !important;
             color: WINDOWFGDARK !important;
         }
+        .notificationbox-stack {
+            background-color: WINDOWBGDARK !important;
+        }
+        .icon {
+            color: COlORADAPTIVETABBGDARK !important;
+        }
+        .container button {
+            color: TABFGDARK !important;
+        }
+        .container button:hover {
+            color: TABFGDARK !important;
+        }
+        .container button:active {
+            color: TABFGDARK !important;
+        }
         /* Floorp */
         .browserContainer { border-color: WINDOWBGDARK !important; }
+    }
+}
+@media (prefers-color-scheme: light) {
+    ::-moz-selection {
+        color: COLORADAPTIVETABFGLIGHT;
+        background: COLORADAPTIVETABBGLIGHT;
+    }
+}
+@media (prefers-color-scheme: dark) {
+    ::-moz-selection {
+        color: COLORADAPTIVETABFGDARK;
+        background: COLORADAPTIVETABBGDARK;
     }
 }

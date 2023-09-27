@@ -153,6 +153,22 @@
         --button-bgcolor: color-mix(in srgb, currentColor 13%, transparent) !important;
         --button-hover-bgcolor: color-mix(in srgb, currentColor 17%, transparent) !important;
     }
+    .container.infobar { /* message-bar.css:83, message-bar.css:155, Firefox 115 */
+        background: var(--message-bar-background-color) !important;
+        color: var(--message-bar-text-color) !important;
+    }
+    .container .notification-button {
+        background-color: color-mix(in srgb, currentColor 13%, transparent) !important;
+    }
+    .container .close {
+        fill: currentColor !important;
+    }
+    .container button:hover {
+        background-color: color-mix(in srgb, currentColor 17%, transparent) !important;
+    }
+    .container button:active {
+        background-color: color-mix(in srgb, currentColor 30%, transparent) !important;
+    }
 
     /* Bug fixes */
     /*#navigator-toolbox-background { /* Random line below the tab bar */
