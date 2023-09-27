@@ -59,8 +59,8 @@
             background-color: WINDOWFGLIGHT !important;
         }
         ::-moz-selection {
-            color: COLORADAPTIVETABFGLIGHT !important;
-            background: COLORADAPTIVETABBGLIGHT !important;
+            color: COLORADAPTIVEFGLIGHT !important;
+            background: COLORADAPTIVEBGLIGHT !important;
         }
         button.category:not(:hover):not(:active):not(.selected):not([selected]),
         richlistitem.category:not(:hover):not(:active):not(.selected):not([selected]) { /* Special condition for adaptivebg - light */
@@ -145,8 +145,8 @@
             background-color: WINDOWFGDARK !important;
         }
         ::-moz-selection {
-            color: COLORADAPTIVETABFGDARK !important;
-            background: COLORADAPTIVETABBGDARK !important;
+            color: COLORADAPTIVEFGDARK !important;
+            background: COLORADAPTIVEBGDARK !important;
         }
         button.category:not(:hover):not(:active):not(.selected):not([selected]),
         richlistitem.category:not(:hover):not(:active):not(.selected):not([selected]) { /* Special condition for adaptivebg - dark */
@@ -432,13 +432,13 @@
 }
 @media (prefers-color-scheme: light) {
     ::-moz-selection {
-        color: COLORADAPTIVETABFGLIGHT;
-        background: COLORADAPTIVETABBGLIGHT;
+        color: COLORFGLIGHT;
+        background: COLORBGLIGHT;
     }
 }
 @media (prefers-color-scheme: dark) {
     ::-moz-selection {
-        color: COLORADAPTIVETABFGDARK;
-        background: COLORADAPTIVETABBGDARK;
+        color: COLORFGDARK;
+        background: COLORBGDARK;
     }
 }

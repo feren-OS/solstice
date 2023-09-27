@@ -35,6 +35,8 @@ user_pref("browser.proton.toolbar.version", 9999999);
 user_pref("browser.rights.3.shown", true);
 user_pref("browser.search.suggest.enabled", false);
 user_pref("browser.search.suggest.enabled.private", false);
+user_pref("browser.shell.checkDefaultBrowser", false);
+user_pref("browser.shell.defaultBrowserCheckCount", 1);
 user_pref("browser.startup.couldRestoreSession.count", 0);
 user_pref("browser.startup.homepage", "WEBSITEHERE");
 user_pref("browser.startup.homepage_override.mstone", "9999999.0");
