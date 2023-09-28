@@ -11,7 +11,12 @@
             --in-content-text-color: WINDOWFGLIGHT !important;
             --in-content-background-color: WINDOWBGLIGHT !important;
             --in-content-link-color: COLORADAPTIVEBGLIGHT !important;
+            --in-content-link-color-visited: COLORADAPTIVEBGLIGHT !important;
             --in-content-accent-color: COLORADAPTIVEBGLIGHT !important;
+            --link-color: COLORADAPTIVEBGLIGHT !important;
+            --link-color-visited: COLORADAPTIVEBGLIGHT !important;
+            --link-color-hover: color-mix(in srgb, WINDOWFGLIGHT 15%, COLORADAPTIVEBGLIGHT) !important;
+            --link-color-active: color-mix(in srgb, WINDOWFGLIGHT 30%, COLORADAPTIVEBGLIGHT) !important;
 
             --in-content-primary-button-background: COLORADAPTIVEBGLIGHT !important;
             --in-content-primary-button-text-color: COLORADAPTIVEFGLIGHT !important;
@@ -97,7 +102,12 @@
             --in-content-text-color: WINDOWFGDARK !important;
             --in-content-background-color: WINDOWBGDARK !important;
             --in-content-link-color: COLORADAPTIVEBGDARK !important;
+            --in-content-link-color-visited: COLORADAPTIVEBGDARK !important;
             --in-content-accent-color: COLORADAPTIVEBGDARK !important;
+            --link-color: COLORADAPTIVEBGDARK !important;
+            --link-color-visited: COLORADAPTIVEBGDARK !important;
+            --link-color-hover: color-mix(in srgb, WINDOWFGDARK 15%, COLORADAPTIVEBGDARK) !important;
+            --link-color-active: color-mix(in srgb, WINDOWFGDARK 30%, COLORADAPTIVEBGDARK) !important;
 
             --in-content-primary-button-background: COLORADAPTIVEBGDARK !important;
             --in-content-primary-button-text-color: COLORADAPTIVEFGDARK !important;
@@ -201,21 +211,6 @@
     body {
         background-color: var(--in-content-page-background);
         color: var(--in-content-page-color);
-    }
-}
-
-@-moz-document url-prefix('about:blocked') {
-    @media (prefers-color-scheme: light) {
-        #errorTitle,
-        #errorTitleText {
-            color: var(--red-70) !important;
-        }
-    }
-    @media (prefers-color-scheme: dark) {
-        #errorTitle,
-        #errorTitleText {
-            color: var(--red-40) !important;
-        }
     }
 }
 
@@ -371,7 +366,7 @@
             background-color: WINDOWBGLIGHT !important;
         }
         .icon {
-            color: COlORADAPTIVETABBGLIGHT !important;
+            color: COLORADAPTIVETABBGLIGHT !important;
         }
         .container button {
             color: TABFGLIGHT !important;
@@ -415,7 +410,7 @@
             background-color: WINDOWBGDARK !important;
         }
         .icon {
-            color: COlORADAPTIVETABBGDARK !important;
+            color: COLORADAPTIVETABBGDARK !important;
         }
         .container button {
             color: TABFGDARK !important;

@@ -96,7 +96,7 @@ class main:
             try:
                 os.mkdir(variables.solstice_profiles_directory)
             except Exception as e:
-                raise SolsticeUtilsException(_("Failed to create the user's Solstice Profiles folder: %s") % e)
+                raise SolsticeModuleException(_("Failed to create the user's Solstice Profiles folder: %s") % e)
 
         if not os.path.isdir(variables.solstice_profiles_directory + "/%s" % iteminfo["id"]): #Now create the directory for this website application's profiles to go
             try:
@@ -105,7 +105,7 @@ class main:
                 if "flatpak" in variables.sources[iteminfo["browsertype"]][iteminfo["browser"]]:
                     utils.set_flatpak_permissions(iteminfo["id"], iteminfo["name"], iteminfo["browsertype"], iteminfo["browser"])
             except Exception as e:
-                raise SolsticeUtilsException(_("Failed to create the application's Solstice Profiles folder: %s") % e)
+                raise SolsticeModuleException(_("Failed to create the application's Solstice Profiles folder: %s") % e)
 
         #Update the item's .solstice-settings
         itemconfs = {}
