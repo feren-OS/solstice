@@ -9,10 +9,30 @@
             (16px * (var(--toolbar-btn-count) + 1)) +
             (var(--toolbarbutton-outer-padding) * 2 * (var(--toolbar-btn-count) + 1)) +
             (var(--toolbarbutton-inner-padding) * 2 * (var(--toolbar-btn-count) + 1)));
+        --sol-titlebutton-width: 30px;
+        --sol-toolbar-space: 0px;
+    }
+    @media (-moz-gtk-csd-minimize-button),
+    (-moz-gtk-csd-maximize-button),
+    (-moz-gtk-csd-close-button) {
+        :root {
+            --sol-toolbar-space: var(--sol-titlebutton-width) !important;
+        }
+    }
+    @media (-moz-gtk-csd-minimize-button) and (-moz-gtk-csd-close-button),
+    (-moz-gtk-csd-maximize-button) and (-moz-gtk-csd-close-button),
+    (-moz-gtk-csd-minimize-button) and (-moz-gtk-csd-maximize-button) {
+        :root {
+            --sol-toolbar-space: calc(var(--sol-titlebutton-width) * 2) !important;
+        }
+    }
+    @media (-moz-gtk-csd-close-button) and (-moz-gtk-csd-maximize-button) and (-moz-gtk-csd-minimize-button) {
+        :root {
+            --sol-toolbar-space: calc(var(--sol-titlebutton-width) * 3) !important;
+        }
     }
 
     window,
-    #main-window,
     #TabsToolbar,
     #sidebar-box,
     #nav-bar {
@@ -84,14 +104,30 @@
     .titlebar-spacer { display: none !important; }
     .titlebar-buttonbox-container { display: -moz-inline-box !important; }
 
-    /* move tabs bar over */
-    #TabsToolbar {
-        margin-left: var(--sol-toolbar-width) !important;
+    /* move toolbars into one-line */
+    @media (-moz-gtk-csd-reversed-placement) {
+        #TabsToolbar {
+            margin-left: calc(var(--sol-toolbar-width) + var(--sol-toolbar-space)) !important;
+        }
+        #nav-bar {
+            margin: calc((var(--urlbar-min-height) * -1) - 9px) calc(100vw - var(--sol-toolbar-width) + var(--toolbar-start-end-padding)) 0 var(--sol-toolbar-space) !important;
+            overflow: unset !important;
+        }
+        .titlebar-buttonbox-container {
+            left: 0 !important;
+            top: 4px !important;
+            position: absolute !important;
+            display: block !important;
+            z-index: 99 !important;
+        }
     }
-
-    /* move entire nav bar  */
-    #nav-bar {
-        margin: calc((var(--urlbar-min-height) * -1) - 8px) calc(100vw - var(--sol-toolbar-width) + var(--toolbar-start-end-padding)) 0 0 !important;
+    @media not (-moz-gtk-csd-reversed-placement) {
+        #TabsToolbar {
+            margin-left: var(--sol-toolbar-width) !important;
+        }
+        #nav-bar {
+            margin: calc((var(--urlbar-min-height) * -1) - 9px) calc(100vw - var(--sol-toolbar-width) + var(--toolbar-start-end-padding)) 0 0 !important;
+        }
     }
     toolbarbutton {
         fill: var(--lwt-text-color) !important; /* use titlebar text colour */

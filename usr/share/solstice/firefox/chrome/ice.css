@@ -17,6 +17,15 @@
             --link-color-visited: COLORADAPTIVEBGLIGHT !important;
             --link-color-hover: color-mix(in srgb, WINDOWFGLIGHT 15%, COLORADAPTIVEBGLIGHT) !important;
             --link-color-active: color-mix(in srgb, WINDOWFGLIGHT 30%, COLORADAPTIVEBGLIGHT) !important;
+            --color-accent-primary: COLORADAPTIVEBGLIGHT !important;
+            --color-accent-primary-hover: color-mix(in srgb, WINDOWFGLIGHT 15%, COLORADAPTIVEBGLIGHT) !important;
+            --color-accent-primary-active: color-mix(in srgb, WINDOWFGLIGHT 30%, COLORADAPTIVEBGLIGHT) !important;
+
+            --toggle-background-color-pressed: COLORADAPTIVEBGLIGHT !important;
+            --toggle-dot-background-color-on-pressed: COLORADAPTIVEFGLIGHT !important;
+            --toggle-background-color-pressed-hover: color-mix(in srgb, WINDOWFGLIGHT 15%, COLORADAPTIVEBGLIGHT) !important;
+            --toggle-background-color-pressed-active: color-mix(in srgb, WINDOWFGLIGHT 30%, COLORADAPTIVEBGLIGHT) !important;
+            --border-interactive-color: color-mix(in srgb, WINDOWFGLIGHT 55%, WINDOWBGLIGHT) !important;
 
             --in-content-primary-button-background: COLORADAPTIVEBGLIGHT !important;
             --in-content-primary-button-text-color: COLORADAPTIVEFGLIGHT !important;
@@ -108,6 +117,15 @@
             --link-color-visited: COLORADAPTIVEBGDARK !important;
             --link-color-hover: color-mix(in srgb, WINDOWFGDARK 15%, COLORADAPTIVEBGDARK) !important;
             --link-color-active: color-mix(in srgb, WINDOWFGDARK 30%, COLORADAPTIVEBGDARK) !important;
+            --color-accent-primary: COLORADAPTIVEBGDARK !important;
+            --color-accent-primary-hover: color-mix(in srgb, WINDOWFGDARK 15%, COLORADAPTIVEBGDARK) !important;
+            --color-accent-primary-active: color-mix(in srgb, WINDOWFGDARK 30%, COLORADAPTIVEBGDARK) !important;
+
+            --toggle-background-color-pressed: COLORADAPTIVEBGDARK !important;
+            --toggle-dot-background-color-on-pressed: COLORADAPTIVEFGDARK !important;
+            --toggle-background-color-pressed-hover: color-mix(in srgb, WINDOWFGDARK 15%, COLORADAPTIVEBGDARK) !important;
+            --toggle-background-color-pressed-active: color-mix(in srgb, WINDOWFGDARK 30%, COLORADAPTIVEBGDARK) !important;
+            --border-interactive-color: color-mix(in srgb, WINDOWFGDARK 55%, WINDOWBGDARK) !important;
 
             --in-content-primary-button-background: COLORADAPTIVEBGDARK !important;
             --in-content-primary-button-text-color: COLORADAPTIVEFGDARK !important;

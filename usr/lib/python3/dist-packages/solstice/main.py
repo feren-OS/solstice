@@ -98,12 +98,14 @@ class main:
             except Exception as e:
                 raise SolsticeModuleException(_("Failed to create the user's Solstice Profiles folder: %s") % e)
 
+        needflatpakperms = False
         if not os.path.isdir(variables.solstice_profiles_directory + "/%s" % iteminfo["id"]): #Now create the directory for this website application's profiles to go
             try:
                 os.mkdir(variables.solstice_profiles_directory + "/%s" % iteminfo["id"])
+
                 #If Flatpak, grant access to the profiles directory
                 if "flatpak" in variables.sources[iteminfo["browsertype"]][iteminfo["browser"]]:
-                    utils.set_flatpak_permissions(iteminfo["id"], iteminfo["name"], iteminfo["browsertype"], iteminfo["browser"])
+                    needflatpakperms = True
             except Exception as e:
                 raise SolsticeModuleException(_("Failed to create the application's Solstice Profiles folder: %s") % e)
 
@@ -138,7 +140,7 @@ class main:
                 raise SolsticeModuleException(_("Failed to write to .solstice-settings"))
 
             #Check if this config is for a Flatpak, and if so update the permissions on it
-            if "flatpak" in variables.sources[iteminfo["browsertype"]][iteminfo["browser"]]:
+            if "flatpak" in variables.sources[iteminfo["browsertype"]][iteminfo["browser"]] and needflatpakperms == False:
                 #Remove old Downloads directory permissions
                 targetfile = os.path.expanduser("~") + "/.local/share/flatpak/overrides/" + variables.sources[iteminfo["browsertype"]][iteminfo["browser"]]["flatpak"]
                 if not os.path.isfile(targetfile):
@@ -158,6 +160,9 @@ class main:
                         fp.write("".join(newcontents))
                 #Then add in the new directory permissions
                 os.system('/usr/bin/flatpak override --user {0} --filesystem="{1}/{2}"'.format(variables.sources[iteminfo["browsertype"]][iteminfo["browser"]]["flatpak"], targetdir, itemconfs["downloadsname"]))
+
+        if needflatpakperms == True:
+            utils.set_flatpak_permissions(iteminfo["id"], iteminfo["name"], iteminfo["browsertype"], iteminfo["browser"])
 
 
     #### PROFILE CREATION / UPDATING
