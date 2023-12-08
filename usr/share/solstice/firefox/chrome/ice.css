@@ -337,7 +337,8 @@
     }
 
     /* INCOGNITO */
-    [lwt-default-theme-in-dark-mode="true"][privatebrowsingmode="temporary"] {
+    [privatebrowsingmode="temporary"]:not(:-moz-lwtheme),
+    [privatebrowsingmode="temporary"]:not(:-moz-lwtheme) * {
         --lwt-accent-color: WINDOWBGPRIVATE !important;
         --lwt-text-color: WINDOWFGPRIVATE !important;
         --toolbar-bgcolor: TABBGPRIVATE !important;

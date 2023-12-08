@@ -46,6 +46,7 @@ user_pref("browser.tabs.firefox-view", false);
 user_pref("browser.tabs.inTitlebar", 1);
 user_pref("browser.tabs.tabmanager.enabled", false);
 user_pref("browser.tabs.warnOnClose", false);
+user_pref("browser.theme.dark-private-windows", false);
 user_pref("browser.uiCustomization.state", "{\"placements\":{\"widget-overflow-fixed-list\":[],\"nav-bar\":[\"back-button\",\"stop-reload-button\",\"fxa-toolbar-menu-button\"],\"toolbar-menubar\":[\"menubar-items\"],\"TabsToolbar\":[\"tabbrowser-tabs\",\"new-tab-button\",\"alltabs-button\",\"downloads-button\"],\"PersonalToolbar\":[\"import-button\",\"personal-bookmarks\"]},\"seen\":[\"save-to-pocket-button\",\"developer-button\"],\"dirtyAreaCache\":[\"nav-bar\",\"PersonalToolbar\",\"toolbar-menubar\",\"TabsToolbar\"],\"currentVersion\":19,\"newElementCount\":6}");
 user_pref("browser.uidensity", 1);
 user_pref("browser.urlbar.eventTelemetry.enabled", false);

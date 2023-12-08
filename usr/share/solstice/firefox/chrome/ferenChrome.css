@@ -40,8 +40,8 @@
 
     /* Consistent rounding for rounded window option */
     @media (-moz-bool-pref: "widget.gtk.rounded-bottom-corners.enabled") { /*browser.css:64, Firefox 120*/
-        body,
-        dialog::backdrop {
+        :root[tabsintitlebar][sizemode="normal"]:not([gtktiledwindow="true"]) body,
+        :root[tabsintitlebar][sizemode="normal"]:not([gtktiledwindow="true"]) dialog::backdrop {
             border-radius: calc(env(-moz-gtk-csd-titlebar-radius) - 2px) !important;
         }
     }
