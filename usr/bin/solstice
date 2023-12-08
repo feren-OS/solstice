@@ -307,8 +307,6 @@ class SolsticeGUI(QApplication):
         #editProfileHeader is changed when visiting the page
         self.mainwnd.findChild(QObject, "editProfileSubheader").setProperty('text', _("Choose your name, and options for your profile.\nOnce you are done. press Finish below."))
         self.mainwnd.findChild(QObject, "editProfileNameHint").setProperty('text', _("Profile name"))
-        self.mainwnd.findChild(QObject, "forceDarkMode").setProperty('text', _("Always use dark mode"))
-        #forceDarkModeHint is changed by refreshBrowserFeatures
         self.mainwnd.findChild(QObject, "noCache").setProperty('text', _("Disable browser cache"))
         #noCacheHint is changed by refreshBrowserFeatures
         self.mainwnd.findChild(QObject, "browsersHeader").setProperty('text', _("Choose a browser to launch %s") % self.info["name"])
@@ -427,13 +425,6 @@ class SolsticeGUI(QApplication):
             self.maineng.rootContext().setContextProperty('bonusesAvailable', True)
         else:
             self.maineng.rootContext().setContextProperty('bonusesAvailable', False)
-        #Dark mode option
-        if utils.is_feature_available(self.browsertype, self.browser, "darkmodeavailable"):
-            self.mainwnd.findChild(QObject, "forceDarkMode").setProperty('enabled', True)
-            self.mainwnd.findChild(QObject, "forceDarkModeHint").setProperty('text', _("Only works on compatible applications"))
-        else:
-            self.mainwnd.findChild(QObject, "forceDarkMode").setProperty('enabled', False)
-            self.mainwnd.findChild(QObject, "forceDarkModeHint").setProperty('text', _("Not available on %s") % variables.sources[self.browsertype][self.browser]["name"])
         #No cache option
         if utils.is_feature_available(self.browsertype, self.browser, "nocacheavailable"):
             self.mainwnd.findChild(QObject, "noCache").setProperty('enabled', True)
@@ -568,16 +559,15 @@ class SolsticeGUI(QApplication):
             self.mainwnd.findChild(QObject, "editProfileNameError").setProperty('text', _("Please enter a name for this profile"))
             return
 
-        darkmode = self.mainwnd.findChild(QObject, "forceDarkMode").property('checked')
         nocache = self.mainwnd.findChild(QObject, "noCache").property('checked')
         try:
             if self.lastedited == "": #New profile
                 profileid = utils.profileid_generate(self.profilesdir, self.mainwnd.findChild(QObject, "editProfileName").property('text'))
                 #'Update' profile to give it its initial configurations
-                self.main.update_profile(self.info, newname, profileid, darkmode, nocache, self.itemconfs["lastdownloadsdir"], self.itemconfs["downloadsname"])
+                self.main.update_profile(self.info, newname, profileid, nocache, self.itemconfs["lastdownloadsdir"], self.itemconfs["downloadsname"])
             else:
                 outdated = utils.get_profile_outdated(self.lastedited, self.info["id"], self.info["lastupdated"], self.browser, self.itemconfs["lastdownloadsdir"])
-                self.main.batch_set_profilesettings(self.browsertype, utils.get_profilepath(self.info["id"], self.lastedited), self.info["name"], newname, outdated, darkmode, nocache)
+                self.main.batch_set_profilesettings(self.browsertype, utils.get_profilepath(self.info["id"], self.lastedited), self.info["name"], newname, outdated, nocache)
         except Exception as e:
             self.mainwnd.findChild(QObject, "editProfileNameError").setProperty('text', _("Failed to save changes"))
             print(_("Failed to save changes: %s") % e)
@@ -604,21 +594,19 @@ class SolsticeGUI(QApplication):
             self.mainwnd.findChild(QObject, "editProfileHeader").setProperty('text', _("Create a profile"))
             self.mainwnd.findChild(QObject, "deleteProfileBtn").setProperty('enabled', False)
             self.mainwnd.findChild(QObject, "editProfileName").setProperty('text', "")
-            self.mainwnd.findChild(QObject, "forceDarkMode").setProperty('checked', False)
             self.mainwnd.findChild(QObject, "noCache").setProperty('checked', False)
         else:
-            profilename, nocache, darkmode = utils.get_profile_settings(self.info["id"], profileid) #Getting necessary values
+            profilename, nocache = utils.get_profile_settings(self.info["id"], profileid) #Getting necessary values
             self.mainwnd.findChild(QObject, "editProfileHeader").setProperty('text', _("Configuring %s") % profilename)
             self.mainwnd.findChild(QObject, "deleteProfileBtn").setProperty('enabled', True)
             self.mainwnd.findChild(QObject, "editProfileName").setProperty('text', profilename)
-            self.mainwnd.findChild(QObject, "forceDarkMode").setProperty('checked', darkmode)
             self.mainwnd.findChild(QObject, "noCache").setProperty('checked', nocache)
         self.mainwnd.findChild(QObject, "pages").setProperty('currentIndex', 2)
         self.mainwnd.findChild(QObject, "editProfileName").forceActiveFocus(True)
 
     def updateProfile(self, profileid):
-        profilename, nocache, darkmode = utils.get_profile_settings(self.info["id"], profileid) #Getting necessary values
-        self.main.update_profile(self.info, profilename, profileid, darkmode, nocache, self.itemconfs["lastdownloadsdir"], self.itemconfs["downloadsname"])
+        profilename, nocache = utils.get_profile_settings(self.info["id"], profileid) #Getting necessary values
+        self.main.update_profile(self.info, profilename, profileid, nocache, self.itemconfs["lastdownloadsdir"], self.itemconfs["downloadsname"])
 
     def gotoProfiles(self):
         if self.profilesmodel.profiles == []: #Jump to profile creator if there are no profiles

@@ -13,7 +13,7 @@ import shutil
 class SolsticeFirefoxException(Exception):
     pass
 
-def update_profile(iteminfo, extrawebsites, profilename, profilepath, darkmode, nocache, downloadsdir, downloadsname):
+def update_profile(iteminfo, extrawebsites, profilename, profilepath, nocache, downloadsdir, downloadsname):
     if not os.path.isdir("%s/chrome" % profilepath):
         try:
             os.mkdir("%s/chrome" % profilepath)
@@ -57,15 +57,6 @@ def change_profile_name(profilepath, itemname, value, patchvar=False, vartopatch
         return #No visible profile name value to modify on Firefox's side, far as I know
     else:
         return vartopatch #So spit back out the unmodified variable here to prevent the variable Noneing after this call finishes
-
-
-#Dark Mode
-def set_profile_darkmode(profilepath, value, patchvar=False, vartopatch={}):
-    #string, bool
-    if not os.path.isdir(profilepath):
-        raise SolsticeFirefoxException(_("The profile %s does not exist") % profilepath.split("/")[-1])
-
-    raise SolsticeFirefoxException(_("Dark Mode is not available in Mozilla Firefox and its forks. Developers: Make sure your program checks for the 'darkmodeavailable' value in metadata."))
 
 
 #No Cache

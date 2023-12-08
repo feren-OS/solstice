@@ -14,7 +14,7 @@ import shutil
 class SolsticeChromiumException(Exception):
     pass
 
-def update_profile(iteminfo, extrawebsites, profilename, profilepath, darkmode, nocache, downloadsdir, downloadsname):
+def update_profile(iteminfo, extrawebsites, profilename, profilepath, nocache, downloadsdir, downloadsname):
     #dict, list, string, string, bool, bool
     if not os.path.isdir("%s/Default" % profilepath):
         try:
@@ -41,6 +41,25 @@ def update_profile(iteminfo, extrawebsites, profilename, profilepath, darkmode, 
                     if i in result["webkit"]["webprefs"]["fonts"]:
                         if "Zyyy" in result["webkit"]["webprefs"]["fonts"][i]:
                             defaultprefs["webkit"]["webprefs"]["fonts"][i].pop("Zyyy")
+    #Don't override theme settings if they're manually changed
+    if "extensions" in result: #Current theme
+        if "theme" in result["extensions"]:
+            if "id" in result["extensions"]["theme"]:
+                defaultprefs["extensions"]["theme"].pop("id")
+    if "vivaldi" in result: #Current theme (Vivaldi)
+        if "themes" in result["vivaldi"]:
+            if "current" in result["vivaldi"]["themes"]:
+                defaultprefs["vivaldi"]["themes"].pop("current")
+        if "theme" in result["vivaldi"]:
+            if "schedule" in result["vivaldi"]["theme"]:
+                if "enabled" in result["vivaldi"]["theme"]["schedule"]:
+                    defaultprefs["vivaldi"]["theme"]["schedule"].pop("enabled")
+                if "o_s" in result["vivaldi"]["theme"]["schedule"]:
+                    for i in "dark", "light":
+                        if i in result["vivaldi"]["theme"]["schedule"]["o_s"] and\
+                        result["vivaldi"]["theme"]["schedule"]["o_s"][i] != "ice" and\
+                        result["vivaldi"]["theme"]["schedule"]["o_s"][i] != "ice-dark":
+                            defaultprefs["vivaldi"]["theme"]["schedule"]["o_s"].pop(i)
     #Update configurations in Preferences
     result = utils.dict_recurupdate(result, defaultprefs)
 
@@ -56,9 +75,6 @@ def update_profile(iteminfo, extrawebsites, profilename, profilepath, darkmode, 
 
     #Set the profile's name
     result = change_profile_name(profilepath, iteminfo["name"], profilename, True, result)
-
-    #Set dark theme preference
-    result = set_profile_darkmode(profilepath, darkmode, True, result)
 
     #Set no cache preference
     result = set_profile_nocache(profilepath, nocache, True, result)
@@ -160,63 +176,6 @@ def change_profile_name_ls(profilepath, patchvar=False, vartopatch={}):
                 fp.write(json.dumps(result, separators=(',', ':')))
         except Exception as exceptionstr:
             raise SolsticeChromiumException(_("Failed to write to Local State"))
-    else:
-        return result
-
-
-#Dark Mode
-def set_profile_darkmode(profilepath, value, patchvar=False, vartopatch={}):
-    #string, bool
-    if not os.path.isdir(profilepath):
-        raise SolsticeChromiumException(_("The profile %s does not exist") % profilepath.split("/")[-1])
-    PreferencesFile = "%s/Default/Preferences" % profilepath
-
-    if patchvar == False: #Allow this to also be used in update_profile without causing an additional file-write
-        result = {}
-        if os.path.isfile(PreferencesFile): #Load old Preferences into variable if one exists
-            with open(PreferencesFile, 'r') as fp:
-                result = json.loads(fp.read())
-    else:
-        result = vartopatch
-
-    defaultprefs = {}
-    with open("/usr/share/solstice/chromium/Preferences", 'r') as fp: #Also load default theme preferences, so we can patch
-        defaultprefs = json.loads(fp.read())["darkoption"]
-
-    #Override values if dark mode is enabled
-    if value == True:
-        defaultprefs["vivaldi"]["theme"]["schedule"]["o_s"]["light"] = "ice-dark"
-        defaultprefs["vivaldi"]["themes"]["current"] = "ice-dark"
-
-    #Don't override theme settings if they're manually changed
-    if "extensions" in result: #Current theme
-        if "theme" in result["extensions"]:
-            if "id" in result["extensions"]["theme"]:
-                defaultprefs["extensions"]["theme"].pop("id")
-    if "vivaldi" in result: #Current theme (Vivaldi)
-        if "themes" in result["vivaldi"]:
-            if "current" in result["vivaldi"]["themes"]:
-                defaultprefs["vivaldi"]["themes"].pop("current")
-        if "theme" in result["vivaldi"]:
-            if "schedule" in result["vivaldi"]["theme"]:
-                if "enabled" in result["vivaldi"]["theme"]["schedule"]:
-                    defaultprefs["vivaldi"]["theme"]["schedule"].pop("enabled")
-                if "o_s" in result["vivaldi"]["theme"]["schedule"]:
-                    for i in "dark", "light":
-                        if i in result["vivaldi"]["theme"]["schedule"]["o_s"] and\
-                        result["vivaldi"]["theme"]["schedule"]["o_s"][i] != "ice" and\
-                        result["vivaldi"]["theme"]["schedule"]["o_s"][i] != "ice-dark":
-                            defaultprefs["vivaldi"]["theme"]["schedule"]["o_s"].pop(i)
-    #Update configurations in Preferences
-    result = utils.dict_recurupdate(result, defaultprefs)
-
-    if patchvar == False:
-        #Save to the Preferences file
-        try:
-            with open(PreferencesFile, 'w') as fp:
-                fp.write(json.dumps(result, separators=(',', ':')))
-        except Exception as exceptionstr:
-            raise SolsticeChromiumException(_("Failed to write to Preferences"))
     else:
         return result
 

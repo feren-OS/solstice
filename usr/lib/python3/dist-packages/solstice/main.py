@@ -35,18 +35,13 @@ class main:
         if browser in variables.sources[browsertype]:
             commandtorun = variables.sources[browsertype][browser]["command"]
             #Check for configs
-            darkmode, nocache = False, False
+            nocache = False
             if os.path.isfile(profilepath + "/.solstice-settings"):
                 with open(profilepath + "/.solstice-settings", 'r') as fp:
                     solsettings = json.loads(fp.read())
-                    if "darkmode" in solsettings:
-                        darkmode = solsettings["darkmode"]
                     if "nocache" in solsettings:
                         nocache = solsettings["nocache"]
             #Append and prepend to command as according to the selected preferences
-            if darkmode == True:
-                commandtorun = variables.sources[browsertype][browser]["darkmodeprefix"] + commandtorun
-                commandtorun = commandtorun + variables.sources[browsertype][browser]["darkmodesuffix"]
             if nocache == True:
                 commandtorun = variables.sources[browsertype][browser]["nocacheprefix"] + commandtorun
                 commandtorun = commandtorun + variables.sources[browsertype][browser]["nocachesuffix"]
@@ -166,7 +161,7 @@ class main:
 
 
     #### PROFILE CREATION / UPDATING
-    def update_profile(self, iteminfo, profilename, profileid, darkmode, nocache, downloadsdir, downloadsname):
+    def update_profile(self, iteminfo, profilename, profileid, nocache, downloadsdir, downloadsname):
         #NOTE: Also used to generate a new profile
         profilepath = utils.get_profilepath(iteminfo["id"], profileid)
 
@@ -189,10 +184,10 @@ class main:
 
         if iteminfo["browsertype"] == "chromium":
             from . import chromium
-            chromium.update_profile(iteminfo, iteminfo["extrawebsites"], profilename, profilepath, darkmode, nocache, downloadsdir, downloadsname)
+            chromium.update_profile(iteminfo, iteminfo["extrawebsites"], profilename, profilepath, nocache, downloadsdir, downloadsname)
         elif iteminfo["browsertype"] == "firefox":
             from . import firefox
-            firefox.update_profile(iteminfo, iteminfo["extrawebsites"], profilename, profilepath, darkmode, nocache, downloadsdir, downloadsname)
+            firefox.update_profile(iteminfo, iteminfo["extrawebsites"], profilename, profilepath, nocache, downloadsdir, downloadsname)
 
         #Make note of the profile name and last updated configs
         profileconfs = {}
@@ -204,8 +199,6 @@ class main:
         profileconfs["readablename"] = profilename
         #...no-cache preference,
         profileconfs["nocache"] = nocache
-        #...and dark-mode preference,
-        profileconfs["darkmode"] = darkmode
         #...and update lastupdated values, and save .solstice-settings.
         profileconfs["lastupdatedshortcut"] = int(iteminfo["lastupdated"])
         profileconfs["lastupdatedsolstice"] = int(variables.solstice_lastupdated)
@@ -251,34 +244,6 @@ class main:
         except Exception as exceptionstr:
             raise SolsticeModuleException(_("Failed to write to .solstice-settings"))
 
-    def set_profile_darkmode(self, browsertype, profilepath, value, outdated=False, returnonly=False):
-        #string, boolean
-
-        if outdated == False: #If the profile is outdated, the changes made per browser will be made when the profile gets updated on launch,
-            #thus, we save a write to disk by just skipping those aforementioned changes in here
-            if browsertype == "chromium":
-                from . import chromium
-                chromium.set_profile_darkmode(profilepath, value)
-            elif browsertype == "firefox":
-                pass #Not available in Firefox currently
-                #from . import firefox
-                #firefox.set_profile_darkmode(profilepath, value)
-
-        if returnonly:
-            return
-
-        #Update solstice-settings to reaffirm this change
-        profileconfs = {}
-        if os.path.isfile("%s/.solstice-settings" % profilepath):
-            with open("%s/.solstice-settings" % profilepath, 'r') as fp:
-                profileconfs = json.loads(fp.read())
-        profileconfs["darkmode"] = value
-        try:
-            with open("%s/.solstice-settings" % profilepath, 'w') as fp:
-                fp.write(json.dumps(profileconfs, separators=(',', ':')))
-        except Exception as exceptionstr:
-            raise SolsticeModuleException(_("Failed to write to .solstice-settings"))
-
     def set_profile_nocache(self, browsertype, profilepath, value, outdated=False, returnonly=False):
         #string, boolean
 
@@ -305,10 +270,9 @@ class main:
         except Exception as exceptionstr:
             raise SolsticeModuleException(_("Failed to write to .solstice-settings"))
 
-    def batch_set_profilesettings(self, browsertype, profilepath, itemname, newname, outdated, darkmode, nocache):
+    def batch_set_profilesettings(self, browsertype, profilepath, itemname, newname, outdated, nocache):
         self.change_profile_name(browsertype, profilepath, itemname, newname, outdated, True)
-        self.set_profile_darkmode(browsertype, profilepath, darkmode, outdated, True)
-        self.set_profile_nocache(browsertype, profilepath, darkmode, outdated, True)
+        self.set_profile_nocache(browsertype, profilepath, nocache, outdated, True)
         #By doing things this way, we prevent 2 extra file writes
 
         #Update solstice-settings to reaffirm these changes
@@ -317,7 +281,6 @@ class main:
             with open("%s/.solstice-settings" % profilepath, 'r') as fp:
                 profileconfs = json.loads(fp.read())
         profileconfs["readablename"] = newname
-        profileconfs["darkmode"] = darkmode
         profileconfs["nocache"] = nocache
         try:
             with open("%s/.solstice-settings" % profilepath, 'w') as fp:

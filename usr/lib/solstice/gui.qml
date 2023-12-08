@@ -347,20 +347,7 @@ ApplicationWindow {
                 }
                 spacing: 0
 
-                CheckBox {
-                    id: forceDarkMode
-                    objectName: "forceDarkMode"
-                    text: "FORCEDARKMODE" // Changed by solstice
-                }
-                Label {
-                    id: forceDarkModeHint
-                    objectName: "forceDarkModeHint"
-                    text: "FORCEDARKMODEHINT"
-                    wrapMode: Text.WordWrap
-                    elide: Text.ElideRight
-                    font.pointSize: Kirigami.Theme.smallFont.pointSize
-                }
-                Item { height: Kirigami.Units.smallSpacing }
+                // Item { height: Kirigami.Units.smallSpacing }
                 CheckBox {
                     id: noCache
                     objectName: "noCache"

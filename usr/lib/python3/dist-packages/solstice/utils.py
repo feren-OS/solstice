@@ -153,7 +153,7 @@ def create_profile_folder(itemid, profileid):
         os.mkdir("{0}/{1}/{2}".format(variables.solstice_profiles_directory, itemid, profileid))
 
 def get_profile_settings(itemid, profileid):
-    #Returns: readablename, nocache, darkmode
+    #Returns: readablename, nocache
     profiledir = get_profilepath(itemid, profileid)
     if not os.path.isfile("%s/.solstice-settings" % profiledir):
         return profileid, False, False
@@ -168,11 +168,7 @@ def get_profile_settings(itemid, profileid):
         result["nocache"] = profileconfs["nocache"]
     else:
         result["nocache"] = False
-    if "darkmode" in profileconfs:
-        result["darkmode"] = profileconfs["darkmode"]
-    else:
-        result["darkmode"] = False
-    return result["readablename"], result["nocache"], result["darkmode"]
+    return result["readablename"], result["nocache"]
 
 def get_profile_outdated(profileid, itemid, shortcutlastupdated, browserid, downloadsdir):
     profilepath = get_profilepath(itemid, profileid)
