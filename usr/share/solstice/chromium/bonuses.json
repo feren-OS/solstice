@@ -76,14 +76,14 @@
                         "api": [ "downloads", "downloadsInternal", "history", "storage" ],
                         "explicit_host": [ "*://*/*" ],
                         "manifest_permissions": [],
-                        "scriptable_host": [ "<all_urls>", "https://*/search*", "https://duckduckgo.com/*" ]
+                        "scriptable_host": ["\u003Call_urls>", "https://*/search*", "https://duckduckgo.com/*"]
                     },
                     "from_webstore": true,
                     "granted_permissions": {
-                        "api": [ "downloads", "downloadsInternal", "history", "storage" ],
+                        "api": [ "downloads", "history", "storage" ],
                         "explicit_host": [ "*://*/*" ],
                         "manifest_permissions": [],
-                        "scriptable_host": [ "<all_urls>", "https://*/search*", "https://duckduckgo.com/*" ]
+                        "scriptable_host": ["\u003Call_urls>", "https://*/search*", "https://duckduckgo.com/*"]
                     },
                     "incognito": true,
                     "location": 1,

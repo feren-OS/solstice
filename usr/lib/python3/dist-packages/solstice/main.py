@@ -161,7 +161,7 @@ class main:
 
 
     #### PROFILE CREATION / UPDATING
-    def update_profile(self, iteminfo, profilename, profileid, nocache, downloadsdir, downloadsname):
+    def update_profile(self, iteminfo, profilename, profileid, nocache, skiptheme, downloadsdir, downloadsname):
         #NOTE: Also used to generate a new profile
         profilepath = utils.get_profilepath(iteminfo["id"], profileid)
 
@@ -184,10 +184,10 @@ class main:
 
         if iteminfo["browsertype"] == "chromium":
             from . import chromium
-            chromium.update_profile(iteminfo, iteminfo["extrawebsites"], profilename, profilepath, nocache, downloadsdir, downloadsname)
+            chromium.update_profile(iteminfo, iteminfo["extrawebsites"], profilename, profilepath, nocache, skiptheme, downloadsdir, downloadsname)
         elif iteminfo["browsertype"] == "firefox":
             from . import firefox
-            firefox.update_profile(iteminfo, iteminfo["extrawebsites"], profilename, profilepath, nocache, downloadsdir, downloadsname)
+            firefox.update_profile(iteminfo, iteminfo["extrawebsites"], profilename, profilepath, nocache, skiptheme, downloadsdir, downloadsname)
 
         #Make note of the profile name and last updated configs
         profileconfs = {}

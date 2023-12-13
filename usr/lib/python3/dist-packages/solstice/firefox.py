@@ -13,7 +13,7 @@ import shutil
 class SolsticeFirefoxException(Exception):
     pass
 
-def update_profile(iteminfo, extrawebsites, profilename, profilepath, nocache, downloadsdir, downloadsname):
+def update_profile(iteminfo, extrawebsites, profilename, profilepath, nocache, skiptheme, downloadsdir, downloadsname):
     if not os.path.isdir("%s/chrome" % profilepath):
         try:
             os.mkdir("%s/chrome" % profilepath)
@@ -102,7 +102,7 @@ def firefox_set_ui(profilepath, bg, bgdark, accent, accentdark, color, colordark
     if not os.path.isdir(profilepath):
         raise SolsticeChromiumException(_("The profile %s does not exist") % profilepath.split("/")[-1])
 
-    for cfile in ["userContent.css", "userChrome.css", "ferenChrome.css", "ice.css"]:
+    for cfile in ["userContent.css", "userChrome.css", "GTKless.css", "ice.css"]:
         shutil.copy("/usr/share/solstice/firefox/chrome/" + cfile, profilepath + "/chrome/" + cfile)
 
     # Backgrounds

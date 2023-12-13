@@ -14,7 +14,7 @@ import shutil
 class SolsticeChromiumException(Exception):
     pass
 
-def update_profile(iteminfo, extrawebsites, profilename, profilepath, nocache, downloadsdir, downloadsname):
+def update_profile(iteminfo, extrawebsites, profilename, profilepath, nocache, skiptheme, downloadsdir, downloadsname):
     #dict, list, string, string, bool, bool
     if not os.path.isdir("%s/Default" % profilepath):
         try:
@@ -106,6 +106,10 @@ def update_profile(iteminfo, extrawebsites, profilename, profilepath, nocache, d
     # Custom CSS
     if os.path.isfile(os.path.expanduser("~") + "/.config/solstice/vivaldi.css"):
         shutil.copyfile(os.path.expanduser("~") + "/.config/solstice/vivaldi.css", "%s/CSS/vivaldi/custom.css" % profilepath)
+
+    #Remove theme if disabled on this browser
+    if skiptheme == True:
+        result["extensions"]["settings"].pop("pdcjjgefkpoemmlcjfcfkeminneboaob")
 
     #Save to the Preferences file
     try:

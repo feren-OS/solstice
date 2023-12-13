@@ -563,8 +563,9 @@ class SolsticeGUI(QApplication):
         try:
             if self.lastedited == "": #New profile
                 profileid = utils.profileid_generate(self.profilesdir, self.mainwnd.findChild(QObject, "editProfileName").property('text'))
+                skiptheme = utils.is_feature_available(self.browsertype, self.browser, "notheme")
                 #'Update' profile to give it its initial configurations
-                self.main.update_profile(self.info, newname, profileid, nocache, self.itemconfs["lastdownloadsdir"], self.itemconfs["downloadsname"])
+                self.main.update_profile(self.info, newname, profileid, nocache, skiptheme, self.itemconfs["lastdownloadsdir"], self.itemconfs["downloadsname"])
             else:
                 outdated = utils.get_profile_outdated(self.lastedited, self.info["id"], self.info["lastupdated"], self.browser, self.itemconfs["lastdownloadsdir"])
                 self.main.batch_set_profilesettings(self.browsertype, utils.get_profilepath(self.info["id"], self.lastedited), self.info["name"], newname, outdated, nocache)
@@ -606,7 +607,8 @@ class SolsticeGUI(QApplication):
 
     def updateProfile(self, profileid):
         profilename, nocache = utils.get_profile_settings(self.info["id"], profileid) #Getting necessary values
-        self.main.update_profile(self.info, profilename, profileid, nocache, self.itemconfs["lastdownloadsdir"], self.itemconfs["downloadsname"])
+        skiptheme = utils.is_feature_available(self.browsertype, self.browser, "notheme")
+        self.main.update_profile(self.info, profilename, profileid, nocache, skiptheme, self.itemconfs["lastdownloadsdir"], self.itemconfs["downloadsname"])
 
     def gotoProfiles(self):
         if self.profilesmodel.profiles == []: #Jump to profile creator if there are no profiles

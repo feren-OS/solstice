@@ -11,6 +11,7 @@
             "nocachesuffix": ["--media-cache-size=0", "--disk-cache-size=0", "--disk-cache-dir=/dev/null"],
             "nocacheavailable": true,
             "bonusesavailable": true,
+            "notheme": true,
             "expected-file": "/Local State"
         },
         "chrome": {
@@ -71,6 +72,7 @@
             "nocachesuffix": ["--media-cache-size=0", "--disk-cache-size=0", "--disk-cache-dir=/dev/null"],
             "nocacheavailable": true,
             "bonusesavailable": false,
+            "notheme": true,
             "flatpak": "com.github.Eloston.UngoogledChromium",
             "expected-file": "/Local State"
         }
