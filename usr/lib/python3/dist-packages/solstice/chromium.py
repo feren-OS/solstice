@@ -89,7 +89,7 @@ def update_profile(iteminfo, extrawebsites, profilename, profilepath, nocache, s
     result = chromi_set_bonuses(result, iteminfo["bonusids"])
 
     #Add theme colours to SSB (Vivaldi) and Chromium
-    result = chromi_set_colors(result, iteminfo["bg"], iteminfo["bgdark"], iteminfo["accent"], iteminfo["accentdark"], iteminfo["color"], iteminfo["colordark"], iteminfo["accentonwindow"])
+    result = chromi_set_colors(result, iteminfo["bg"], iteminfo["bgdark"], iteminfo["accent"], iteminfo["accentdark"], iteminfo["color"], iteminfo["colordark"], iteminfo["accentonwindow"], profilepath)
 
     #Add the Start Page Bookmark
     chromi_add_startpage(profilepath, iteminfo["name"], iteminfo["website"])
@@ -281,16 +281,65 @@ def chromi_set_bonuses(preferencedict, bonuses=[]):
 
 
 #Theme colouring
-def chromi_set_colors(preferencedict, bg, bgdark, accent, accentdark, color, colordark, accentonwindow):
+def chromi_set_colors(preferencedict, bg, bgdark, accent, accentdark, color, colordark, accentonwindow, profilepath):
     #dict, string, string, string, string, string, bool
 
-    #TODO: Figure out automating themes for Chrome to colour the windows by their 'color' colours
+    def color_to_rgb(hexcode, includefourth=False):
+        redc, greenc, bluec = tuple(int(hexcode[i:i+2], 16) for i in (1, 3, 5)) #Dodge the # character
+
+        return [redc, greenc, bluec] if includefourth == False else [redc, greenc, bluec, 1]
+
+    #Chromium and co.
+    if accentonwindow == True:
+        preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["bookmark_text"] = [0, 0, 0] if utils.color_is_light(bg) == True else [255, 255, 255] #Bookmark's text
+        preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["button_background"] = color_to_rgb(accent) #Titlebar buttons (unused)
+        preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["frame"] = color_to_rgb(accent) #Titlebar
+        preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["ntp_background"] = color_to_rgb(bg) #Self-explanatory
+        preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["ntp_link"] = [0, 0, 0] if utils.color_is_light(bg) == True else [255, 255, 255] #NTP link (unused)
+        preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["ntp_text"] = [0, 0, 0] if utils.color_is_light(bg) == True else [255, 255, 255] #NTP item-text
+        preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["tab_background_text"] = [0, 0, 0] if utils.color_is_light(accent) == True else [255, 255, 255] #Titlebar text
+        preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["tab_text"] = [0, 0, 0] if utils.color_is_light(bg) == True else [255, 255, 255] #Active tab's text
+        preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["toolbar"] = color_to_rgb(bg) #Toolbar
+    else:
+        preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["bookmark_text"] = [0, 0, 0] if utils.color_is_light(accent) == True else [255, 255, 255]
+        preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["button_background"] = color_to_rgb(bg)
+        preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["frame"] = color_to_rgb(bg)
+        preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["ntp_background"] = color_to_rgb(accent)
+        preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["ntp_link"] = [0, 0, 0] if utils.color_is_light(accent) == True else [255, 255, 255]
+        preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["ntp_text"] = [0, 0, 0] if utils.color_is_light(accent) == True else [255, 255, 255]
+        preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["tab_background_text"] = [0, 0, 0] if utils.color_is_light(bg) == True else [255, 255, 255]
+        preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["tab_text"] = [0, 0, 0] if utils.color_is_light(accent) == True else [255, 255, 255]
+        preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["toolbar"] = color_to_rgb(accent)
+
+    # Update the fake theme accordingly
+    if not os.path.isdir(profilepath + "/Default/Extensions"):
+        try:
+            os.mkdir(profilepath + "/Default/Extensions")
+        except Exception as e:
+            raise SolsticeChromiumException(_("Failed to create the profile's Chromium Extensions folder: %s") % e)
+    if os.path.isdir(profilepath + "/Default/Extensions/aghfnjkcakhmadgdomlmlhhaocbkloab"):
+        try:
+            shutil.rmtree(profilepath + "/Default/Extensions/aghfnjkcakhmadgdomlmlhhaocbkloab")
+        except Exception as e:
+            raise SolsticeChromiumException(_("Failed to prepare to update a profile dependency: %s") % e)
+    for i in ["/Default/Extensions/aghfnjkcakhmadgdomlmlhhaocbkloab", "/Default/Extensions/aghfnjkcakhmadgdomlmlhhaocbkloab/99_0"]:
+        try:
+            os.mkdir(profilepath + i)
+        except Exception as e:
+            raise SolsticeChromiumException(_("Failed to create a profile dependency folder: %s") % e)
+    try:
+        with open(profilepath + "/Default/Extensions/aghfnjkcakhmadgdomlmlhhaocbkloab/99_0/manifest.json", 'w') as fp:
+            result = {"key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqxThvdYeWk6kwfNo+/HoqQSkL6iBx48w28vEPXHdhJo8OHMxS7D+1W1nhUsv4hOnb1CM2TlP/Nh9G+1Z32R9r6RmVxD1Anq9ZTZpK7VHVUxExGR4X9+TYHKWk8VGAjSBmutvayf0i0gCEkh7Pdc68ex4M0ypKGFWxBzxqw2uQ/4BLMVB/9KZJwXOC5LcaBNgq2Q74J3Dd3a90OzFXh+vC9zIyDueu3/K4F6u5bXgsgviAGIrUm7YbGhLDMxuW81zvYMlLtkA4XDDnhgk88s0G/5OwoMEyU6YdMq9R795NHsI0bPUMOOgUsPT5cytKRcQMegMassBe9EB+ktTl9CloQIDAQAB", \
+                "manifest_version": 3, "name": "Solstice", "theme": {}, "version": "99"}
+            fp.write(json.dumps(result, separators=(',', ':')))
+    except Exception as exceptionstr:
+        raise SolsticeChromiumException(_("Failed to prepare a profile dependency"))
 
     #Vivaldi
-    bgprivate = utils.color_filter(color, -70.0)
     # Ensure 'colour' usage doesn't camoflague in the tab/dialogs colour
     coloradaptive = ("#000000" if utils.color_is_light(color) else "#FFFFFF") if not utils.are_colours_different(color, bg) else color
     coloradaptivedark = ("#000000" if utils.color_is_light(colordark) else "#FFFFFF") if not utils.are_colours_different(colordark, bgdark) else colordark
+    bgprivate = utils.color_filter(color, -70.0)
     preferencedict["vivaldi"]["themes"]["system"][0]["accentOnWindow"] = accentonwindow
     preferencedict["vivaldi"]["themes"]["system"][1]["accentOnWindow"] = accentonwindow
     preferencedict["vivaldi"]["themes"]["system"][2]["accentOnWindow"] = False

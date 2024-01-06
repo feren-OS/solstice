@@ -167,36 +167,32 @@
                     "was_installed_by_default": true,
                     "withholding_permissions": false
                 },
-                "pdcjjgefkpoemmlcjfcfkeminneboaob": {
+                "aghfnjkcakhmadgdomlmlhhaocbkloab": {
                     "location": 1,
                     "manifest": {
-                        "key": "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCEetbb+aZag1Su2EOp1gOdRwJd2mBJo5HqX6cdZzXOZ3Ag1eoXzMFVikqDH8dgOEyWUTwGXh5ruDHy9Nztg8oPIFfx6xPi5mrDjuENAK9GtBHEvHOdmwx8jU+dUNB/5Vx+Fs6ngIQLy9cFRQegVP8P9zwc6rO8w/KL1R8RQaLJDwIDAQAB",
-                        "name": "Modern Flat",
-                        "permissions": [],
-                        "update_url": "http://clients2.google.com/service/update2/crx",
-                        "version": "0.0",
-                        "manifest_version": 2,
+                        "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqxThvdYeWk6kwfNo+/HoqQSkL6iBx48w28vEPXHdhJo8OHMxS7D+1W1nhUsv4hOnb1CM2TlP/Nh9G+1Z32R9r6RmVxD1Anq9ZTZpK7VHVUxExGR4X9+TYHKWk8VGAjSBmutvayf0i0gCEkh7Pdc68ex4M0ypKGFWxBzxqw2uQ/4BLMVB/9KZJwXOC5LcaBNgq2Q74J3Dd3a90OzFXh+vC9zIyDueu3/K4F6u5bXgsgviAGIrUm7YbGhLDMxuW81zvYMlLtkA4XDDnhgk88s0G/5OwoMEyU6YdMq9R795NHsI0bPUMOOgUsPT5cytKRcQMegMassBe9EB+ktTl9CloQIDAQAB",
+                        "name": "Solstice",
+                        "version": "99",
+                        "manifest_version": 3,
                         "theme": {
                             "colors": {
-                                "bookmark_text": [33, 38, 41],
-                                "button_background": [0, 0, 0, 0],
-                                "frame": [33, 38, 41],
-                                "ntp_background": [255, 255, 255],
-                                "ntp_text": [104, 104, 104],
-                                "tab_background_text": [228, 228, 228],
-                                "tab_text": [33, 38, 41],
-                                "toolbar": [223, 223, 223]
-                            },
-                            "images": { "theme_frame": "images/theme_frame.png", "theme_tab_background": "images/theme_tab_background.png", "theme_toolbar": "images/theme_toolbar.png" },
-                            "properties": { "ntp_background_alignment": "bottom", "ntp_background_repeat": "no-repeat" },
-                            "tints": { "buttons": [0, 0, 0.5] }
+                                "bookmark_text": [0, 255, 219],
+                                "button_background": [136, 0, 255, 1],
+                                "frame": [158, 190, 255],
+                                "ntp_background": [255, 163, 163],
+                                "ntp_link": [255, 235, 0],
+                                "ntp_text": [255, 160, 0],
+                                "tab_background_text": [0, 0, 255],
+                                "tab_text": [0, 146, 255],
+                                "toolbar": [255, 0, 0]
+                            }
                         }
                     },
-                    "path": "pdcjjgefkpoemmlcjfcfkeminneboaob\\0.0",
+                    "path": "aghfnjkcakhmadgdomlmlhhaocbkloab/99_0",
                     "state": 1
                 }
             },
-            "theme": { "id": "pdcjjgefkpoemmlcjfcfkeminneboaob" }
+            "theme": { "id": "aghfnjkcakhmadgdomlmlhhaocbkloab" }
         },
         "homepage": "WEBSITEHERE",
         "homepage_is_newtabpage": false,
