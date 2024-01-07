@@ -93,6 +93,11 @@ def color_filter(hexcode, amount, multiply=False):
             else:
                 lumi += amount
 
+    if lumi == 255.0:
+        return "#FFFFFF"
+    elif lumi == 0.0:
+        return "#000000"
+
     redc, greenc, bluec = colorsys.hls_to_rgb(hue, lumi, sat) #Convert to RGB
     redc, greenc, bluec = int(redc), int(greenc), int(bluec) #Convert back to integers
     return '#%02x%02x%02x' % (redc, greenc, bluec) #Returns conversion to hexcode

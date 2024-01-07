@@ -16,6 +16,7 @@
         },
         "chrome": {
             "name": "Google Chrome",
+            "subtitle": "Follows the application's palette",
             "icon": "google-chrome",
             "required-file": ["/usr/bin/google-chrome"],
             "classprefix": "solstice:",
@@ -28,6 +29,7 @@
         },
         "msedge": {
             "name": "Microsoft Edge",
+            "subtitle": "Follows the application's palette",
             "icon": "microsoft-edge",
             "required-file": ["/usr/bin/microsoft-edge"],
             "classprefix": "solstice:",
@@ -40,6 +42,7 @@
         },
         "brave": {
             "name": "Brave",
+            "subtitle": "Follows the application's palette",
             "icon": "brave-browser",
             "required-file": ["/usr/bin/brave-browser"],
             "classprefix": "solstice:",
@@ -64,6 +67,7 @@
         },
         "ungoogled-chromium-flatpak": {
             "name": "Ungoogled Chromium",
+            "subtitle": "Follows the application's palette",
             "icon": "com.github.Eloston.UngoogledChromium",
             "required-file": ["/var/lib/flatpak/app/com.github.Eloston.UngoogledChromium/current/active/files/bin/chromium"],
             "classprefix": "solstice:",
@@ -72,7 +76,6 @@
             "nocachesuffix": ["--media-cache-size=0", "--disk-cache-size=0", "--disk-cache-dir=/dev/null"],
             "nocacheavailable": true,
             "bonusesavailable": false,
-            "notheme": true,
             "flatpak": "com.github.Eloston.UngoogledChromium",
             "expected-file": "/Local State"
         }

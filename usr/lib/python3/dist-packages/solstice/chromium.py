@@ -300,22 +300,34 @@ def chromi_set_colors(preferencedict, bg, bgdark, accent, accentdark, color, col
             preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["bookmark_text"] = [0, 0, 0] if utils.color_is_light(bg) == True else [255, 255, 255] #Bookmark's text
             preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["button_background"] = color_to_rgb(accent) #Titlebar buttons (unused)
             preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["frame"] = color_to_rgb(accent) #Titlebar
+            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["frame_inactive"] = color_to_rgb(accent) #Titlebar (inactive)
             preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["ntp_background"] = color_to_rgb(bg) #Self-explanatory
             preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["ntp_link"] = [0, 0, 0] if utils.color_is_light(bg) == True else [255, 255, 255] #NTP link (unused)
             preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["ntp_text"] = [0, 0, 0] if utils.color_is_light(bg) == True else [255, 255, 255] #NTP item-text
+            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["omnibox_background"] = color_to_rgb(utils.color_filter(bg, 15.3)) if utils.color_is_light(bg) == True else color_to_rgb(utils.color_filter(bg, -23.0)) #Omnibox
+            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["omnibox_text"] = [0, 0, 0] if utils.color_is_light(bg) == True else [255, 255, 255] #Omnibox text
             preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["tab_background_text"] = [0, 0, 0] if utils.color_is_light(accent) == True else [255, 255, 255] #Titlebar text
+            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["tab_background_text_inactive"] = [0, 0, 0] if utils.color_is_light(accent) == True else [255, 255, 255] #Titlebar text (inactive)
             preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["tab_text"] = [0, 0, 0] if utils.color_is_light(bg) == True else [255, 255, 255] #Active tab's text
             preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["toolbar"] = color_to_rgb(bg) #Toolbar
+            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["toolbar_button_icon"] = [0, 0, 0] if utils.color_is_light(bg) == True else [255, 255, 255] #Toolbar icons
+            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["toolbar_text"] = [0, 0, 0] if utils.color_is_light(bg) == True else [255, 255, 255] #Toolbar text
         else:
             preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["bookmark_text"] = [0, 0, 0] if utils.color_is_light(accent) == True else [255, 255, 255]
             preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["button_background"] = color_to_rgb(bg)
             preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["frame"] = color_to_rgb(bg)
+            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["frame_inactive"] = color_to_rgb(bg)
             preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["ntp_background"] = color_to_rgb(accent)
             preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["ntp_link"] = [0, 0, 0] if utils.color_is_light(accent) == True else [255, 255, 255]
             preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["ntp_text"] = [0, 0, 0] if utils.color_is_light(accent) == True else [255, 255, 255]
+            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["omnibox_background"] = color_to_rgb(bg)
+            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["omnibox_text"] = [0, 0, 0] if utils.color_is_light(bg) == True else [255, 255, 255]
             preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["tab_background_text"] = [0, 0, 0] if utils.color_is_light(bg) == True else [255, 255, 255]
+            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["tab_background_text_inactive"] = [0, 0, 0] if utils.color_is_light(bg) == True else [255, 255, 255]
             preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["tab_text"] = [0, 0, 0] if utils.color_is_light(accent) == True else [255, 255, 255]
             preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["toolbar"] = color_to_rgb(accent)
+            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["toolbar_button_icon"] = [0, 0, 0] if utils.color_is_light(accent) == True else [255, 255, 255]
+            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["toolbar_text"] = [0, 0, 0] if utils.color_is_light(accent) == True else [255, 255, 255]
 
         # Update the fake theme accordingly
         if not os.path.isdir(profilepath + "/Default/Extensions"):

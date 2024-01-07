@@ -179,12 +179,18 @@
                                 "bookmark_text": [0, 255, 219],
                                 "button_background": [136, 0, 255, 1],
                                 "frame": [158, 190, 255],
+                                "frame_inactive": [ 0, 0, 0 ],
                                 "ntp_background": [255, 163, 163],
                                 "ntp_link": [255, 235, 0],
                                 "ntp_text": [255, 160, 0],
+                                "omnibox_background": [ 84, 84, 84 ],
+                                "omnibox_text": [ 194, 194, 194 ],
                                 "tab_background_text": [0, 0, 255],
+                                "tab_background_text_inactive": [ 153, 153, 153 ],
                                 "tab_text": [0, 146, 255],
-                                "toolbar": [255, 0, 0]
+                                "toolbar": [255, 0, 0],
+                                "toolbar_button_icon": [ 194, 194, 194 ],
+                                "toolbar_text": [ 194, 194, 194 ]
                             }
                         }
                     },
