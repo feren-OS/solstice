@@ -204,11 +204,11 @@ def chromi_set_sitepermissions(preferencedict, itemid, ogwebsite, extrawebsites)
 
     #Set the permissions for default website in this SSB
     shortenedurl = utils.shorten_url(ogwebsite)
-    for permtype in ["ar", "autoplay", "automatic_downloads", "background_sync", "clipboard", "file_handling", "font_access", "local_fonts", "midi_sysex", "notifications", "payment_handler", "sensors", "sound", "sleeping-tabs", "window_placement", "vr"]:
+    for permtype in ["automatic_downloads", "autoplay", "background_sync", "clipboard", "cookies", "file_handling", "font_access", "images", "javascript", "local_fonts", "notifications", "payment_handler", "sensors", "sleeping-tabs", "sound", "window_placement"]:
         preferencedict["profile"]["content_settings"]["exceptions"][permtype] = {}
         preferencedict["profile"]["content_settings"]["exceptions"][permtype]["[*.]"+shortenedurl+",*"] = {"expiration": "0", "model": 0, "setting": 1}
         preferencedict["profile"]["content_settings"]["exceptions"][permtype][shortenedurl+",*"] = {"expiration": "0", "model": 0, "setting": 1}
-    for permtype in ["file_system_write_guard", "hid_guard"]:
+    for permtype in ["ar", "bluetooth_scanning", "file_system_write_guard", "geolocation", "hid_guard", "media_stream_camera", "media_stream_mic", "midi_sysex", "serial_guard", "storage_access", "usb_guard", "vr"]:
         preferencedict["profile"]["content_settings"]["exceptions"][permtype] = {}
         preferencedict["profile"]["content_settings"]["exceptions"][permtype]["[*.]"+shortenedurl+",*"] = {"expiration": "0", "model": 0, "setting": 3}
         preferencedict["profile"]["content_settings"]["exceptions"][permtype][shortenedurl+",*"] = {"expiration": "0", "model": 0, "setting": 3}
@@ -220,10 +220,10 @@ def chromi_set_sitepermissions(preferencedict, itemid, ogwebsite, extrawebsites)
             shortenedurl = shortenedurl.split("/")[0]
         except:
             pass
-        for permtype in ["ar", "autoplay", "automatic_downloads", "background_sync", "clipboard", "file_handling", "font_access", "local_fonts", "midi_sysex", "notifications", "payment_handler", "sensors", "sound", "sleeping-tabs", "window_placement", "vr"]:
+        for permtype in ["automatic_downloads", "autoplay", "background_sync", "clipboard", "cookies", "file_handling", "font_access", "images", "javascript", "local_fonts", "notifications", "payment_handler", "sensors", "sleeping-tabs", "sound", "window_placement"]:
             preferencedict["profile"]["content_settings"]["exceptions"][permtype]["[*.]"+shortenedurl+",*"] = {"expiration": "0", "model": 0, "setting": 1}
             preferencedict["profile"]["content_settings"]["exceptions"][permtype][shortenedurl+",*"] = {"expiration": "0", "model": 0, "setting": 1}
-        for permtype in ["file_system_write_guard", "hid_guard"]:
+        for permtype in ["ar", "bluetooth_scanning", "file_system_write_guard", "geolocation", "hid_guard", "media_stream_camera", "media_stream_mic", "midi_sysex", "serial_guard", "storage_access", "usb_guard", "vr"]:
             preferencedict["profile"]["content_settings"]["exceptions"][permtype]["[*.]"+shortenedurl+",*"] = {"expiration": "0", "model": 0, "setting": 3}
             preferencedict["profile"]["content_settings"]["exceptions"][permtype][shortenedurl+",*"] = {"expiration": "0", "model": 0, "setting": 3}
 
@@ -301,9 +301,9 @@ def chromi_set_colors(preferencedict, bg, bgdark, accent, accentdark, color, col
             preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["button_background"] = color_to_rgb(accent) #Titlebar buttons (unused)
             preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["frame"] = color_to_rgb(accent) #Titlebar
             preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["frame_inactive"] = color_to_rgb(accent) #Titlebar (inactive)
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["ntp_background"] = color_to_rgb(bg) #Self-explanatory
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["ntp_link"] = [0, 0, 0] if utils.color_is_light(bg) == True else [255, 255, 255] #NTP link (unused)
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["ntp_text"] = [0, 0, 0] if utils.color_is_light(bg) == True else [255, 255, 255] #NTP item-text
+            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["ntp_background"] = color_to_rgb(accent) #Self-explanatory
+            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["ntp_link"] = [0, 0, 0] if utils.color_is_light(accent) == True else [255, 255, 255] #NTP link (unused)
+            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["ntp_text"] = [0, 0, 0] if utils.color_is_light(accent) == True else [255, 255, 255] #NTP item-text
             preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["omnibox_background"] = color_to_rgb(utils.color_filter(bg, 15.3)) if utils.color_is_light(bg) == True else color_to_rgb(utils.color_filter(bg, -23.0)) #Omnibox
             preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["omnibox_text"] = [0, 0, 0] if utils.color_is_light(bg) == True else [255, 255, 255] #Omnibox text
             preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["tab_background_text"] = [0, 0, 0] if utils.color_is_light(accent) == True else [255, 255, 255] #Titlebar text
@@ -317,9 +317,9 @@ def chromi_set_colors(preferencedict, bg, bgdark, accent, accentdark, color, col
             preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["button_background"] = color_to_rgb(bg)
             preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["frame"] = color_to_rgb(bg)
             preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["frame_inactive"] = color_to_rgb(bg)
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["ntp_background"] = color_to_rgb(accent)
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["ntp_link"] = [0, 0, 0] if utils.color_is_light(accent) == True else [255, 255, 255]
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["ntp_text"] = [0, 0, 0] if utils.color_is_light(accent) == True else [255, 255, 255]
+            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["ntp_background"] = color_to_rgb(bg)
+            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["ntp_link"] = [0, 0, 0] if utils.color_is_light(bg) == True else [255, 255, 255]
+            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["ntp_text"] = [0, 0, 0] if utils.color_is_light(bg) == True else [255, 255, 255]
             preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["omnibox_background"] = color_to_rgb(bg)
             preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["omnibox_text"] = [0, 0, 0] if utils.color_is_light(bg) == True else [255, 255, 255]
             preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["tab_background_text"] = [0, 0, 0] if utils.color_is_light(bg) == True else [255, 255, 255]
