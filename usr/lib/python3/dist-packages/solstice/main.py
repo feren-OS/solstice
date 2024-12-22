@@ -14,276 +14,412 @@ from datetime import datetime
 import ast
 import time
 import shutil
+import filecmp
+import copy
 
 class SolsticeModuleException(Exception):
     pass
 class ProfileInUseException(Exception):
     pass
 
-class main:
-    def __init__(self):
-        pass
 
-    #### PROFILE EXECUTION
-    def run_profile(self, itemid, profileid, browser, browsertype, website, wmclass, nohistory=False, closecallback=None):
-        #string, string, string, string, bool
-        profilepath = utils.get_profilepath(itemid, profileid)
+def getBrowserModule(browsertype):
+    if browsertype == "chromium":
+        from . import chromium
+        return chromium
+    elif browsertype == "firefox":
+        from . import firefox
+        return firefox
 
-        if browsertype not in variables.sources:
-            raise SolsticeModuleException(_("Corrupt or incompatible data - %s is not a type of supported browser") % browsertype)
 
-        if browser in variables.sources[browsertype]:
-            commandtorun = variables.sources[browsertype][browser]["command"]
-            #Check for configs
-            nocache = False
-            if os.path.isfile(profilepath + "/.solstice-settings"):
-                with open(profilepath + "/.solstice-settings", 'r') as fp:
-                    solsettings = json.loads(fp.read())
-                    if "nocache" in solsettings:
-                        nocache = solsettings["nocache"]
-            #Append and prepend to command as according to the selected preferences
-            if nocache == True:
-                commandtorun = variables.sources[browsertype][browser]["nocacheprefix"] + commandtorun
-                commandtorun = commandtorun + variables.sources[browsertype][browser]["nocachesuffix"]
-            piececount = 0 #for loop right below
-            for piece in commandtorun:
-                #Translate arguments to their context-appropriate values
-                commandtorun[piececount] = piece.replace(
-                    "%WEBSITEURL%", website).replace(
-                    "%WINCLASS%", wmclass).replace(
-                    "%PROFILEDIR%", profilepath)
-                piececount += 1
+##########################################################
+# CSS Modding
+##########################################################
 
-            ssbproc = subprocess.Popen(commandtorun, close_fds=True)
-        else:
-            raise SolsticeModuleException(_("Corrupt or incompatible data - %s is not a supported browser") % browser)
-
-        #Check there's a note about a process having ran, and if so if the process is running
-        if os.path.isfile(profilepath + "/.solstice-active-pid"):
-            with open(profilepath + "/.solstice-active-pid", 'r') as pidfile:
-                lastpid = pidfile.readline()
+def getCSSSettings(browsertype, browser):
+    # Check the browser is eligible for CSS modding
+    if "cssfolder" in variables.sources[browsertype][browser]:
+        csspath = "%s/%s-css" % (variables.cssPath,
+                        variables.sources[browsertype][browser]["cssfolder"])
+        if os.path.isfile("%s/config.json" % csspath) and os.path.isfile("%s/custom.css" % csspath):
             try:
-                lastpid = int(lastpid)
-                if not utils.proc_exists(lastpid):
-                    os.remove(profilepath + "/.solstice-active-pid") #The PID doesn't exist
+                with open("%s/config.json" % csspath, 'r') as fp:
+                    return json.loads(fp.read())
             except:
-                os.remove(profilepath + "/.solstice-active-pid")
-        #Tell Solstice that the process's running
-        if not os.path.isfile(profilepath + "/.solstice-active-pid"):
-            with open(profilepath + "/.solstice-active-pid", 'w') as pidfile:
-                pidfile.write(str(ssbproc.pid))
-
-        if not closecallback == None:
-            closecallback()
-        if nohistory == True and browsertype == "chromium":
-            #FIXME: We need a better way of doing this.
-            time.sleep(16)
-            if os.path.isfile(profilepath + "/Default/History"):
-                os.remove(profilepath + "/Default/History")
-            if os.path.isfile(profilepath + "/Default/History-journal"):
-                os.remove(profilepath + "/Default/History-journal")
-            if os.path.isdir(profilepath + "/Default/Sessions"):
-                shutil.rmtree(profilepath + "/Default/Sessions")
+                print(_("W: Failed to open custom CSS configs. Custom CSS will be disabled on this profile."))
+    
+    # Return nothing, therefore disabling mods, if the browser chosen isn't eligible
+    #  or the user has no/invalid mods
+    return {}
 
 
-    def update_item_settings(self, iteminfo):
-        if not os.path.isdir(variables.solstice_profiles_directory): #Make sure the profiles directory even exists
-            try:
-                os.mkdir(variables.solstice_profiles_directory)
-            except Exception as e:
-                raise SolsticeModuleException(_("Failed to create the user's Solstice Profiles folder: %s") % e)
+def isCSSOutdated(profiledir, browsertype, browser):    
+    profilecss = "%s/%s/custom" % (profiledir,
+                                variables.sources[browsertype][browser]["cssroot"])
+    csspath = "%s/.config/solstice/%s-css" % (os.path.expanduser("~"),
+                            variables.sources[browsertype][browser]["cssfolder"])
+    
+    # Create the parent CSS folder if it doesn't exist
+    if not os.path.exists(profiledir + "/" + variables.sources[browsertype][browser]["cssroot"]):
+        try:
+            os.mkdir(profiledir + "/" + variables.sources[browsertype][browser]["cssroot"])
+            return os.path.exists(csspath) # Skip comparing CSS files given the directory's new
+        except:
+            raise SolsticeModuleException(_("Failed to create parent CSS folder in the profile"))
+    
+    # Get files in both global CSS folder and the profile's CSS folder and
+    # check for unique files between both folders
+    currentfiles = utils.recursiveFileList(profilecss)
+    globalfiles = utils.recursiveFileList(csspath)
+    if "config.json" in globalfiles:
+        globalfiles.remove("config.json")
+    for i in currentfiles:
+        if i not in globalfiles:
+            return True
+    for i in globalfiles:
+        if i not in currentfiles:
+            return True
+    #Check that each file matches in both folders
+    for i in currentfiles:
+        if filecmp.cmp(csspath + "/" + i, profilecss + "/" + i) == False:
+            return True
+    #All checks passed
+    return False
 
-        needflatpakperms = False
-        if not os.path.isdir(variables.solstice_profiles_directory + "/%s" % iteminfo["id"]): #Now create the directory for this website application's profiles to go
-            try:
-                os.mkdir(variables.solstice_profiles_directory + "/%s" % iteminfo["id"])
 
-                #If Flatpak, grant access to the profiles directory
-                if "flatpak" in variables.sources[iteminfo["browsertype"]][iteminfo["browser"]]:
-                    needflatpakperms = True
-            except Exception as e:
-                raise SolsticeModuleException(_("Failed to create the application's Solstice Profiles folder: %s") % e)
+def updateCSSSettings(parentinfo, psettings, profiledir, browsermodule):
+    csssettings = getCSSSettings(parentinfo["browsertype"], parentinfo["browser"])
 
-        #Update the item's .solstice-settings
-        itemconfs = {}
-        changesmade = False
-        itemprofilesfldr = variables.solstice_profiles_directory + "/" + iteminfo["id"]
-        if os.path.isfile("%s/.solstice-settings" % itemprofilesfldr):
-            with open("%s/.solstice-settings" % itemprofilesfldr, 'r') as fp:
-                itemconfs = json.loads(fp.read())
+    def isCSSSettingsOutdated(psettings, csssettings):
+        #CSS settings changed since profile opened
+        if csssettings == {} and "css" in psettings:
+            return True # CSS has been disabled since
+        elif csssettings != {} and "css" not in psettings:
+            return True # CSS has been enabled since
+        elif "css" in psettings and type(psettings["css"]) != dict:
+            return True # CSS preferences are invalid
+        elif csssettings != {}:
+            for i in csssettings:
+                if i not in psettings or psettings["css"][i] != csssettings[i]:
+                    return True # CSS setting has been added/changed since
+            for i in psettings["css"]:
+                if i not in csssettings:
+                    return True # CSS setting has been removed since
 
-        targetdir = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD)
-        if "lastdownloadsdir" in itemconfs:
-            olddir = itemconfs["lastdownloadsdir"]
-            if itemconfs["lastdownloadsdir"] != targetdir:
-                itemconfs["lastdownloadsdir"] = targetdir
-                changesmade = True
+    # Skip if the CSS Settings DON'T need updating
+    if not isCSSSettingsOutdated(psettings, csssettings):
+        return psettings, False
+
+    # Update the CSS Settings influencing values for the browser
+    browsermodule.updateCSSSettings(parentinfo, profiledir, csssettings)
+
+    # Update recorded CSS Settings
+    updated = False
+    if csssettings == {} and "css" in psettings:
+        psettings.pop("css") # Not necessary - remove it
+        updated = True
+    elif csssettings != {}:
+        psettings["css"] = {}
+        updated = True
+        for i in csssettings:
+            psettings["css"][i] = csssettings[i]
+    
+    return psettings, updated
+    
+
+def updateCSS(parentinfo, profiledir):
+    # Skip if the browser chosen isn't eligible
+    if "cssfolder" not in variables.sources[parentinfo["browsertype"]][parentinfo["browser"]]:
+        return
+    # Skip if the CSS DOESN'T need updating
+    if isCSSOutdated(profiledir, parentinfo["browsertype"], parentinfo["browser"]) == False:
+        return
+    
+    cssroot = "%s/%s" % (profiledir,
+                variables.sources[parentinfo["browsertype"]][parentinfo["browser"]]["cssroot"])
+    profilecss = cssroot + "/custom"
+    csspath = "%s/.config/solstice/%s-css" % (os.path.expanduser("~"),
+                    variables.sources[parentinfo["browsertype"]][parentinfo["browser"]]["cssfolder"])
+    
+    # Delete profile's existing CSS mods folder
+    if os.path.exists(profilecss):
+        shutil.rmtree(profilecss)
+
+    try:
+        if os.path.isfile("%s/config.json" % csspath) and os.path.isfile("%s/custom.css" % csspath):
+            # Copy mods to the profile's CSS mods folder
+            shutil.copytree(csspath, profilecss)
+            # Remove redundant files
+            os.remove("%s/config.json" % profilecss)
+
+            # Import the custom CSS
+            with open("%s/solstmods.css" % cssroot, 'w') as fp:
+                fp.write('@import "custom/custom.css";')
         else:
-            olddir = None
-            itemconfs["lastdownloadsdir"] = targetdir
-            changesmade = True
-        if "downloadsname" not in itemconfs:
-            #downloadsname can only be set once and never changed after unless uninstalled
-            itemconfs["downloadsname"] = _("{0} Downloads").format(iteminfo["name"])
-            changesmade = True
+            with open("%s/solstmods.css" % cssroot, 'w') as fp:
+                fp.write(_("/* No mods are currently installed. For more information: %s */") % "TBD")
+    except:
+        raise SolsticeModuleException(_("Failed to update CSS modifications"))
+    
 
-        if changesmade == True: #Save changes if changes were made
+def updateCSSRoot(browsertype, browser, psettings, psettingsupd):
+    if "cssroot" not in variables.sources[browsertype][browser]:
+        # No cssroot for this browser
+        if "lastcssroot" not in psettings:
+            return psettings, psettingsupd
+        psettings.pop("lastcssroot")
+        psettingsupd = True
+    else: # Browser supports CSS
+        if "lastcssroot" in psettings and psettings["lastcssroot"] == variables.sources[browsertype][browser]["cssroot"]:
+            return psettings, psettingsupd
+        psettings["lastcssroot"] = variables.sources[browsertype][browser]["cssroot"]
+        psettingsupd = True
+    return psettings, psettingsupd
+
+
+##########################################################
+# Bonuses
+##########################################################
+
+def updateBonuses(parentinfo, psettings, updated, profiledir, bonuses):
+    # Skip if the bonuses WERE NOT changed
+    if "lastbonusids" in psettings:
+        if psettings["lastbonusids"] == bonuses:
+            return psettings, updated
+
+    # Update values in the browser
+    if parentinfo["browsertype"] == "chromium":
+        from . import chromium
+        chromium.setBonuses(profiledir, bonuses)
+    elif parentinfo["browsertype"] == "firefox":
+        from . import firefox
+        firefox.setBonuses(profiledir, bonuses)
+
+    # Update recorded bonuses
+    psettings["lastbonusids"] = bonuses
+
+    return psettings, True
+
+
+##########################################################
+# Profile Execution
+##########################################################
+
+def runProfile(parentinfo, appinfo, appsettings, pdir, pid, closewndcall):
+    if parentinfo["browsertype"] not in variables.sources:
+        raise SolsticeModuleException(_("Corrupt or incompatible data - %s is not a type of supported browser") % parentinfo["browsertype"])
+    if parentinfo["browser"] not in variables.sources[parentinfo["browsertype"]]:
+        raise SolsticeModuleException(_("Corrupt or incompatible data - %s is not a supported browser") % parentinfo["browser"])
+    profiledir = pdir + "/" + pid
+
+    # Get the profile settings
+    if os.path.isfile("%s/.solstice-settings" % profiledir):
+        with open("%s/.solstice-settings" % profiledir, 'r') as fp:
+            psettings = json.loads(fp.read())
+    else: #Write fallback profile settings
+        psettings = {"readablename": pid}
+        try:
+            with open("%s/.solstice-settings" % profiledir, 'w') as fp:
+                fp.write(json.dumps(psettings, separators=(',', ':')))
+        except Exception as e:
+            raise SolsticeModuleException(_("%s contains no settings") % pid)
+
+    # Check if core files are missing from the profile
+    filesMissing = False
+    for i in variables.sources[parentinfo["browsertype"]][parentinfo["browser"]]["expected-files"]:
+        if not os.path.isfile("%s/%s" % (profiledir, i)):
+            filesMissing = True
+            break
+    
+    # IF the profile isn't already running,
+    if profileInUse(profiledir) != True:
+        # Check if the profile needs updating
+        downloadsUpd, appUpd, solstUpd, browserUpd, cssRootUpd = utils.isProfileOutdated(parentinfo, appsettings, psettings)
+
+        # Delete previous CSS if under various circumstances
+        if (solstUpd or browserUpd or cssRootUpd) and "lastcssroot" in psettings:
+            if os.path.exists("%s/%s" % (profiledir, psettings["lastcssroot"])):
+                shutil.rmtree("%s/%s" % (profiledir, psettings["lastcssroot"]))
+
+        # Collect browsermodule and make notes
+        browsermodule = getBrowserModule(parentinfo["browsertype"])
+        psettingsupd = False
+
+        # Update the CSS if eligible
+        updateCSS(parentinfo, profiledir)
+
+        # Update the profile if it needs updating
+        if filesMissing or \
+                solstUpd or browserUpd or cssRootUpd or \
+                downloadsUpd or appUpd:
+            psettings, psettingsupd = updateProfile(parentinfo, appsettings, psettings, profiledir, browsermodule)
+            # NOTE: updateProfile will updateCSSSettings and updateBonuses during its process
+        else:
+            # Update profile settings pertaining to custom CSS
+            psettings, psettingsupd = updateCSSSettings(parentinfo, psettings, profiledir, browsermodule)
+            # and Bonuses
+            psettings, psettingsupd = updateBonuses(parentinfo, psettings, psettingsupd, profiledir, parentinfo["bonusids"])
+
+        # Update CSS directory and save any profile settings changes
+        psettings, psettingsupd = updateCSSRoot(parentinfo["browsertype"], parentinfo["browser"], psettings, psettingsupd)
+        if psettingsupd == True:
             try:
-                with open("%s/.solstice-settings" % itemprofilesfldr, 'w') as fp:
-                    fp.write(json.dumps(itemconfs, separators=(',', ':')))
-            except Exception as exceptionstr:
+                with open("%s/.solstice-settings" % profiledir, 'w') as fp:
+                    fp.write(json.dumps(psettings, separators=(',', ':')))
+            except:
                 raise SolsticeModuleException(_("Failed to write to .solstice-settings"))
+            
+        if parentinfo["browsertype"] == "chromium" and os.path.isfile("%s/Last Version" % profiledir):
+            # Skips migration procedures and Vivaldi changelog opening
+            try:
+                os.remove("%s/Last Version" % profiledir)
+            except Exception as e:
+                print(_("W: Failed to delete Last Version: %s") % e)
+    else:
+        # Throw an exception if core files are missing
+        if filesMissing:
+            raise SolsticeModuleException(_("%s needs to be updated but is currently running. Please close this application's windows and try again.") % psettings["readablename"])
 
-            #Check if this config is for a Flatpak, and if so update the permissions on it
-            if "flatpak" in variables.sources[iteminfo["browsertype"]][iteminfo["browser"]] and needflatpakperms == False:
-                #Remove old Downloads directory permissions
-                targetfile = os.path.expanduser("~") + "/.local/share/flatpak/overrides/" + variables.sources[iteminfo["browsertype"]][iteminfo["browser"]]["flatpak"]
-                if not os.path.isfile(targetfile):
-                    return #No file means no permissions set
-                with open(targetfile, "rt") as fp:
-                    newcontents = fp.readlines()
-                if olddir != None: #Skip if there's no old downloads directory
-                    i = 0
-                    for line in newcontents:
-                        if line.startswith("filesystems="):
-                            if olddir + "/" + itemconfs["downloadsname"] + ";" not in line:
-                                return #If the Flatpak doesn't have those permissions, don't bother writing to file
-                            newcontents[i] = newcontents[i].replace("!{0}/{1};".format(olddir, itemconfs["downloadsname"]), "")
-                            newcontents[i] = newcontents[i].replace("{0}/{1};".format(olddir, itemconfs["downloadsname"]), "")
-                        i += 1
-                    with open(targetfile, "w") as fp:
-                        fp.write("".join(newcontents))
-                #Then add in the new directory permissions
-                os.system('/usr/bin/flatpak override --user {0} --filesystem="{1}/{2}"'.format(variables.sources[iteminfo["browsertype"]][iteminfo["browser"]]["flatpak"], targetdir, itemconfs["downloadsname"]))
+    # Adjust command for launching profile if "No Cache" is turned on
+    commandtorun = variables.sources[parentinfo["browsertype"]][parentinfo["browser"]]["command"]
+    if "nocache" in psettings and psettings["nocache"] == True:
+        #Append and prepend to command as according to the selected preferences
+        commandtorun = variables.sources[parentinfo["browsertype"]][parentinfo["browser"]]["nocacheprefix"] + commandtorun
+        commandtorun = commandtorun + variables.sources[parentinfo["browsertype"]][parentinfo["browser"]]["nocachesuffix"]
 
-        if needflatpakperms == True:
-            utils.set_flatpak_permissions(iteminfo["id"], iteminfo["name"], iteminfo["browsertype"], iteminfo["browser"])
+    # Translate arguments to their context-appropriate values
+    for i, word in enumerate(commandtorun):
+        commandtorun[i] = word.replace(
+            "%WEBSITEURL%", appinfo["website"]).replace(
+            "%WINCLASS%", parentinfo["wmclass"]).replace(
+            "%PROFILEDIR%", profiledir)
+
+    # Launch profile in its browser
+    ssbproc = subprocess.Popen(commandtorun, close_fds=True)
+
+    # Note the PID of the session if this is the session's launching process
+    if os.path.isfile(profiledir + "/.solstpid"):
+        with open(profiledir + "/.solstpid", 'r') as pidfile:
+            lastpid = pidfile.readline()
+        try:
+            lastpid = int(lastpid)
+            if not utils.procExists(lastpid):
+                os.remove(profiledir + "/.solstpid") #The PID doesn't exist
+        except:
+            os.remove(profiledir + "/.solstpid")
+    if not os.path.isfile(profiledir + "/.solstpid"):
+        with open(profiledir + "/.solstpid", 'w') as pidfile:
+            pidfile.write(str(ssbproc.pid))
+
+    # Delete history files (Chromium)
+    if parentinfo["nohistory"] == True and parentinfo["browsertype"] == "chromium":
+        if not closewndcall == None:
+            closewndcall()
+        #FIXME: We need a better way of doing this.
+        time.sleep(20)
+        if os.path.isfile(profiledir + "/Default/History"):
+            os.remove(profiledir + "/Default/History")
+        if os.path.isfile(profiledir + "/Default/History-journal"):
+            os.remove(profiledir + "/Default/History-journal")
+        if os.path.isdir(profiledir + "/Default/Sessions"):
+            shutil.rmtree(profiledir + "/Default/Sessions")
 
 
-    #### PROFILE CREATION / UPDATING
-    def update_profile(self, iteminfo, profilename, profileid, nocache, skiptheme, downloadsdir, downloadsname):
-        #NOTE: Also used to generate a new profile
-        profilepath = utils.get_profilepath(iteminfo["id"], profileid)
+def profileInUse(profiledir):
+    if os.path.isfile(profiledir + "/.solstpid"):
+        try:
+            with open(profiledir + "/.solstpid", 'r') as pidfile:
+                lastpid = pidfile.readline()
+            lastpid = int(lastpid)
+            if utils.procExists(lastpid):
+                return True
+        except Exception as e:
+            if e.__class__.__name__ != "ProfileInUseException":
+                print(_("W: Could not determine if the profile is in use: %s") % e)
+            else:
+                raise SolsticeModuleException(e)
+    return False
 
-        #Generate profile directory if it does not exist yet
-        if not os.path.isdir(profilepath):
-            utils.create_profile_folder(iteminfo["id"], profileid)
-        else:
-            if os.path.isfile(profilepath + "/.solstice-active-pid"):
-                try:
-                    with open(profilepath + "/.solstice-active-pid", 'r') as pidfile:
-                        lastpid = pidfile.readline()
-                    lastpid = int(lastpid)
-                    if utils.proc_exists(lastpid):
-                        raise ProfileInUseException(_("The profile %s is currently in use, so cannot be updated") % profileid)
-                except Exception as e:
-                    if e.__class__.__name__ != "ProfileInUseException":
-                        print(_("WARNING: Could not determine if the profile {0} is in use: {1}").format(profileid, e))
-                    else:
-                        raise ProfileInUseException(e)
 
-        if iteminfo["browsertype"] == "chromium":
+def updateProfile(parentinfo, appsettings, psettings, profiledir, browsermodule=None):
+    csssettings = getCSSSettings(parentinfo["browsertype"], parentinfo["browser"])
+
+    # Update recorded CSS Settings
+    if "css" not in csssettings and "css" in psettings:
+        psettings.pop("css") # Not necessary - remove it
+    elif "css" in csssettings:
+        if "css" not in psettings:
+            psettings["css"] = {}
+        for i in csssettings:
+            if psettings["css"][i] != csssettings[i]:
+                psettings["css"][i] = csssettings[i]
+
+    # Run the appropriate module's profile updating code
+    if browsermodule == None:
+        browsermodule = getBrowserModule(parentinfo["browsertype"])
+    browsermodule.updateProfile(parentinfo, appsettings, psettings, profiledir, csssettings)
+
+    #...and update lastupdated values, and save .solstice-settings.
+    psettings["applastupdated"] = int(parentinfo["lastupdated"])
+    psettings["solstlastupdated"] = int(variables.solsticeLastUpdated)
+    psettings["lastbrowser"] = parentinfo["browser"]
+    psettings["lastdownloadsdir"] = appsettings["lastdownloadsdir"]
+    psettings["lastbonusids"] = parentinfo["bonusids"]
+
+    return psettings, True
+
+
+##########################################################
+# Profile Management
+##########################################################
+
+def setProfileName(parentinfo, newname, profiledir, running):
+    # Update values in the browser if the profile isn't running
+    #  If running, the profile will be marked to naturally update, including the new name.
+    if running != True:
+        if parentinfo["browsertype"] == "chromium":
             from . import chromium
-            chromium.update_profile(iteminfo, iteminfo["extrawebsites"], profilename, profilepath, nocache, skiptheme, downloadsdir, downloadsname)
-        elif iteminfo["browsertype"] == "firefox":
+            chromium.setProfileName(parentinfo, newname, profiledir)
+        elif parentinfo["browsertype"] == "firefox":
             from . import firefox
-            firefox.update_profile(iteminfo, iteminfo["extrawebsites"], profilename, profilepath, nocache, skiptheme, downloadsdir, downloadsname)
+            firefox.setProfileName(parentinfo, newname, profiledir)
 
-        #Make note of the profile name and last updated configs
-        profileconfs = {}
-        if os.path.isfile("%s/.solstice-settings" % profilepath):
-            with open("%s/.solstice-settings" % profilepath, 'r') as fp:
-                profileconfs = json.loads(fp.read())
+    # Save the new name in the .solstice-settings file
+    confdict = {}
+    if os.path.isfile("%s/.solstice-settings" % profiledir):
+        with open("%s/.solstice-settings" % profiledir, 'r') as fp:
+            confdict = json.loads(fp.read())
 
-        #Set user's human-readable name,
-        profileconfs["readablename"] = profilename
-        #...no-cache preference,
-        profileconfs["nocache"] = nocache
-        #...and update lastupdated values, and save .solstice-settings.
-        profileconfs["lastupdatedshortcut"] = int(iteminfo["lastupdated"])
-        profileconfs["lastupdatedsolstice"] = int(variables.solstice_lastupdated)
-        profileconfs["lastbrowser"] = iteminfo["browser"]
-        profileconfs["lastdownloadsdir"] = downloadsdir
+    confdict["readablename"] = newname
 
-        try:
-            with open("%s/.solstice-settings" % profilepath, 'w') as fp:
-                fp.write(json.dumps(profileconfs, separators=(',', ':')))
-        except Exception as exceptionstr:
-            raise SolsticeModuleException(_("Failed to write to .solstice-settings"))
-
-    def delete_profile(self, iteminfo, profileid):
-        profilepath = utils.get_profilepath(iteminfo["id"], profileid)
-        utils.delete_profilefolder(profilepath)
+    try:
+        with open("%s/.solstice-settings" % profiledir, 'w') as fp:
+            fp.write(json.dumps(confdict, separators=(',', ':')))
+    except Exception as exceptionstr:
+        raise SolsticeModuleException(_("Failed to write to .solstice-settings"))
 
 
-    #### PROFILE OPTIONS
-    def change_profile_name(self, browsertype, profilepath, itemname, value, outdated=False, returnonly=False):
-        #string, string
+def setNoCache(parentinfo, newbool, profiledir, running):
+    # Update values in the browser if the profile isn't running
+    #  If running, the profile will be marked to naturally update, including the new value.
+    if running != True:
+        if parentinfo["browsertype"] == "chromium":
+            from . import chromium
+            chromium.setNoCache(newbool, profiledir)
+        elif parentinfo["browsertype"] == "firefox":
+            from . import firefox
+            firefox.setNoCache(newbool, profiledir)
 
-        if outdated == False: #If the profile is outdated, the changes made per browser will be made when the profile gets updated on launch,
-            #thus, we save a write to disk by just skipping those aforementioned changes in here
-            if browsertype == "chromium":
-                from . import chromium
-                chromium.change_profile_name(profilepath, itemname, value)
-            elif browsertype == "firefox":
-                from . import firefox
-                firefox.change_profile_name(profilepath, itemname, value)
+    # Save the new name in the .solstice-settings file
+    confdict = {}
+    if os.path.isfile("%s/.solstice-settings" % profiledir):
+        with open("%s/.solstice-settings" % profiledir, 'r') as fp:
+            confdict = json.loads(fp.read())
 
-        if returnonly:
-            return
+    confdict["nocache"] = newbool
 
-        #Change the profile's name after its initial creation occurred
-        profileconfs = {}
-        if os.path.isfile("%s/.solstice-settings" % profilepath):
-            with open("%s/.solstice-settings" % profilepath, 'r') as fp:
-                profileconfs = json.loads(fp.read())
-        profileconfs["readablename"] = value
-        try:
-            with open("%s/.solstice-settings" % profilepath, 'w') as fp:
-                fp.write(json.dumps(profileconfs, separators=(',', ':')))
-        except Exception as exceptionstr:
-            raise SolsticeModuleException(_("Failed to write to .solstice-settings"))
-
-    def set_profile_nocache(self, browsertype, profilepath, value, outdated=False, returnonly=False):
-        #string, boolean
-
-        if outdated == False:
-            if browsertype == "chromium":
-                from . import chromium
-                chromium.set_profile_nocache(profilepath, value)
-            elif browsertype == "firefox":
-                from . import firefox
-                firefox.set_profile_nocache(profilepath, value)
-
-        if returnonly:
-            return
-
-        #Update solstice-settings to reaffirm this change
-        profileconfs = {}
-        if os.path.isfile("%s/.solstice-settings" % profilepath):
-            with open("%s/.solstice-settings" % profilepath, 'r') as fp:
-                profileconfs = json.loads(fp.read())
-        profileconfs["nocache"] = value
-        try:
-            with open("%s/.solstice-settings" % profilepath, 'w') as fp:
-                fp.write(json.dumps(profileconfs, separators=(',', ':')))
-        except Exception as exceptionstr:
-            raise SolsticeModuleException(_("Failed to write to .solstice-settings"))
-
-    def batch_set_profilesettings(self, browsertype, profilepath, itemname, newname, outdated, nocache):
-        self.change_profile_name(browsertype, profilepath, itemname, newname, outdated, True)
-        self.set_profile_nocache(browsertype, profilepath, nocache, outdated, True)
-        #By doing things this way, we prevent 2 extra file writes
-
-        #Update solstice-settings to reaffirm these changes
-        profileconfs = {}
-        if os.path.isfile("%s/.solstice-settings" % profilepath):
-            with open("%s/.solstice-settings" % profilepath, 'r') as fp:
-                profileconfs = json.loads(fp.read())
-        profileconfs["readablename"] = newname
-        profileconfs["nocache"] = nocache
-        try:
-            with open("%s/.solstice-settings" % profilepath, 'w') as fp:
-                fp.write(json.dumps(profileconfs, separators=(',', ':')))
-        except Exception as exceptionstr:
-            raise SolsticeModuleException(_("Failed to write to .solstice-settings"))
+    try:
+        with open("%s/.solstice-settings" % profiledir, 'w') as fp:
+            fp.write(json.dumps(confdict, separators=(',', ':')))
+    except Exception as exceptionstr:
+        raise SolsticeModuleException(_("Failed to write to .solstice-settings"))

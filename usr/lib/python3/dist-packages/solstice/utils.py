@@ -6,6 +6,7 @@ from . import variables
 import os
 import gettext
 gettext.install("solstice-python", "/usr/share/locale", names="ngettext")
+import locale
 import gi
 from gi.repository import GLib
 from xdg.DesktopEntry import DesktopEntry
@@ -18,21 +19,40 @@ import psutil
 import shutil
 import signal
 import time
+import grp
 
 class SolsticeUtilsException(Exception):
     pass
 class ProfileInUseException(Exception):
     pass
 
-def dict_recurupdate(d, u):
+
+def dictRecurUpdate(d, u):
     for k, v in u.items():
         if isinstance(v, collections.abc.Mapping):
-            d[k] = dict_recurupdate(d.get(k, {}), v)
+            d[k] = dictRecurUpdate(d.get(k, {}), v)
         else:
             d[k] = v
     return d
 
-def shorten_url(website):
+
+def recursiveFileList(directory):
+    if not os.path.isdir(directory):
+        return []
+
+    dirs = [x[0] for x in os.walk(directory)]
+    result = []
+    for i in dirs:
+        for ii in os.listdir(i):
+            if os.path.isfile(i + "/" + ii):
+                if i == directory:
+                    result.append(ii)
+                else:
+                    result.append(i[len(directory)+1:] + "/" + ii)
+    return result
+
+
+def shortenURL(website):
     shortenedurl = website.split("://")[1:] #Remove the HTTPS portion
     shortenedurl = ''.join(shortenedurl) #Rejoin list into string
     try:
@@ -41,34 +61,8 @@ def shorten_url(website):
         pass
     return shortenedurl
 
-def boolean_to_jsonbool(boole):
-    if boole == True:
-        return "true"
-    else:
-        return "false"
 
-def color_is_light(hexcode):
-    #string
-
-    #Returns:
-    # True: Light
-    # False: Dark
-    redc, greenc, bluec = tuple(int(hexcode[i:i+2], 16) for i in (1, 3, 5)) #Dodge the # character
-    rSRGB = redc / 255
-    gSRGB = greenc / 255
-    bSRGB = bluec / 255
-
-    r = rSRGB / 12.92 if rSRGB <= .03928 else math.pow((rSRGB + .055) / 1.055, 2.4)
-    g = gSRGB / 12.92 if rSRGB <= .03928 else math.pow((gSRGB + .055) / 1.055, 2.4)
-    b = rSRGB / 12.92 if bSRGB <= .03928 else math.pow((bSRGB + .055) / 1.055, 2.4)
-    lumi = .2126 * r + .7152 * g + .0722 * b
-
-    if lumi > 0.4:
-        return True
-    else:
-        return False
-
-def color_filter(hexcode, amount, multiply=False):
+def colourFilter(hexcode, amount, multiply=False):
     #string, float, bool
 
     #Returns:
@@ -102,7 +96,29 @@ def color_filter(hexcode, amount, multiply=False):
     redc, greenc, bluec = int(redc), int(greenc), int(bluec) #Convert back to integers
     return '#%02x%02x%02x' % (redc, greenc, bluec) #Returns conversion to hexcode
 
-def are_colours_different(hexcode1, hexcode2):
+
+def colourIsLight(hexcode):
+    #string
+
+    #Returns:
+    # True: Light
+    # False: Dark
+    redc, greenc, bluec = tuple(int(hexcode[i:i+2], 16) for i in (1, 3, 5)) #Dodge the # character
+    rSRGB = redc / 255
+    gSRGB = greenc / 255
+    bSRGB = bluec / 255
+
+    r = rSRGB / 12.92 if rSRGB <= .03928 else math.pow((rSRGB + .055) / 1.055, 2.4)
+    g = gSRGB / 12.92 if rSRGB <= .03928 else math.pow((gSRGB + .055) / 1.055, 2.4)
+    b = rSRGB / 12.92 if bSRGB <= .03928 else math.pow((bSRGB + .055) / 1.055, 2.4)
+    lumi = .2126 * r + .7152 * g + .0722 * b
+
+    if lumi > 0.4:
+        return True
+    else:
+        return False
+
+def coloursDiffer(hexcode1, hexcode2):
     #string, string
 
     #Returns:
@@ -129,14 +145,50 @@ def are_colours_different(hexcode1, hexcode2):
     else:
         return True
 
-def proc_exists(pid):
+def isColorGrey(hexcode):
+    #string
+
+    #Returns:
+    # True: Yes
+    # False: No
+    redc, greenc, bluec = tuple(int(hexcode[i:i+2], 16) for i in (1, 3, 5))
+    hue, sat, val = colorsys.rgb_to_hsv(redc, greenc, bluec)
+
+    if sat > 0.3:
+        return False
+    else:
+        return True
+
+
+def procExists(pid):
     try:
         os.kill(pid, 0) #Send a You There? to the PID identified
     except:
         return False
     return True
 
-def profileid_generate(profilesdir, profilename):
+
+def getParentShortcut(parentid, wmclass, childid, filepath):
+    #Get browser prefix
+    browserprefix = wmclass[:-len(childid)]
+    #Get the child shortcut's path
+    shortcutpath = os.path.dirname(filepath)
+
+    #Return parent shortcut location
+    result = shortcutpath + "/" + browserprefix + parentid + ".desktop"
+    if not os.path.isfile(result):
+        raise SolsticeUtilsException(_("The shortcut's parent shortcut cannot be found."))
+    return result
+
+
+def browserFeatureAvailable(browsertype, browser, feature):
+    if feature in variables.sources[browsertype][browser]:
+        if variables.sources[browsertype][browser][feature] == True:
+            return True
+    return False
+
+
+def generateProfileID(profilesdir, profilename):
     name = profilename.replace(" ", "").replace("\\", "").replace("/", "").replace("?", "").replace("*", "").replace("+", "").replace("%", "").lower()
     result = str(name)
 
@@ -148,108 +200,97 @@ def profileid_generate(profilesdir, profilename):
 
     return result
 
-def get_profilepath(itemid, profileid):
-    return "{0}/{1}/{2}".format(variables.solstice_profiles_directory, itemid, profileid)
 
-def create_profile_folder(itemid, profileid):
-    if os.path.isdir("{0}/{1}/{2}".format(variables.solstice_profiles_directory, itemid, profileid)): #Fail if profile exists
-        raise SolsticeUtilsException(_("The profile %s already exists") % profileid)
-    else:
-        os.mkdir("{0}/{1}/{2}".format(variables.solstice_profiles_directory, itemid, profileid))
-
-def get_profile_settings(itemid, profileid):
+def getProfileSettings(profilesdir, profileid):
     #Returns: readablename, nocache
-    profiledir = get_profilepath(itemid, profileid)
-    if not os.path.isfile("%s/.solstice-settings" % profiledir):
-        return profileid, False, False
-    with open("%s/.solstice-settings" % profiledir, 'r') as fp:
+    if not os.path.isfile("%s/%s/.solstice-settings" % (profilesdir, profileid)):
+        return profileid, False
+    with open("%s/%s/.solstice-settings" % (profilesdir, profileid), 'r') as fp:
         profileconfs = json.loads(fp.read())
-    result = {}
+    readablename = profileid
     if "readablename" in profileconfs:
-        result["readablename"] = profileconfs["readablename"]
-    else:
-        result["readablename"] = profileid
+        readablename = profileconfs["readablename"]
+    nocache = False
     if "nocache" in profileconfs:
-        result["nocache"] = profileconfs["nocache"]
+        nocache = profileconfs["nocache"]
+    return readablename, nocache
+
+
+def isProfileOutdated(parentinfo, appsettings, psettings):
+    downloads = False
+    app = False
+    solst = False
+    browser = False
+    cssroot = False
+
+    #Downloads directory changed since profile opened
+    if "lastdownloadsdir" not in psettings:
+        downloads = True # No Downloads folder has been set yet, thus the profile needs updating to add one
     else:
-        result["nocache"] = False
-    return result["readablename"], result["nocache"]
+        try:
+            if psettings["lastdownloadsdir"] != appsettings["lastdownloadsdir"]:
+                downloads = True
+        except:
+            downloads = True # This usually means they aren't numbers, thus outdated by definition
 
-def get_profile_outdated(profileid, itemid, shortcutlastupdated, browserid, downloadsdir):
-    profilepath = get_profilepath(itemid, profileid)
-    if not os.path.isfile("%s/.solstice-settings" % profilepath):
-        return True #lastupdated* is in said file
-    with open("%s/.solstice-settings" % profilepath, 'r') as fp:
-        profileconfs = json.loads(fp.read())
-    if "lastupdatedshortcut" not in profileconfs:
-        return True #not having lastupdatedshortcut means it's outdated by definition
-    if "lastupdatedsolstice" not in profileconfs:
-        return True #not having lastupdatedsolstice also does
-    if "lastbrowser" not in profileconfs:
-        return True #not having lastbrowser also does
-    if "lastdownloadsdir" not in profileconfs:
-        return True #not having lastdownloadsdir also does
-    try:
-        if int(profileconfs["lastupdatedshortcut"]) < int(shortcutlastupdated):
-            return True #profile's last update was earlier than the shortcut's
+    #Application updated since profile opened
+    if "applastupdated" not in psettings:
+        app = True #not having applastupdated means it's outdated by definition
+    else:
+        try:
+            if int(psettings["applastupdated"]) != parentinfo["lastupdated"]:
+                app = True
+        except:
+            app = True
+
+    #Solstice updated since profile opened
+    if "solstlastupdated" not in psettings:
+        solst = True
+    else:
+        try:
+            if int(psettings["solstlastupdated"]) != variables.solsticeLastUpdated:
+                solst = True
+        except:
+            solst = True
+
+    #Browser changed since profile opened
+    if "lastbrowser" not in psettings:
+        browser = True
+    else:
+        try:
+            if psettings["lastbrowser"] != parentinfo["browser"]:
+                browser = True
+        except:
+            browser = True
+
+    #CSS root directory changed since profile opened
+    if "cssroot" in variables.sources[parentinfo["browsertype"]][parentinfo["browser"]]:
+        if "lastcssroot" not in psettings:
+            cssroot = True
         else:
-            if int(profileconfs["lastupdatedsolstice"]) < int(variables.solstice_lastupdated):
-                return True #profile's last update was earlier than Solstice's was
-            elif profileconfs["lastbrowser"] != browserid:
-                return True #profile's last browser wasn't the current one
-            elif profileconfs["lastdownloadsdir"] != downloadsdir:
-                return True #profile's downloads directory isn't the current one
-            else:
-                return False #profile is up to date
-    except:
-        return True #this usually means they aren't numbers, thus outdated by definition
+            try:
+                if psettings["lastcssroot"] != variables.sources[parentinfo["browsertype"]][parentinfo["browser"]]["cssroot"]:
+                    cssroot = True
+            except:
+                cssroot = True
+    elif "lastcssroot" in psettings and "cssroot" not in variables.sources[parentinfo["browsertype"]][parentinfo["browser"]]:
+        cssroot = True
 
-def complete_item_information(desktopinfo):
-    #Adds fallback values for any missing values
-    fallbackpalette = False
-    fallbackchromi = False
-    defaultitems = {"nohistory": False,
-                    "googlehangouts": False,
-                    "workspaces": False,
-                    "bonusids": [],
-                    "bg": "#ffffff",
-                    "bgdark": "#000000",
-                    "accent": "#4ba9fb",
-                    "accentdark": "#1a192d",
-                    "color": "#4ba9fb",
-                    "colordark": "#4ba9fb",
-                    "accentonwindow": True}
-    itemsrequired = ["name", "wmclass", "website", "browser", "browsertype", "extrawebsites", "lastupdated"]
-    for item in itemsrequired:
-        if item not in desktopinfo or desktopinfo[item] == "":
-            raise SolsticeUtilsException(_("Corrupt or overdated .desktop file - %s is missing") % item)
-    #Fall back to Solstice palette if the provided palette is incomplete
-    if "bg" not in desktopinfo or "bgdark" not in desktopinfo or "accent" not in desktopinfo or "accentdark" not in desktopinfo:
-        fallbackpalette = True
-    elif desktopinfo["bg"] == "" or desktopinfo["bgdark"] == "" or desktopinfo["accent"] == "" or desktopinfo["accentdark"] == "":
-        fallbackpalette = True
-    if fallbackpalette == True:
-        desktopinfo.pop("bg")
-        desktopinfo.pop("bgdark")
-        desktopinfo.pop("accent")
-        desktopinfo.pop("accentdark")
-        desktopinfo.pop("accentonwindow")
-        print(_("W: %s is missing colour palette, falling back to Solstice palette") % desktopinfo["name"])
-    if "colordark" not in desktopinfo or desktopinfo["colordark"] == "":
-        desktopinfo.pop("colordark") #Don't warn as colordark is an optional accent colour extension
-    if "color" not in desktopinfo or desktopinfo["color"] == "":
-        desktopinfo.pop("color")
-        print(_("W: %s is missing accent colour, falling back to Solstice accent colour") % desktopinfo["name"])
-    #Add in fallback values for missing values
-    for item in defaultitems:
-        if item not in desktopinfo or desktopinfo[item] == "":
-            if item == "colordark" and "color" in desktopinfo:
-                desktopinfo[item] = desktopinfo["color"]
-            else:
-                desktopinfo[item] = defaultitems[item]
-    return desktopinfo
+    #All checks have passed
+    return downloads, app, solst, browser, cssroot
 
-def is_browser_available(browser, browsertype):
+
+def amAdministrator():
+    #Returns True if the current user is in the administrators group
+    if os.geteuid() == 0:
+        return True #being root counts as administrator.
+    for g in os.getgroups():
+        if grp.getgrgid(g).gr_name == "sudo":
+            return True
+    return False
+
+
+def isBrowserAvailable(browser, browsertype):
     if browsertype not in variables.sources: #Invalid browser type
         return False
     if browser not in variables.sources[browsertype]: #Browser isn't categorised as this
@@ -258,160 +299,189 @@ def is_browser_available(browser, browsertype):
         return False
     return os.path.isfile(variables.sources[browsertype][browser]["required-file"][0])
 
-def get_available_browsers(browsertype):
+
+def getAvailableBrowsers(browsertype):
     if browsertype not in variables.sources: #Invalid browser type
         raise SolsticeUtilsException(_("%s is not a valid browser type") % browsertype)
-    result = []
+    installed = 0
+    available = 0
     for browser in variables.sources[browsertype]:
+        if "unavailable" not in variables.sources[browsertype][browser]:
+            available += 1
+        else:
+            continue
         if "required-file" in variables.sources[browsertype][browser]:
             if os.path.isfile(variables.sources[browsertype][browser]["required-file"][0]):
-                result.append(browser) #Add the available browsers to list,
-    return result #and return the list
+                installed += 1
+    return installed, available #and return the quantity
 
-def is_feature_available(browsertype, browser, key): #use for sources[browsertype][browser][*available]
-    if key not in variables.sources[browsertype][browser]:
-        return False #Default to unavailable
-    return variables.sources[browsertype][browser][key]
 
-def remove_prefix(text, prefix):
-    if text.startswith(prefix):
-        return text[len(prefix):]
-    return text
+def removeFlatpakProfilesPerm(flatpakid, profilesdir):
+    targetfile = os.path.expanduser("~") + "/.local/share/flatpak/overrides/" + flatpakid
 
-def remove_suffix(text, suffix):
-    if text.endswith(suffix):
-        return text[:-len(suffix)]
-    return text
-
-def set_flatpak_permissions(itemid, itemname, browsertype, browser):
-    #NOTE: Flatpak permissions are granted to the profiles folder per application so that the browser cannot read profiles it is not assigned to
-    os.system('/usr/bin/flatpak override --user {0} --filesystem="{1}/{2}"'.format(variables.sources[browsertype][browser]["flatpak"], variables.solstice_profiles_directory, itemid))
-    #Allow access to the downloads folders
-    itemconfs = {}
-    if os.path.isfile("{0}/{1}/.solstice-settings".format(variables.solstice_profiles_directory, itemid)):
-        with open("{0}/{1}/.solstice-settings".format(variables.solstice_profiles_directory, itemid), 'r') as fp:
-            itemconfs = json.loads(fp.read())
-    if itemconfs == {}:
-        raise SolsticeUtilsException(_("No Downloads folder has been set."))
-    os.system('/usr/bin/flatpak override --user {0} --filesystem="{1}/{2}"'.format(variables.sources[browsertype][browser]["flatpak"], itemconfs["lastdownloadsdir"], itemconfs["downloadsname"]))
-
-def remove_flatpak_permissions(itemid, itemname, browsertype, browser):
-    #Obtain downloads folder location before continuing
-    itemconfs = {}
-    if os.path.isfile("{0}/{1}/.solstice-settings".format(variables.solstice_profiles_directory, itemid)):
-        with open("{0}/{1}/.solstice-settings".format(variables.solstice_profiles_directory, itemid), 'r') as fp:
-            itemconfs = json.loads(fp.read())
-    if itemconfs == {}:
-        #Fallback
-        itemconfs["lastdownloadsdir"] = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD)
-        itemconfs["downloadsname"] = _("{0} Downloads").format(itemname)
-    #Now remove the permissions
-    targetfile = os.path.expanduser("~") + "/.local/share/flatpak/overrides/" + variables.sources[browsertype][browser]["flatpak"]
     if not os.path.isfile(targetfile):
         return #No file means no permissions set
     with open(targetfile, "rt") as fp:
         newcontents = fp.readlines()
     i = 0
-    for line in newcontents: #FIXME: Wouldn't X - Y("Downloads") change if the language changes?
+    changed = False
+    for line in newcontents:
         if line.startswith("filesystems="):
-            if "{0}/{1};".format(variables.solstice_profiles_directory, itemid) not in line \
-            and itemconfs["lastdownloadsdir"] + "/" + itemconfs["downloadsname"] + ";" not in line \
-            and GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) + "/" + itemconfs["downloadsname"] + ";" not in line:
-                return #If the Flatpak doesn't have those permissions, don't bother writing to file
-            newcontents[i] = newcontents[i].replace("!{0}/{1};".format(variables.solstice_profiles_directory, itemid), "")
-            newcontents[i] = newcontents[i].replace("!" +  itemconfs["lastdownloadsdir"] + "/" + itemconfs["downloadsname"] + ";", "")
-            newcontents[i] = newcontents[i].replace("!" + GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) + "/" + itemconfs["downloadsname"] + ";", "") #Fallback
-            newcontents[i] = newcontents[i].replace("{0}/{1};".format(variables.solstice_profiles_directory, itemid), "")
-            newcontents[i] = newcontents[i].replace(itemconfs["lastdownloadsdir"] + "/" + itemconfs["downloadsname"] + ";", "")
-            newcontents[i] = newcontents[i].replace(GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) + "/" + itemconfs["downloadsname"] + ";", "") #Fallback
+            if "%s;" % profilesdir not in line:
+                continue #If the Flatpak doesn't have those permissions, don't bother writing to file
+            newcontents[i] = newcontents[i].replace("!%s;" % profilesdir, "")
+            newcontents[i] = newcontents[i].replace("%s;" % profilesdir, "")
+            changed = True
         i += 1
-    with open(targetfile, "w") as fp:
-        fp.write("".join(newcontents))
+    if changed == True:
+        with open(targetfile, "w") as fp:
+            fp.write("".join(newcontents))
 
-def set_browser(currentfile, browsertype, itemid, itemname, oldbrowser, newbrowser):
-    #If the old browser was a Flatpak, remove its permissions
-    if "flatpak" in variables.sources[browsertype][oldbrowser]:
-        remove_flatpak_permissions(itemid, itemname, browsertype, oldbrowser)
-    #If the new browser is a Flatpak, grant it permissions
-    if "flatpak" in variables.sources[browsertype][newbrowser]:
-        set_flatpak_permissions(itemid, itemname, browsertype, newbrowser)
+def removeFlatpakDownloadsPerm(flatpakid, downloadsdir, downloadsname):
+    targetfile = os.path.expanduser("~") + "/.local/share/flatpak/overrides/" + flatpakid
 
-    currentchild = ""
-    oldshortcut=DesktopEntry()
-    oldshortcut.parse(currentfile)
+    if not os.path.isfile(targetfile):
+        return #No file means no permissions set
+    with open(targetfile, "rt") as fp:
+        newcontents = fp.readlines()
+    i = 0
+    changed = False
+    for line in newcontents:
+        if line.startswith("filesystems="):
+            if "%s/%s;" % (downloadsdir, downloadsname) not in line:
+                continue #If the Flatpak doesn't have those permissions, don't bother writing to file
+            newcontents[i] = newcontents[i].replace("%s/%s;" % (downloadsdir, downloadsname), "")
+            newcontents[i] = newcontents[i].replace("%s/%s;" % (downloadsdir, downloadsname), "")
+            changed = True
+        i += 1
+    if changed == True:
+        with open(targetfile, "w") as fp:
+            fp.write("".join(newcontents))
 
-    #Check if it's a parent ID, and if so switch to it
-    if oldshortcut.get("X-Solstice-ParentID") != "":
-        #currentchild = os.path.basename(currentfile).replace(itemid + "-", "").removesuffix(".desktop")
-        currentchild = remove_suffix(os.path.basename(currentfile).replace(itemid + "-", ""), ".desktop")
-        currentfilelist = currentfile.split("/")
-        currentfilelist[-1] = currentfilelist[-1].replace("-" + currentchild + ".desktop", ".desktop")
-        currentfile = "/".join(currentfilelist)
-        #Swap out for parent .desktop
-        oldshortcut=DesktopEntry()
-        oldshortcut.parse(currentfile)
+def removeFlatpakPerms(itemid):
+    #Global permissions removal - used by the Storium module's uninstaller
+    profilesdir = "{0}/{1}".format(variables.solsticeProfilesDirectory, itemid)
+    with open("%s/.solstice-settings" % profilesdir, 'r') as fp:
+        configs = json.loads(fp.read())
+    if "lastdownloadsdir" not in configs:
+        configs["lastdownloadsdir"] = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) #Fallback value
+    for i in variables.sources:
+        for ii in variables.sources[i]:
+            if "flatpak" in variables.sources[i][ii]:
+                targetfile = os.path.expanduser("~") + "/.local/share/flatpak/overrides/" + variables.sources[i][ii]["flatpak"]
+
+                if not os.path.isfile(targetfile):
+                    continue #No file means no permissions set
+                with open(targetfile, "rt") as fp:
+                    newcontents = fp.readlines()
+                i = 0
+                changed = False
+                for line in newcontents:
+                    if line.startswith("filesystems="):
+                        if "%s;" % profilesdir in line:
+                            newcontents[i] = newcontents[i].replace("!%s;" % profilesdir, "")
+                            newcontents[i] = newcontents[i].replace("%s;" % profilesdir, "")
+                            changed = True
+                        if "downloadsdirname" not in configs:
+                            continue
+                        if "%s/%s;" % (configs["lastdownloadsdir"], configs["downloadsdirname"]) not in line:
+                            continue #If the Flatpak doesn't have those permissions, don't bother writing to file
+                        newcontents[i] = newcontents[i].replace("%s/%s;" % (configs["lastdownloadsdir"], configs["downloadsdirname"]), "")
+                        newcontents[i] = newcontents[i].replace("%s/%s;" % (configs["lastdownloadsdir"], configs["downloadsdirname"]), "")
+                        changed = True
+                    i += 1
+                if changed == True:
+                    with open(targetfile, "w") as fp:
+                        fp.write("".join(newcontents))
+    if "downloadsdirname" not in configs:
+        raise SolsticeUtilsException(_("Cannot remove Downloads folder permissions as the Downloads folder was not set."))
+
+
+def grantFlatpakProfilesPerm(browsertype, browser, profilesdir):
+    if "flatpak" in variables.sources[browsertype][browser]:
+        os.system('/usr/bin/flatpak override --user %s --filesystem="%s"' % (variables.sources[browsertype][browser]["flatpak"], profilesdir))
+
+def grantFlatpakDownloadsPerm(browsertype, browser, downloadsdir, downloadsname):
+    if "flatpak" in variables.sources[browsertype][browser]:
+        os.system('/usr/bin/flatpak override --user %s --filesystem="%s/%s"' % (variables.sources[browsertype][browser]["flatpak"], downloadsdir, downloadsname))
+
+
+def changeBrowserValue(parentfile, browsertype, oldbrowser, newbrowser, childfile=None):
+    #Read the parent file to obtain required information
+    parent=DesktopEntry()
+    parent.parse(parentfile)
+    parentdirectory = os.path.dirname(parentfile)
+
+    oldprefix = variables.sources[browsertype][oldbrowser]["classprefix"]
+    newprefix = variables.sources[browsertype][newbrowser]["classprefix"]
 
     #Get childrens' IDs
-    childids = []
-    childids = ast.literal_eval(oldshortcut.get("X-Solstice-Children"))
-    updatedidpaths = {}
+    childids = ast.literal_eval(parent.get("X-Solstice-Children"))
     #Update childrens' shortcuts
     for i in childids:
-        childfilelist = currentfile.split("/")
-        childfilelist[-1] = childfilelist[-1].replace(itemid + ".desktop", itemid + "-" + i + ".desktop")
-        childfile = "/".join(childfilelist)
-        updatedidpaths[i] = set_browser_shortcut(childfile, browsertype, itemid, newbrowser, i)
-    #Then update the main shortcut
-    updatedidpaths[itemid] = set_browser_shortcut(currentfile, browsertype, itemid, newbrowser)
+        childfile = parentdirectory + "/" + oldprefix + i + ".desktop"
+        if not os.path.isfile(childfile):
+            raise SolsticeUtilsException(_("%s's shortcut was not found") % i)
+        newpath = parentdirectory + "/" + newprefix + i + ".desktop"
+        with open(childfile, 'r') as old:
+            newshortcut = old.readlines()
+        ii = 0
+        for line in newshortcut:
+            if line.startswith("StartupWMClass="):
+                newshortcut[ii] = "StartupWMClass=" + newprefix + i + "\n"
+            elif line.startswith("Exec="):
+                if line.endswith(" --force-manager\n"):
+                    newshortcut[ii] = 'Exec=/usr/bin/solstice "' + newpath + '" --force-manager\n'
+                else:
+                    newshortcut[ii] = 'Exec=/usr/bin/solstice "' + newpath + '"\n'
+            ii += 1
 
-    if currentchild == "": #If this was summoned for the parent shortcut...
-        return updatedidpaths[itemid] #Return new shortcut path
-    else: #Otherwise...
-        return updatedidpaths[currentchild] #Return child shortcut path
-            
-def set_browser_shortcut(currentfile, browsertype, itemid, newbrowser, childid=""):
-    #Put old shortcut's lines into memory
-    with open(currentfile, 'r') as old:
+        os.remove(childfile) #Remove old shortcut
+        #Write new shortcut
+        with open(newpath, 'w') as fp:
+            fp.write(''.join(newshortcut))
+        #Mark shortcut as executable
+        os.system('/usr/bin/chmod +x "%s"' % newpath)
+
+    #Update parent file
+    i = parent.get("X-Solstice-ID")
+    newpath = parentdirectory + "/" + newprefix + i + ".desktop"
+    with open(parentfile, 'r') as old:
         newshortcut = old.readlines()
-
-    #Generate a new name for the shortcut
-    if childid == "":
-        newfilename = variables.sources[browsertype][newbrowser]["classprefix"] + itemid
-    else:
-        newfilename = variables.sources[browsertype][newbrowser]["classprefix"] + itemid + "-" + childid
-    newpath = os.path.join(os.path.dirname(currentfile), newfilename + ".desktop")
-
-    i = 0
+    ii = 0
     for line in newshortcut:
         if line.startswith("X-Solstice-Browser="):
-            newshortcut[i] = "X-Solstice-Browser=" + newbrowser + "\n"
+            newshortcut[ii] = "X-Solstice-Browser=" + newbrowser + "\n"
         elif line.startswith("StartupWMClass="):
-            newshortcut[i] = "StartupWMClass=" + newfilename + "\n"
+            newshortcut[ii] = "StartupWMClass=" + newprefix + i + "\n"
         elif line.startswith("Exec="):
             if line.endswith(" --force-manager\n"):
-                newshortcut[i] = 'Exec=/usr/bin/solstice "' + newpath + '" --force-manager\n'
+                newshortcut[ii] = 'Exec=/usr/bin/solstice "' + newpath + '" --force-manager\n'
             else:
-                newshortcut[i] = 'Exec=/usr/bin/solstice "' + newpath + '"\n'
-        i += 1
-    
-    os.remove(currentfile) #Remove old shortcut
+                newshortcut[ii] = 'Exec=/usr/bin/solstice "' + newpath + '"\n'
+        ii += 1
+
+    os.remove(parentfile) #Remove old shortcut
     #Write new shortcut
     with open(newpath, 'w') as fp:
         fp.write(''.join(newshortcut))
-
     #Mark as executable too
     os.system('/usr/bin/chmod +x "%s"' % newpath)
 
     #Return the shortcut to relaunch into
-    return newpath
-
-def delete_profilefolder(profilepath):
-    if not os.path.isdir(profilepath):
-        raise SolsticeUtilsException(_("The profile %s does not exist") % profilepath.split("/")[-1])
+    if childfile == None:
+        return newpath
     else:
-        if os.path.isfile(profilepath + "/.solstice-active-pid"):
+        return childfile.replace(parentdirectory + "/" + oldprefix, parentdirectory + "/" + newprefix)
+
+
+def deleteProfile(profiledir):
+    if not os.path.isdir(profiledir):
+        raise SolsticeUtilsException(_("The profile %s does not exist") % profiledir.split("/")[-1])
+    else:
+        if os.path.isfile(profiledir + "/.solstice-active-pid"):
             try:
-                with open(profilepath + "/.solstice-active-pid", 'r') as pidfile:
+                with open(profiledir + "/.solstice-active-pid", 'r') as pidfile:
                     lastpid = pidfile.readline()
                 lastpid = int(lastpid)
                 try:
@@ -426,6 +496,16 @@ def delete_profilefolder(profilepath):
                 raise ProfileInUseException(_("Failed to end %s's current session") % profileid)
 
     try:
-        shutil.rmtree(profilepath)
+        shutil.rmtree(profiledir)
     except Exception as e:
-        raise SolsticeUtilsException(_("Failed to delete {0}: {1}").format(profilepath.split("/")[-1], e))
+        raise SolsticeUtilsException(_("Failed to delete {0}: {1}").format(profiledir.split("/")[-1], e))
+
+
+def getTranslation(value, getid=False):
+    for i in [locale.getlocale()[0], locale.getlocale()[0].split("_")[0], "C"]:
+        if i in value:
+            if getid == False:
+                return value[i]
+            else:
+                return i
+    return None

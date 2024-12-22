@@ -2,7 +2,7 @@
 #
 # Copyright 2020-2023 Dominic Hayes
 
-from . import utils
+from . import utils, variables
 import os
 import gettext
 gettext.install("solstice-python", "/usr/share/locale", names="ngettext")
@@ -10,429 +10,442 @@ import gi
 from gi.repository import GLib
 import json
 import shutil
+import filecmp
+import colorsys
 
 class SolsticeChromiumException(Exception):
     pass
 
-def update_profile(iteminfo, extrawebsites, profilename, profilepath, nocache, skiptheme, downloadsdir, downloadsname):
-    #dict, list, string, string, bool, bool
-    if not os.path.isdir("%s/Default" % profilepath):
+
+def updateProfile(parentinfo, appsettings, psettings, profiledir, csssettings):
+    def excludeSettings(defaults, blacklist, prefs):
+        if prefs == {}:
+            # Skip excluding defaults if the profile isn't configured yet
+            return defaults
+        # Exclude defaults from being re-set if their settings already exist and should not be reset
+        for i in blacklist:
+            if type(blacklist[i]) == dict:
+                if i in prefs: # Recurse
+                    defaults[i] = excludeSettings(defaults[i], blacklist[i], prefs[i])
+            else:
+                if i in prefs:
+                    if blacklist[i] == None:
+                        defaults.pop(i) #Never reset (null)
+                    elif prefs[i] not in blacklist[i]:
+                        defaults.pop(i) #Reset only if value matches criteria
+        return defaults
+
+    # Generate profile folder if not present
+    if not os.path.isdir("%s/Default" % profiledir):
         try:
-            os.mkdir("%s/Default" % profilepath)
+            os.mkdir("%s/Default" % profiledir)
         except Exception as e:
-            raise SolsticeChromiumException(_("Failed to create the profile's Chromium Preferences folder: %s") % e)
-    PreferencesFile = "%s/Default/Preferences" % profilepath
+            raise SolsticeChromiumException(_("Failed to create the profile's folder: %s") % e)
 
-    result, defaultprefs = {}, {}
-    if os.path.isfile(PreferencesFile): #Load old Preferences into variable if one exists
-        with open(PreferencesFile, 'r') as fp:
-            result = json.loads(fp.read())
-    with open("/usr/share/solstice/chromium/Preferences", 'r') as fp: #Also load default browser preferences, so we can patch
-        defaultprefs = json.loads(fp.read())["general"]
+    # Update the Solstice CSS
+    updateSolstDefaultCSS(profiledir, parentinfo["browser"])
 
-    #Don't override certain settings in existing profiles
-    if "session" in result: #Restore on startup preference
-        if "restore_on_startup" in result["session"]:
-            defaultprefs["session"].pop("restore_on_startup")
-    if "webkit" in result: #Font preferences
-        if "webprefs" in result["webkit"]:
-            if "fonts" in result["webkit"]["webprefs"]:
-                for i in "fixed", "sansserif", "serif", "standard":
-                    if i in result["webkit"]["webprefs"]["fonts"]:
-                        if "Zyyy" in result["webkit"]["webprefs"]["fonts"][i]:
-                            defaultprefs["webkit"]["webprefs"]["fonts"][i].pop("Zyyy")
-    #Don't override theme settings if they're manually changed
-    if "extensions" in result: #Current theme
-        if "theme" in result["extensions"]:
-            if "id" in result["extensions"]["theme"]:
-                defaultprefs["extensions"]["theme"].pop("id")
-    if "vivaldi" in result: #Current theme (Vivaldi)
-        if "themes" in result["vivaldi"]:
-            if "current" in result["vivaldi"]["themes"]:
-                defaultprefs["vivaldi"]["themes"].pop("current")
-        if "theme" in result["vivaldi"]:
-            if "schedule" in result["vivaldi"]["theme"]:
-                if "enabled" in result["vivaldi"]["theme"]["schedule"]:
-                    defaultprefs["vivaldi"]["theme"]["schedule"].pop("enabled")
-                if "o_s" in result["vivaldi"]["theme"]["schedule"]:
-                    for i in "dark", "light":
-                        if i in result["vivaldi"]["theme"]["schedule"]["o_s"] and\
-                        result["vivaldi"]["theme"]["schedule"]["o_s"][i] != "ice" and\
-                        result["vivaldi"]["theme"]["schedule"]["o_s"][i] != "ice-dark":
-                            defaultprefs["vivaldi"]["theme"]["schedule"]["o_s"].pop(i)
-    #Update configurations in Preferences
-    result = utils.dict_recurupdate(result, defaultprefs)
+    # Get current and default profile defaults
+    prefile = "%s/Default/Preferences" % profiledir
+    if os.path.isfile(prefile):
+        with open(prefile, 'r') as fp:
+            confdict = json.loads(fp.read())
+    else:
+        confdict = {}
+    with open("/usr/share/solstice/chromium/Preferences", 'r') as fp:
+        defaults = json.loads(fp.read())
 
-    #Set important settings unique to each SSB
-    result["homepage"] = iteminfo["website"]
-    result["custom_links"]["list"][0]["title"] = iteminfo["name"]
-    result["custom_links"]["list"][0]["url"] = iteminfo["website"]
-    result["session"]["startup_urls"] = [iteminfo["website"]]
-    result["download"]["default_directory"] = downloadsdir + "/" + downloadsname
-    result["ntp"]["custom_background_dict"]["attribution_line_1"] = _("{0} - {1}").format(profilename, iteminfo["name"])
-    result["vivaldi"]["homepage"] = iteminfo["website"]
-    result["vivaldi"]["homepage_cache"] = iteminfo["website"]
+    # Also get current Local State if it exists
+    lsfile = "%s/Local State" % profiledir
+    if os.path.isfile(lsfile):
+        with open(lsfile, 'r') as fp:
+            lsdict = json.loads(fp.read())
+    else:
+        lsdict = {}
 
-    #Set the profile's name
-    result = change_profile_name(profilepath, iteminfo["name"], profilename, True, result)
+    # Prevent certain settings from being reset on existing profiles
+    defaults["default"] = excludeSettings(defaults["default"], defaults["resetblacklist"], confdict)
 
-    #Set no cache preference
-    result = set_profile_nocache(profilepath, nocache, True, result)
+    # Apply new defaults into profile
+    confdict = utils.dictRecurUpdate(confdict, defaults["default"])
 
-    #Set permissions for the initial website
-    result = chromi_set_sitepermissions(result, iteminfo["id"], iteminfo["website"], extrawebsites)
+    # Repeat with Local State
+    with open("/usr/share/solstice/chromium/Local State", 'r') as fp:
+        lsdefaults = json.loads(fp.read())
+        lsdefaults["default"] = excludeSettings(lsdefaults["default"], lsdefaults["resetblacklist"], lsdict)
+        lsdict = utils.dictRecurUpdate(lsdict, lsdefaults["default"])
 
-    #Toggle features for the SSB
-    result = chromi_set_additionalfeatures(result, iteminfo["nohistory"], iteminfo["googlehangouts"], iteminfo["workspaces"])
+    # Set profile defaults specific to the profile-application configuration
+    confdict["custom_links"]["list"][0]["title"] = parentinfo["name"]
+    confdict["custom_links"]["list"][0]["url"] = parentinfo["website"]
+    confdict["download"]["default_directory"] = appsettings["lastdownloadsdir"] + "/" + appsettings["downloadsdirname"]
+    confdict["homepage"] = parentinfo["website"]
+    confdict["session"]["startup_urls"] = [parentinfo["website"]]
+    confdict["vivaldi"]["homepage"] = parentinfo["website"]
+    confdict["vivaldi"]["homepage_cache"] = parentinfo["website"]
+    if "cssroot" in variables.sources[parentinfo["browsertype"]][parentinfo["browser"]]:
+        confdict["vivaldi"]["appearance"]["css_ui_mods_directory"] = "%s/%s" % \
+                (profiledir, variables.sources[parentinfo["browsertype"]][parentinfo["browser"]]["cssroot"])
+    confdict, lsdict = setProfileName(parentinfo, psettings["readablename"], profiledir, confdict, lsdict)
+    # confdict = setNoCache(psettings["nocache"], profiledir, confdict)
 
-    #Add bonuses to SSB
-    result = chromi_set_bonuses(result, iteminfo["bonusids"])
+    # Include Plasma Integration, and selected bonuses, into the profile
+    confdict = setBonuses(profiledir, parentinfo["bonusids"], confdict)
 
-    #Add theme colours to SSB (Vivaldi) and Chromium
-    result = chromi_set_colors(result, iteminfo["bg"], iteminfo["bgdark"], iteminfo["accent"], iteminfo["accentdark"], iteminfo["color"], iteminfo["colordark"], iteminfo["accentonwindow"], profilepath, skiptheme)
+    # Set permissions for our websites and required services' websites
+    confdict = setPermissions(defaults, confdict, parentinfo)
 
-    #Add the Start Page Bookmark
-    chromi_add_startpage(profilepath, iteminfo["name"], iteminfo["website"])
+    # Set Workspaces and History availability
+    confdict = setExtFeatures(defaults, confdict, parentinfo["nohistory"], parentinfo["workspaces"])
 
-    #Add in CSS and custom CSS
-    result["vivaldi"]["appearance"]["css_ui_mods_directory"] = "%s/CSS/vivaldi" % profilepath
-    # Normal CSS
-    if os.path.isdir("%s/CSS" % profilepath):
-        shutil.rmtree("%s/CSS" % profilepath)
-    if iteminfo["browsertype"] == "chromium" and iteminfo["browser"] == "vivaldi":
-        os.mkdir("%s/CSS" % profilepath)
-        os.mkdir("%s/CSS/vivaldi" % profilepath)
-        shutil.copyfile("/usr/share/solstice/vivaldicss/browser.css", "%s/CSS/vivaldi/main.css" % profilepath)
-    # Custom CSS
-    if os.path.isfile(os.path.expanduser("~") + "/.config/solstice/vivaldi.css"):
-        shutil.copyfile(os.path.expanduser("~") + "/.config/solstice/vivaldi.css", "%s/CSS/vivaldi/custom.css" % profilepath)
+    # Set the palette this application will use in the respective browsers
+    confdict = setPalette(csssettings, confdict, parentinfo)
 
-    #Remove theme if disabled on this browser
-    if skiptheme == True:
-        result["extensions"]["settings"].pop("aghfnjkcakhmadgdomlmlhhaocbkloab")
+    # Enable Vivaldi's bubbly mode if CSS requests it
+    if "connectedtabs" in csssettings:
+        if csssettings["connectedtabs"] == False:
+            confdict["vivaldi"]["appearance"]["density"] = True
 
-    #Save to the Preferences file
+    # Save to the Preferences file
     try:
-        with open(PreferencesFile, 'w') as fp:
-            fp.write(json.dumps(result, separators=(',', ':'))) # This dumps minified json (how convenient), which is EXACTLY what Chrome uses for Preferences, so it's literally pre-readied
-    except Exception as exceptionstr:
+        with open(prefile, 'w') as fp:
+            fp.write(json.dumps(confdict, separators=(',', ':'))) # This dumps minified json (how convenient), which is EXACTLY what Chrome uses for Preferences, so it's literally pre-readied
+    except:
         raise SolsticeChromiumException(_("Failed to write to Preferences"))
 
-    #Finally, configure Local State
-    chromi_update_local_state(profilepath)
-
-    #and finish off with this:
-    chromi_finishing_touches(profilepath)
-
-
-#Profile Name
-def change_profile_name(profilepath, itemname, value, patchvar=False, vartopatch={}):
-    #string, string
-    if not os.path.isdir(profilepath):
-        raise SolsticeChromiumException(_("The profile %s does not exist") % profilepath.split("/")[-1])
-    PreferencesFile = "%s/Default/Preferences" % profilepath
-
-    if patchvar == False: #Allow this to also be used in update_profile without causing an additional file-write
-        result = {}
-        if os.path.isfile(PreferencesFile): #Load old Preferences into variable if one exists
-            with open(PreferencesFile, 'r') as fp:
-                result = json.loads(fp.read())
-    else:
-        result = vartopatch
-
-    #Update configurations in Preferences
-    result["profile"]["name"] = _("{0} - {1}").format(value, itemname)
-
-    if patchvar == False:
-        #Save to the Preferences file
-        try:
-            with open(PreferencesFile, 'w') as fp:
-                fp.write(json.dumps(result, separators=(',', ':')))
-        except Exception as exceptionstr:
-            raise SolsticeChromiumException(_("Failed to write to Preferences"))
-        change_profile_name_ls(profilepath) #Only run this when called externally
-    else:
-        return result
-
-def change_profile_name_ls(profilepath, patchvar=False, vartopatch={}):
-    #string
-    if not os.path.isdir(profilepath):
-        raise SolsticeChromiumException(_("The profile %s does not exist") % profilepath.split("/")[-1])
-    LocalState = "%s/Local State" % profilepath
-
-    if patchvar == False: #Allow this to also be used in chromi_update_local_state without causing an additional file-write
-        result = {}
-        if os.path.isfile(LocalState): #Load old Local State into variable if one exists
-            with open(LocalState, 'r') as fp:
-                result = json.loads(fp.read())
-    else:
-        result = vartopatch
-
-    if "profile" in result: #Remove cached profile name
-        if "info_cache" in result["profile"]:
-            if "Default" in result["profile"]["info_cache"]:
-                result["profile"]["info_cache"].pop("Default")
-
-    if patchvar == False:
-        #Save to the Local State
-        try:
-            with open(LocalState, 'w') as fp:
-                fp.write(json.dumps(result, separators=(',', ':')))
-        except Exception as exceptionstr:
-            raise SolsticeChromiumException(_("Failed to write to Local State"))
-    else:
-        return result
-
-
-#No Cache
-def set_profile_nocache(profilepath, value, patchvar=False, vartopatch={}):
-    #string, bool
-    if not os.path.isdir(profilepath):
-        raise SolsticeChromiumException(_("The profile %s does not exist") % profilepath.split("/")[-1])
-    PreferencesFile = "%s/Default/Preferences" % profilepath
-
-    #NOTE: Chromiums have no cache occur via commandline arguments, so there is no need to do anything here right now
-    if patchvar == False: #Allow this to also be used in update_profile without causing an additional file-write
-        return
-    else:
-        return vartopatch
-
-
-#Default Settings
-def chromi_set_sitepermissions(preferencedict, itemid, ogwebsite, extrawebsites):
-    #dict, string, list
-
-    #Set the permissions for default website in this SSB
-    shortenedurl = utils.shorten_url(ogwebsite)
-    for permtype in ["automatic_downloads", "autoplay", "background_sync", "clipboard", "cookies", "file_handling", "font_access", "images", "javascript", "local_fonts", "notifications", "payment_handler", "sensors", "sleeping-tabs", "sound", "window_placement"]:
-        preferencedict["profile"]["content_settings"]["exceptions"][permtype] = {}
-        preferencedict["profile"]["content_settings"]["exceptions"][permtype]["[*.]"+shortenedurl+",*"] = {"expiration": "0", "model": 0, "setting": 1}
-        preferencedict["profile"]["content_settings"]["exceptions"][permtype][shortenedurl+",*"] = {"expiration": "0", "model": 0, "setting": 1}
-    for permtype in ["ar", "bluetooth_scanning", "file_system_write_guard", "geolocation", "hid_guard", "media_stream_camera", "media_stream_mic", "midi_sysex", "serial_guard", "storage_access", "usb_guard", "vr"]:
-        preferencedict["profile"]["content_settings"]["exceptions"][permtype] = {}
-        preferencedict["profile"]["content_settings"]["exceptions"][permtype]["[*.]"+shortenedurl+",*"] = {"expiration": "0", "model": 0, "setting": 3}
-        preferencedict["profile"]["content_settings"]["exceptions"][permtype][shortenedurl+",*"] = {"expiration": "0", "model": 0, "setting": 3}
-
-    #Set the permissions for extra websites in this SSB
-    for extrawebsite in extrawebsites:
-        shortenedurl = utils.shorten_url(extrawebsite)
-        try:
-            shortenedurl = shortenedurl.split("/")[0]
-        except:
-            pass
-        for permtype in ["automatic_downloads", "autoplay", "background_sync", "clipboard", "cookies", "file_handling", "font_access", "images", "javascript", "local_fonts", "notifications", "payment_handler", "sensors", "sleeping-tabs", "sound", "window_placement"]:
-            preferencedict["profile"]["content_settings"]["exceptions"][permtype]["[*.]"+shortenedurl+",*"] = {"expiration": "0", "model": 0, "setting": 1}
-            preferencedict["profile"]["content_settings"]["exceptions"][permtype][shortenedurl+",*"] = {"expiration": "0", "model": 0, "setting": 1}
-        for permtype in ["ar", "bluetooth_scanning", "file_system_write_guard", "geolocation", "hid_guard", "media_stream_camera", "media_stream_mic", "midi_sysex", "serial_guard", "storage_access", "usb_guard", "vr"]:
-            preferencedict["profile"]["content_settings"]["exceptions"][permtype]["[*.]"+shortenedurl+",*"] = {"expiration": "0", "model": 0, "setting": 3}
-            preferencedict["profile"]["content_settings"]["exceptions"][permtype][shortenedurl+",*"] = {"expiration": "0", "model": 0, "setting": 3}
-
-    #Return the modified Preferences
-    return preferencedict
-
-
-#Vivaldi and Brave settings
-def chromi_set_additionalfeatures(preferencedict, nohistory=False, allowgooglehangouts=False, allowworkspaces=False):
-    #dict, bool, bool, bool
-
-    #First, open the Preferences file
-    with open("/usr/share/solstice/chromium/preferences.json", 'r') as fp:
-        preferencesjson = json.loads(fp.read())
-
-    if not allowgooglehangouts: #Disable Google Hangouts if unneeded
-        preferencedict = utils.dict_recurupdate(preferencedict, preferencesjson["disable-googlehangouts"])
-    if not allowworkspaces: #Disable Workspaces if unneeded
-        preferencedict = utils.dict_recurupdate(preferencedict, preferencesjson["disable-workspaces"])
-    if nohistory: #Disable History if the SSB provides History itself
-        preferencedict = utils.dict_recurupdate(preferencedict, preferencesjson["disable-history"])
-
-    #Return the modified Preferences
-    return preferencedict
-
-
-#Bonuses
-def chromi_set_bonuses(preferencedict, bonuses=[]):
-    #dict, list
-
-    #First, open the Extras file
-    with open("/usr/share/solstice/chromium/bonuses.json", 'r') as fp:
-        bonusesjson = json.loads(fp.read())
-
-    #First, add the bonuses that were chosen
-    for item in bonuses:
-        if item in bonusesjson:
-            #Check that the extension isn't already installed
-            for extensionid in bonusesjson[item]["extensions"]["settings"]:
-                if extensionid in preferencedict["extensions"]["settings"]:
-                    #If it is, clear out stuff that would uninstall the extra if installed
-                    bonusesjson[item]["extensions"]["settings"][extensionid].pop("path", None)
-                    bonusesjson[item]["extensions"]["settings"][extensionid]["manifest"].pop("name", None)
-                    bonusesjson[item]["extensions"]["settings"][extensionid]["manifest"].pop("version", None)
-            #Now that is done, install extra to profile
-            preferencedict = utils.dict_recurupdate(preferencedict, bonusesjson[item])
-    #Second, we remove bonuses no longer selected
-    for item in bonusesjson:
-        if not item in bonuses:
-            for extensionid in bonusesjson[item]["extensions"]["settings"]:
-                preferencedict["extensions"]["settings"].pop(extensionid, None)
-
-    #Now, return the modified Preferences
-    return preferencedict
-
-
-#Theme colouring
-def chromi_set_colors(preferencedict, bg, bgdark, accent, accentdark, color, colordark, accentonwindow, profilepath, skiptheme):
-    #dict, string, string, string, string, string, bool
-
-    def color_to_rgb(hexcode, includefourth=False):
-        redc, greenc, bluec = tuple(int(hexcode[i:i+2], 16) for i in (1, 3, 5)) #Dodge the # character
-
-        return [redc, greenc, bluec] if includefourth == False else [redc, greenc, bluec, 1]
-
-    #Chromium and co.
-    if os.path.isdir(profilepath + "/Default/Extensions/aghfnjkcakhmadgdomlmlhhaocbkloab"):
-        try:
-            shutil.rmtree(profilepath + "/Default/Extensions/aghfnjkcakhmadgdomlmlhhaocbkloab")
-        except Exception as e:
-            raise SolsticeChromiumException(_("Failed to prepare to update a profile dependency: %s") % e)
-    if skiptheme == False:
-        if accentonwindow == True:
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["bookmark_text"] = [0, 0, 0] if utils.color_is_light(bg) == True else [255, 255, 255] #Bookmark's text
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["button_background"] = color_to_rgb(accent) #Titlebar buttons (unused)
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["frame"] = color_to_rgb(accent) #Titlebar
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["frame_inactive"] = color_to_rgb(accent) #Titlebar (inactive)
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["ntp_background"] = color_to_rgb(accent) #Self-explanatory
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["ntp_link"] = [0, 0, 0] if utils.color_is_light(accent) == True else [255, 255, 255] #NTP link (unused)
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["ntp_text"] = [0, 0, 0] if utils.color_is_light(accent) == True else [255, 255, 255] #NTP item-text
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["omnibox_background"] = color_to_rgb(utils.color_filter(bg, 15.3)) if utils.color_is_light(bg) == True else color_to_rgb(utils.color_filter(bg, -23.0)) #Omnibox
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["omnibox_text"] = [0, 0, 0] if utils.color_is_light(bg) == True else [255, 255, 255] #Omnibox text
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["tab_background_text"] = [0, 0, 0] if utils.color_is_light(accent) == True else [255, 255, 255] #Titlebar text
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["tab_background_text_inactive"] = [0, 0, 0] if utils.color_is_light(accent) == True else [255, 255, 255] #Titlebar text (inactive)
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["tab_text"] = [0, 0, 0] if utils.color_is_light(bg) == True else [255, 255, 255] #Active tab's text
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["toolbar"] = color_to_rgb(bg) #Toolbar
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["toolbar_button_icon"] = [0, 0, 0] if utils.color_is_light(bg) == True else [255, 255, 255] #Toolbar icons
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["toolbar_text"] = [0, 0, 0] if utils.color_is_light(bg) == True else [255, 255, 255] #Toolbar text
-        else:
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["bookmark_text"] = [0, 0, 0] if utils.color_is_light(accent) == True else [255, 255, 255]
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["button_background"] = color_to_rgb(bg)
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["frame"] = color_to_rgb(bg)
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["frame_inactive"] = color_to_rgb(bg)
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["ntp_background"] = color_to_rgb(bg)
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["ntp_link"] = [0, 0, 0] if utils.color_is_light(bg) == True else [255, 255, 255]
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["ntp_text"] = [0, 0, 0] if utils.color_is_light(bg) == True else [255, 255, 255]
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["omnibox_background"] = color_to_rgb(bg)
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["omnibox_text"] = [0, 0, 0] if utils.color_is_light(bg) == True else [255, 255, 255]
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["tab_background_text"] = [0, 0, 0] if utils.color_is_light(bg) == True else [255, 255, 255]
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["tab_background_text_inactive"] = [0, 0, 0] if utils.color_is_light(bg) == True else [255, 255, 255]
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["tab_text"] = [0, 0, 0] if utils.color_is_light(accent) == True else [255, 255, 255]
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["toolbar"] = color_to_rgb(accent)
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["toolbar_button_icon"] = [0, 0, 0] if utils.color_is_light(accent) == True else [255, 255, 255]
-            preferencedict["extensions"]["settings"]["aghfnjkcakhmadgdomlmlhhaocbkloab"]["manifest"]["theme"]["colors"]["toolbar_text"] = [0, 0, 0] if utils.color_is_light(accent) == True else [255, 255, 255]
-
-        # Update the fake theme accordingly
-        if not os.path.isdir(profilepath + "/Default/Extensions"):
-            try:
-                os.mkdir(profilepath + "/Default/Extensions")
-            except Exception as e:
-                raise SolsticeChromiumException(_("Failed to create the profile's Chromium Extensions folder: %s") % e)
-        for i in ["/Default/Extensions/aghfnjkcakhmadgdomlmlhhaocbkloab", "/Default/Extensions/aghfnjkcakhmadgdomlmlhhaocbkloab/99_0"]:
-            try:
-                os.mkdir(profilepath + i)
-            except Exception as e:
-                raise SolsticeChromiumException(_("Failed to create a profile dependency folder: %s") % e)
-        try:
-            with open(profilepath + "/Default/Extensions/aghfnjkcakhmadgdomlmlhhaocbkloab/99_0/manifest.json", 'w') as fp:
-                result = {"key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqxThvdYeWk6kwfNo+/HoqQSkL6iBx48w28vEPXHdhJo8OHMxS7D+1W1nhUsv4hOnb1CM2TlP/Nh9G+1Z32R9r6RmVxD1Anq9ZTZpK7VHVUxExGR4X9+TYHKWk8VGAjSBmutvayf0i0gCEkh7Pdc68ex4M0ypKGFWxBzxqw2uQ/4BLMVB/9KZJwXOC5LcaBNgq2Q74J3Dd3a90OzFXh+vC9zIyDueu3/K4F6u5bXgsgviAGIrUm7YbGhLDMxuW81zvYMlLtkA4XDDnhgk88s0G/5OwoMEyU6YdMq9R795NHsI0bPUMOOgUsPT5cytKRcQMegMassBe9EB+ktTl9CloQIDAQAB", \
-                    "manifest_version": 3, "name": "Solstice", "theme": {}, "version": "99"}
-                fp.write(json.dumps(result, separators=(',', ':')))
-        except Exception as exceptionstr:
-            raise SolsticeChromiumException(_("Failed to prepare a profile dependency"))
-
-    #Vivaldi
-    # Ensure 'colour' usage doesn't camoflague in the tab/dialogs colour
-    coloradaptive = ("#000000" if utils.color_is_light(color) else "#FFFFFF") if not utils.are_colours_different(color, bg) else color
-    coloradaptivedark = ("#000000" if utils.color_is_light(colordark) else "#FFFFFF") if not utils.are_colours_different(colordark, bgdark) else colordark
-    bgprivate = utils.color_filter(color, -70.0)
-    preferencedict["vivaldi"]["themes"]["system"][0]["accentOnWindow"] = accentonwindow
-    preferencedict["vivaldi"]["themes"]["system"][1]["accentOnWindow"] = accentonwindow
-    preferencedict["vivaldi"]["themes"]["system"][2]["accentOnWindow"] = False
-    preferencedict["vivaldi"]["themes"]["system"][0]["colorAccentBg"] = accent
-    preferencedict["vivaldi"]["themes"]["system"][1]["colorAccentBg"] = accentdark
-    preferencedict["vivaldi"]["themes"]["system"][2]["colorAccentBg"] = utils.color_filter(color, -46.0)
-    preferencedict["vivaldi"]["themes"]["system"][0]["colorBg"] = bg
-    preferencedict["vivaldi"]["themes"]["system"][1]["colorBg"] = bgdark
-    preferencedict["vivaldi"]["themes"]["system"][2]["colorBg"] = bgprivate
-    preferencedict["vivaldi"]["themes"]["system"][0]["colorHighlightBg"] = coloradaptive
-    preferencedict["vivaldi"]["themes"]["system"][1]["colorHighlightBg"] = coloradaptivedark
-    preferencedict["vivaldi"]["themes"]["system"][2]["colorHighlightBg"] = color
-    preferencedict["vivaldi"]["themes"]["system"][0]["colorWindowBg"] = accent if accentonwindow else bg
-    preferencedict["vivaldi"]["themes"]["system"][1]["colorWindowBg"] = accentdark if accentonwindow else bgdark
-    preferencedict["vivaldi"]["themes"]["system"][2]["colorWindowBg"] = bgprivate
-    #Now set text colours where appropriate
-    # Normal foregrounds
-    preferencedict["vivaldi"]["themes"]["system"][0]["colorFg"] = "#000000" if utils.color_is_light(bg) else "#FFFFFF"
-    preferencedict["vivaldi"]["themes"]["system"][1]["colorFg"] = "#000000" if utils.color_is_light(bgdark) else "#FFFFFF"
-    # Private foregrounds
-    preferencedict["vivaldi"]["themes"]["system"][2]["colorFg"] = "#000000" if utils.color_is_light(bgprivate) else "#FFFFFF"
-
-    #Return the modified Preferences
-    return preferencedict
-
-
-#Local State
-def chromi_update_local_state(profilepath):
-    #string, string, bool
-    if not os.path.isdir(profilepath):
-        raise SolsticeChromiumException(_("The profile %s does not exist") % profilepath.split("/")[-1])
-
-    LocalStateFile = "%s/Local State" % profilepath
-
-    result = {}
-    if os.path.isfile(LocalStateFile): #Load old Preferences into variable if one exists
-        with open(LocalStateFile, 'r') as fp:
-            result = json.loads(fp.read())
-    with open("/usr/share/solstice/chromium/Local State", 'r') as fp: #Also load default local state, so we can patch
-        result = utils.dict_recurupdate(result, json.loads(fp.read()))
-
-    #Remove profile cache from Local State
-    result = change_profile_name_ls(profilepath, True, result)
-
-    #Save to the Local State
+    # Save to the Local State file
     try:
-        with open(LocalStateFile, 'w') as fp:
-            fp.write(json.dumps(result, separators=(',', ':'))) # Also a minified json
-    except Exception as exceptionstr:
+        with open(lsfile, 'w') as fp:
+            fp.write(json.dumps(lsdict, separators=(',', ':')))
+    except:
         raise SolsticeChromiumException(_("Failed to write to Local State"))
 
 
-#Start Page
-def chromi_add_startpage(profilepath, name, website):
-    #dict, string, string
-    if not os.path.isdir(profilepath):
-        raise SolsticeChromiumException(_("The profile %s does not exist") % profilepath.split("/")[-1])
-
-    #First, open default Bookmarks file
-    with open("/usr/share/solstice/chromium/Bookmarks", 'r') as fp:
-        result = json.loads(fp.read())
-
-    #Then tweak the values
-    result["roots"]["bookmark_bar"]["children"][0]["children"][0]["meta_info"]["Thumbnail"] = "data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
-    result["roots"]["bookmark_bar"]["children"][0]["children"][0]["name"] = _("%s") % name
-    result["roots"]["bookmark_bar"]["children"][0]["children"][0]["url"] = website
-
-    #Then write to Bookmarks
+    # Finally, create the First Run file
     try:
-        with open("%s/Default/Bookmarks" % profilepath, 'w') as fp:
-            fp.write(json.dumps(result, separators=(',', ':'))) # Also a minified json
-    except Exception as exceptionstr:
-        raise SolsticeChromiumException(_("Failed to write to Bookmarks"))
+        with open("%s/First Run" % profiledir, 'w') as fp:
+            pass # Skips the initial Welcome options dialog
+    except Exception as e:
+        raise SolsticeChromiumException(_("Failed at the last minute"))
 
 
-#Finishing touches
-def chromi_finishing_touches(profilepath):
-    #string, string
-    if not os.path.isdir(profilepath):
-        raise SolsticeChromiumException(_("The profile %s does not exist") % profilepath.split("/")[-1])
+##########################################################
+# CSS Settings
+##########################################################
 
-    with open("%s/First Run" % profilepath, 'w') as fp:
-        pass #Skips the initial Welcome to Google Chrome dialog
+def updateCSSSettings(parentinfo, profiledir, csssettings):
+    # Get current and default profile defaults
+    prefile = "%s/Default/Preferences" % profiledir
+    if os.path.isfile(prefile):
+        with open(prefile, 'r') as fp:
+            confdict = json.loads(fp.read())
+    else:
+        raise SolsticeChromiumException(_("Preferences does not exist - the profile should have been updated instead of running this function"))
+    
+    # Update the palette this application will use per the settings
+    confdict = setPalette(csssettings, confdict, parentinfo)
+
+    # Toggle Vivaldi's bubbly mode accordingly
+    confdict["vivaldi"]["appearance"]["density"] = False
+    if "connectedtabs" in csssettings:
+        if csssettings["connectedtabs"] == False:
+            confdict["vivaldi"]["appearance"]["density"] = True
+
+    # Save changes to Preferences file
+    try:
+        with open(prefile, 'w') as fp:
+            fp.write(json.dumps(confdict, separators=(',', ':'))) # This dumps minified json (how convenient), which is EXACTLY what Chrome uses for Preferences, so it's literally pre-readied
+    except:
+        raise SolsticeChromiumException(_("Failed to write to Preferences"))
+
+
+##########################################################
+# Profile Updating
+##########################################################
+
+def updateSolstDefaultCSS(profiledir, browser):
+    # Don't continue if the browser is ineligible
+    if "cssfolder" not in variables.sources["chromium"][browser]:
+        return
+    cssroot = variables.sources["chromium"][browser]["cssroot"]
+
+    # Abort if the Browser-specific CSS's folder is somehow not present
+    if not os.path.isdir(profiledir + "/" + cssroot):
+        raise SolsticeChromiumException(_("The CSS's folder does not exist - it should have been created by updateCSS"))
+
+    # Copy Solstice's Browser-specific CSS
+    try:
+        shutil.copy("/usr/share/solstice/chromium/chrome/%s.css" % variables.sources["chromium"][browser]["cssfolder"],
+                "%s/solsticss.css" % (profiledir + "/" + cssroot))
+    except Exception as e:
+        raise SolsticeChromiumException(_("Failed to copy Solstice's CSS: %s") % e)
+    
+
+def setProfileName(parentinfo, newname, profiledir, confdict=None, lsdict=None):
+    if not os.path.isdir(profiledir):
+        raise SolsticeChromiumException(_("The profile %s does not exist") % profiledir.split("/")[-1])
+
+    patchfiles = (confdict == None and lsdict == None)
+    # Preferences file
+    if confdict == None:
+        prefile = "%s/Default/Preferences" % profiledir
+        if os.path.isfile(prefile): # Load Preferences into variable if one exists
+            with open(prefile, 'r') as fp:
+                confdict = json.loads(fp.read())
+    # Local State file
+    if lsdict == None:
+        lsfile = "%s/Local State" % profiledir
+        if os.path.isfile(lsfile): # Load Local State into variable if one exists
+            with open(lsfile, 'r') as fp:
+                lsdict = json.loads(fp.read())
+
+    # Update configurations in Preferences
+    confdict["profile"]["name"] = _("{0} - {1}").format(newname, parentinfo["name"])
+    # Remove cached profile name
+    if "profile" in lsdict:
+        if "info_cache" in lsdict["profile"]:
+            if "Default" in lsdict["profile"]["info_cache"]:
+                lsdict["profile"]["info_cache"].pop("Default")
+
+    if patchfiles:
+        # Save to Preferences
+        try:
+            with open(prefile, 'w') as fp:
+                fp.write(json.dumps(confdict, separators=(',', ':')))
+        except Exception as exceptionstr:
+            raise SolsticeChromiumException(_("Failed to write to Preferences"))
+        # Save to Local State
+        try:
+            with open(lsfile, 'w') as fp:
+                fp.write(json.dumps(lsdict, separators=(',', ':')))
+        except Exception as exceptionstr:
+            raise SolsticeChromiumException(_("Failed to write to Local State"))
+    else:
+        return confdict, lsdict
+
+
+def setBonuses(profiledir, bonuses=[], confdict=None):
+    if not os.path.isdir(profiledir):
+        raise SolsticeChromiumException(_("The profile %s does not exist") % profiledir.split("/")[-1])
+
+    patchfiles = (confdict == None)
+    # Preferences file
+    if confdict == None:
+        prefile = "%s/Default/Preferences" % profiledir
+        if os.path.isfile(prefile): # Load Preferences into variable if one exists
+            with open(prefile, 'r') as fp:
+                confdict = json.loads(fp.read())
+
+    # Open the Bonuses file
+    with open("/usr/share/solstice/chromium/bonuses.json", 'r') as fp:
+        bonusesjson = json.loads(fp.read())
+
+    # Add the required extensions settings parent if not present yet
+    if "extensions" not in confdict:
+        confdict["extensions"] = {}
+    if "settings" not in confdict["extensions"]:
+        confdict["extensions"]["settings"] = {}
+
+    # Add/remove bonuses based on bonus-selection
+    bonuses.append("plasma-integration")
+    for item in bonusesjson:
+        if item in bonuses:
+            # Prevent 'downgrading' the selected bonuses
+            for extid in bonusesjson[item]:
+                if extid in confdict["extensions"]["settings"]:
+                    bonusesjson[item][extid]["manifest"].pop("name", None)
+                    bonusesjson[item][extid]["manifest"].pop("version", None)
+                    bonusesjson[item][extid]["manifest"].pop("manifest_version", None)
+                    bonusesjson[item][extid].pop("path", None)
+            confdict["extensions"]["settings"] = utils.dictRecurUpdate(confdict["extensions"]["settings"], bonusesjson[item])
+        else:
+            for extid in bonusesjson[item]:
+                confdict["extensions"]["settings"].pop(extid, None)
+
+    if patchfiles:
+        # Save to Preferences
+        try:
+            with open(prefile, 'w') as fp:
+                fp.write(json.dumps(confdict, separators=(',', ':')))
+        except Exception as exceptionstr:
+            raise SolsticeChromiumException(_("Failed to write to Preferences"))
+    else:
+        return confdict
+    
+
+def setNoCache(newbool, profiledir, confdict=None):
+    # if not os.path.isdir(profiledir):
+    #     raise SolsticeChromiumException(_("The profile %s does not exist") % profiledir.split("/")[-1])
+    
+    patchfiles = (confdict == None)
+    # # Preferences file
+    # if confdict == None:
+    #     prefile = "%s/Default/Preferences" % profiledir
+    #     if os.path.isfile(prefile): # Load Preferences into variable if one exists
+    #         with open(prefile, 'r') as fp:
+    #             confdict = json.loads(fp.read())
+
+    # NOTE:
+    # Chromium browsers DON'T have anything to do here.
+    # To disable cache, arguments are used instead at their runtime.
+
+    if patchfiles:
+        pass
+        # # Save to Preferences
+        # try:
+        #     with open(prefile, 'w') as fp:
+        #         fp.write(json.dumps(confdict, separators=(',', ':')))
+        # except Exception as exceptionstr:
+        #     raise SolsticeChromiumException(_("Failed to write to Preferences"))
+    else:
+        return confdict
+
+
+def setPermissions(defaults, confdict, parentinfo):
+    # Open the Services file
+    with open("/usr/share/solstice/info/services.json", 'r') as fp:
+        services = json.loads(fp.read())
+
+    # Collate websites to grant permissions to
+    websites = [utils.shortenURL(parentinfo["website"])] # Main website
+    for i in parentinfo["extrawebsites"]: # Child websites
+        ii = utils.shortenURL(i)
+        try:
+            ii = ii.split("/")[0]
+        except:
+            pass
+        websites.append(ii)
+    for i in parentinfo["services"]: # Required services' domains
+        if i in services:
+            for ii in services[i]:
+                websites.append(services[i][ii])
+
+    # Grant permissions to the websites
+    for domain in websites:
+        for permtype in ["automatic_downloads", "automatic_fullscreen", "auto_picture_in_picture", "autoplay", "background_sync", "captured_surface_control", "clipboard", "cookies", "file_handling", "font_access", "images", "javascript", "local_fonts", "notifications", "payment_handler", "popups", "sensors", "sleeping_tabs", "sound", "window_placement"]:
+            confdict["profile"]["content_settings"]["exceptions"][permtype] = {}
+            confdict["profile"]["content_settings"]["exceptions"][permtype]["[*.]"+domain+",*"] = {"expiration": "0", "model": 0, "setting": 1}
+            confdict["profile"]["content_settings"]["exceptions"][permtype][domain+",*"] = {"expiration": "0", "model": 0, "setting": 1}
+        for permtype in ["ar", "bluetooth_scanning", "file_system_write_guard", "geolocation", "hid_guard", "media_stream_camera", "media_stream_mic", "midi_sysex", "serial_guard", "storage_access", "usb_guard", "vr"]:
+            confdict["profile"]["content_settings"]["exceptions"][permtype] = {}
+            confdict["profile"]["content_settings"]["exceptions"][permtype]["[*.]"+domain+",*"] = {"expiration": "0", "model": 0, "setting": 3}
+            confdict["profile"]["content_settings"]["exceptions"][permtype][domain+",*"] = {"expiration": "0", "model": 0, "setting": 3}
+
+    # Disabled Hangouts if the Hangouts service isn't required
+    if "google-hangouts" not in parentinfo["services"]:
+        confdict = utils.dictRecurUpdate(confdict, defaults["disable-googlehangouts"])
+    
+    # Return the modified Preferences
+    return confdict
+
+
+def setExtFeatures(defaults, confdict, nohistory, workspaces):
+    if nohistory: # Disable History if the SSB provides History itself
+        confdict = utils.dictRecurUpdate(confdict, defaults["nohistory"])
+    if workspaces: # Enable Workspaces if needed
+        confdict = utils.dictRecurUpdate(confdict, defaults["workspaces"])
+    
+    return confdict
+
+
+def setPalette(csssettings, confdict, parentinfo):
+    def getNearestNeighbour(header, tab, page):
+        # Get the HSLs
+        r, g, b = tuple(int(page[i:i+2], 16) for i in (1, 3, 5))
+        pageh, pages, pagel = colorsys.rgb_to_hsv(r, g, b)
+        r, g, b = tuple(int(header[i:i+2], 16) for i in (1, 3, 5))
+        hdrh, hdrs, hdrl = colorsys.rgb_to_hsv(r, g, b)
+        r, g, b = tuple(int(tab[i:i+2], 16) for i in (1, 3, 5))
+        tabh, tabs, tabl = colorsys.rgb_to_hsv(r, g, b)
+
+        # Find the difference
+        tabldiff = abs(pagel - tabl) # Prevent from becoming negative
+        hdrldiff = abs(pagel - hdrl)
+        tabsdiff = abs(pages - tabs)
+        hdrsdiff = abs(pages - hdrs)
+        tabhdiff = abs(pageh - tabh)
+        hdrhdiff = abs(pageh - hdrh)
+        # Return the 'nearest neighbour' to page background
+        #  NOTE: Lightness has highest priority, hence the difference is tripled
+        if ((3 * tabldiff) + (2 * tabsdiff) + tabhdiff) <= ((3 * hdrldiff) + (2 * hdrsdiff) + hdrhdiff): #Tab colour is nearer
+            return tab
+        else:
+            return header
+        
+    # Apply appropriate Chromium "Material You" colour
+    #  NOTE: The colour from light mode is used for the colour
+    if utils.isColorGrey(parentinfo["accent"]):
+        # If the colour is a shade of grey, we need to actually apply grey
+        #  If we don't, we'll get a random colour instead - only hue is actually used.
+        confdict["browser"]["theme"]["is_grayscale"] = True
+        confdict["browser"]["theme"].pop("color_variant", None)
+        confdict["browser"]["theme"].pop("user_color", None)
+    else:
+        # NOTE: -16777216 is the minimum value, being black, with -1 being white
+        #  Essentially, to apply the colour we take its hex value, convert it to decimal,
+        #  and then add it to the minimum value, and... profit.
+        confdict["browser"]["theme"]["user_color"] = -16777216 + int(parentinfo["accent"][1:], 16)
+        confdict["browser"]["theme"]["color_variant"] = 1
+        confdict["browser"]["theme"].pop("is_grayscale", None)
+
+    # Vivaldi palette
+    visuallyconnectedtabs = True # Default value
+    # Override if CSS states wanting otherwise
+    if "connectedtabs" in csssettings:
+        if csssettings["connectedtabs"] == False:
+            visuallyconnectedtabs = False
+
+    # Get header, tab and page colours appropriate to the visual tabs connection or lack-of
+    if visuallyconnectedtabs == True:
+        lighthdr, darkhdr = parentinfo["connheaderlight"], parentinfo["connheaderdark"]
+        lighttab, darktab = parentinfo["conntablight"], parentinfo["conntabdark"]
+        lightpage, darkpage = parentinfo["connsitelight"], parentinfo["connsitedark"]
+    else:
+        lighthdr, darkhdr = parentinfo["headerlight"], parentinfo["headerdark"]
+        lighttab, darktab = parentinfo["tablight"], parentinfo["tabdark"]
+        lightpage, darkpage = parentinfo["sitelight"], parentinfo["sitedark"]
+
+    # Light
+    #  NOTE: Vivaldi has no separate page colour - therefore, we need to set
+    #  the palette accordingly so the colour used in pages is the closest
+    #  palette colour possible to the intended page colour by mapping accordingly.
+    if getNearestNeighbour(lighthdr, lighttab, lightpage) == lighthdr:
+        confdict["vivaldi"]["themes"]["system"][0]["accentOnWindow"] = False
+        confdict["vivaldi"]["themes"]["system"][0]["colorAccentBg"] = lighttab
+        confdict["vivaldi"]["themes"]["system"][0]["colorBg"] = lighthdr
+        confdict["vivaldi"]["themes"]["system"][0]["colorWindowBg"] = lighthdr
+        confdict["vivaldi"]["themes"]["system"][0]["colorFg"] = "#000000" if utils.colourIsLight(lighthdr) else "#FFFFFF"
+        confdict["vivaldi"]["themes"]["system"][0]["colorHighlightBg"] = parentinfo["accent"] if utils.coloursDiffer(parentinfo["accent"], lighthdr) else confdict["vivaldi"]["themes"]["system"][0]["colorFg"]
+    else:
+        confdict["vivaldi"]["themes"]["system"][0]["accentOnWindow"] = True
+        confdict["vivaldi"]["themes"]["system"][0]["colorAccentBg"] = lighthdr
+        confdict["vivaldi"]["themes"]["system"][0]["colorBg"] = lighttab
+        confdict["vivaldi"]["themes"]["system"][0]["colorWindowBg"] = lighttab
+        confdict["vivaldi"]["themes"]["system"][0]["colorFg"] = "#000000" if utils.colourIsLight(lighttab) else "#FFFFFF"
+        confdict["vivaldi"]["themes"]["system"][0]["colorHighlightBg"] = parentinfo["accent"] if utils.coloursDiffer(parentinfo["accent"], lighttab) else confdict["vivaldi"]["themes"]["system"][0]["colorFg"]
+
+    # Dark
+    if getNearestNeighbour(darkhdr, darktab, darkpage) == darkhdr:
+        confdict["vivaldi"]["themes"]["system"][1]["accentOnWindow"] = False
+        confdict["vivaldi"]["themes"]["system"][1]["colorAccentBg"] = darktab
+        confdict["vivaldi"]["themes"]["system"][1]["colorBg"] = darkhdr
+        confdict["vivaldi"]["themes"]["system"][1]["colorWindowBg"] = darkhdr
+        confdict["vivaldi"]["themes"]["system"][1]["colorFg"] = "#000000" if utils.colourIsLight(darkhdr) else "#FFFFFF"
+        confdict["vivaldi"]["themes"]["system"][1]["colorHighlightBg"] = parentinfo["accentdark"] if utils.coloursDiffer(parentinfo["accentdark"], darkhdr) else confdict["vivaldi"]["themes"]["system"][1]["colorFg"]
+    else:
+        confdict["vivaldi"]["themes"]["system"][1]["accentOnWindow"] = True
+        confdict["vivaldi"]["themes"]["system"][1]["colorAccentBg"] = darkhdr
+        confdict["vivaldi"]["themes"]["system"][1]["colorBg"] = darktab
+        confdict["vivaldi"]["themes"]["system"][1]["colorWindowBg"] = darktab
+        confdict["vivaldi"]["themes"]["system"][1]["colorFg"] = "#000000" if utils.colourIsLight(darktab) else "#FFFFFF"
+        confdict["vivaldi"]["themes"]["system"][1]["colorHighlightBg"] = parentinfo["accentdark"] if utils.coloursDiffer(parentinfo["accentdark"], darktab) else confdict["vivaldi"]["themes"]["system"][1]["colorFg"]
+
+    # Private (NOTE: Colour palette is the same regardless of connected tabs option)
+    confdict["vivaldi"]["themes"]["system"][2]["accentOnWindow"] = False
+    confdict["vivaldi"]["themes"]["system"][2]["colorAccentBg"] = utils.colourFilter(parentinfo["accent"], -46.0)
+    confdict["vivaldi"]["themes"]["system"][2]["colorBg"] = utils.colourFilter(parentinfo["accent"], -70.0)
+    confdict["vivaldi"]["themes"]["system"][2]["colorWindowBg"] = utils.colourFilter(parentinfo["accent"], -70.0)
+    confdict["vivaldi"]["themes"]["system"][2]["colorFg"] = "#000000" if utils.colourIsLight(utils.colourFilter(parentinfo["accent"], -70.0)) else "#FFFFFF"
+    confdict["vivaldi"]["themes"]["system"][2]["colorHighlightBg"] = parentinfo["accent"]
+    
+    return confdict

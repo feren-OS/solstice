@@ -1,0 +1,613 @@
+/** 🌅 Solstice Firefox Browsers
+
+##########################################################
+# User Interface
+##########################################################
+**/
+
+@-moz-document url('chrome://browser/content/browser.xhtml') {
+    /* Apply Solstice one-liner interface */
+    :root {
+        --toolbar-btn-count: 4;
+        --sol-toolbar-width: calc(
+            2 * (var(--toolbar-start-end-padding) +
+                var(--toolbar-btn-count) * (
+                    var(--toolbarbutton-outer-padding) + var(--toolbarbutton-inner-padding)
+                )
+            ) + (var(--toolbar-btn-count) * 16px)
+            - (var(--toolbarbutton-inner-padding) / 2)
+        );
+        --sol-titlebutton-width: 30px;
+        --sol-toolbar-space: 0px;
+    }
+    :root[uidensity="compact"] {
+        --sol-toolbar-width: calc(
+            2 * (var(--toolbar-start-end-padding) +
+                var(--toolbar-btn-count) * (
+                    var(--toolbarbutton-outer-padding) + var(--toolbarbutton-inner-padding)
+                )
+            ) + (var(--toolbar-btn-count) * 16px)
+            - var(--toolbarbutton-inner-padding)
+        );
+    }
+    @media (-moz-gtk-csd-minimize-button),
+    (-moz-gtk-csd-maximize-button),
+    (-moz-gtk-csd-close-button) {
+        :root {
+            --sol-toolbar-space: var(--sol-titlebutton-width) !important;
+        }
+    }
+    @media (-moz-gtk-csd-minimize-button) and (-moz-gtk-csd-close-button),
+    (-moz-gtk-csd-maximize-button) and (-moz-gtk-csd-close-button),
+    (-moz-gtk-csd-minimize-button) and (-moz-gtk-csd-maximize-button) {
+        :root {
+            --sol-toolbar-space: calc(var(--sol-titlebutton-width) * 2) !important;
+        }
+    }
+    @media (-moz-gtk-csd-close-button) and (-moz-gtk-csd-maximize-button) and (-moz-gtk-csd-minimize-button) {
+        :root {
+            --sol-toolbar-space: calc(var(--sol-titlebutton-width) * 3) !important;
+        }
+    }
+    /* Remove redundant spacers */
+    .titlebar-spacer {
+        display: none !important;
+    }
+    /* Remove the top padding from the toolbar, as well as its texture */
+    #nav-bar {
+        max-width: var(--sol-toolbar-width) !important;
+        border: none !important;
+        box-shadow: none !important;
+        background: none !important;
+    }
+    @media not (-moz-gtk-csd-reversed-placement) {
+        #TabsToolbar {
+            margin-left: var(--sol-toolbar-width) !important;
+        }
+        #nav-bar {
+            margin: calc((var(--urlbar-min-height) * -1) - 9px) 0 0 0 !important;
+        }
+    }
+    @media (-moz-gtk-csd-reversed-placement) {
+        #tabbrowser-tabs {
+            margin-left: var(--sol-toolbar-width) !important;
+        }
+        #nav-bar {
+            margin: calc((var(--urlbar-min-height) * -1) - 9px) 0 0 var(--sol-toolbar-space) !important;
+        }
+    }
+
+    /* Force hide unavailable toolbars */
+    #toolbar-menubar,
+    #PersonalToolbar,
+    #sidebar-box,
+    #sidebar-splitter {
+        display: none !important;
+    }
+    /* Floorp: Force hide unavailable toolbars */
+    #statusBar {
+        display: none !important;
+    }
+    
+    /* Hide unavailable main menu items */
+    #appMenu-new-private-window-button2,
+    #appMenu-bookmarks-button,
+    #appMenu-downloads-button,
+    #appMenuSearchHistory,
+    #PanelUI-historyMore,
+    #appMenu_feedbackPage,
+    #appMenu_helpSafeMode,
+    #appMenu_troubleShooting,
+    #appMenu_helpSwitchDevice {
+        display: none !important;
+    }
+
+    /* Hide unavailable menu items */
+    #context-forward,
+    #context-bookmarkpage,
+    #context-searchselect,
+    #context-searchselect-private,
+    #toggle_toolbar-menubar,
+    #toggle_PersonalToolbar,
+    #viewToolbarsMenuSeparator,
+    #toolbar-context-bookmarkSelectedTab,
+    #context_bookmarkTab,
+    #toolbar-context-autohide-downloads-button,
+    #toolbarDownloadsAnchorMenuSeparator,
+    .customize-context-moveToPanel,
+    .customize-context-removeFromToolbar,
+    #allTabsMenu-searchTabs,
+    #allTabsMenu-containerTabsButton {
+        display: none !important;
+    }
+    /* Floorp: Hide unavailable menu items */
+    #toggle_statusBar {
+        display: none !important;
+    }
+
+    /* Hide unavailable toolbar items */
+    #forward-button,
+    #nav-bar-overflow-button {
+        display: none !important;
+    }
+
+    /* Hide unavailable Customisation */
+    #customization-palette-container,
+    #customization-panel-container,
+    #customization-titlebar-visibility-checkbox,
+    #customization-toolbar-visibility-button,
+    #customization-lwtheme-link,
+    #customization-reset-button,
+    #customization-uidensity-menuitem-touch,
+    toolbarpaletteitem:not(#wrapper-urlbar-container) {
+        display: none !important;
+    }
+    #wrapper-urlbar-container {
+        visibility: hidden !important;
+    }
+    #customization-content-container::before {
+        margin: auto;
+        content: "🌅";
+        font-size: 800%;
+    }
+    #customization-uidensity-menuitem-compact {
+        list-style-image: url("chrome://browser/skin/customizableui/density-normal.svg") !important;
+    }
+    #customization-uidensity-menuitem-normal {
+        list-style-image: url("chrome://browser/skin/customizableui/density-touch.svg") !important;
+    }
+    /* Floorp: Hide unavailable Customisation */
+    #customization-visibility-unified-extensions-button-checkbox {
+        display: none !important;
+    }
+
+    /* Hide the address bar */
+    #urlbar[breakout] {
+        display: none !important;
+    }
+    #urlbar-container {
+        max-width: 0px !important;
+        min-width: 0px !important;
+        margin-inline: 0 !important;
+    }
+
+    /* Remove unavailable features on applications with own history */
+    @media (-moz-bool-pref: "privacy.clearOnShutdown.history") {
+        #appMenu-history-button {
+            display: none !important;
+        }
+        #back-button,
+        #reload-button,
+        #stop-button,
+        #context-back,
+        #context-reload,
+        #context-stop,
+        #context-sep-navigation {
+            display: none !important;
+        }
+        #unified-extensions-button { /* Taken from browser-shared.css:184 */
+            padding-inline-start: var(--toolbar-start-end-padding) !important;
+        }
+        :root {
+            --toolbar-btn-count: 2;
+        }
+    }
+}
+
+@-moz-document url-prefix('about:newtab'),
+                url-prefix('about:home') {
+    .personalize-button,
+    .context-menu-button,
+    .icon-pin-small {
+        display: none !important;
+    }
+    .top-sites-list .top-site-outer:not(:first-child) {
+        display: none !important;
+    }
+    /* Floorp */
+    .releasenote {
+        display: none !important;
+    }
+}
+
+@-moz-document url-prefix('about:privatebrowsing') {
+    .search-inner-wrapper {
+        display: none !important;
+    }
+}
+
+@-moz-document url-prefix('about:preferences') {
+    /* Hide unavailable Settings categories */
+    #category-home,
+    #category-experimental,
+    #category-more-from-mozilla {
+        display: none !important;
+    }
+    /* Floorp: Hide unavailable Settings categories */
+    #category-BSB,
+    #category-ssb,
+    #ProfilesButton {
+        display: none !important;
+    }
+    @supports not -moz-bool-pref("floorp.browser.workspaces.enabled") {
+        #category-workspaces {
+            display: none !important;
+        }
+    }
+
+    /* Hide unavailable General settings */
+    #startupGroup,
+    #startupPageBox,
+    #dataMigrationGroup,
+    #saveWhere,
+    [data-subcategory="cfraddons"],
+    [data-subcategory="cfrfeatures"] {
+        display: none !important;
+    }
+    /* Floorp: Hide unavailable General settings */
+    #browserContainersbox,
+    [data-l10n-id="floorp-notes"],
+    #enable-notes-sync,
+    [data-l10n-id="notes-sync-description"],
+    [data-l10n-id="notes-backup-option"],
+    #backUpNotesOption,
+    [data-l10n-id="userjs-select-option"],
+    #userjsOptionsButton {
+        display: none !important;
+    }
+
+    /* Floorp: Hide unavailable Design settings */
+    #designGroup,
+    [data-l10n-id="vertical-tabbar"],
+    #nativeVerticalTab,
+    #hoverVerticalTab,
+    #verticalTabNewTabButton,
+    #verticalTabPadding,
+    .TST.ContentBlockBox,
+    #treestyletabSettings,
+    #tabbbarGroup,
+    #bookmarkBarGroup,
+    #navBarGroup,
+    #dualtheme_enable,
+    [data-l10n-id="floorp-enable-dualtheme-description"],
+    [href="https://blog.ablaze.one/2449/2022-10-10/"] {
+        display: none !important;
+    }
+
+    /* Floorp: Hide unavailable Workspaces settings */
+    [data-l10n-id="enable-workspaces"],
+    [data-l10n-id="workspace-notice"],
+    [data-l10n-id="manage-workspace-on-bms-option"] {
+        display: none !important;
+    }
+
+    /* Floorp: Hide unavailable Downloads settings */
+    [data-l10n-id="downloading-red-color"] {
+        display: none !important;
+    }
+
+    /* Hide unavailable Search settings */
+    #searchSuggestionsGroup,
+    #locationBarGroup,
+    #engineKeyword {
+        display: none !important;
+    }
+
+    /* Hide unavailable Privacy settings */
+    /* NOTE: This refers to settings that are forced by user.js to be at their most private */
+    #contentBlockingOptionStandard,
+    #contentBlockingOptionStrict,
+    #historyModeLabel,
+    #historyMode,
+    #clearDataBox,
+    #clearDataSettings,
+    #nonTechnicalPrivacyGroup,
+    #formAutofillGroupBox,
+    #dataCollectionCategory,
+    #dataCollectionGroup,
+    #websiteAdvertisingCategory,
+    #websiteAdvertisingGroup,
+    #httpsOnlyBox {
+        display: none !important;
+    }
+    /* Floorp: Hide unavailable Privacy settings */
+    .FacebookContainer.ContentBlockBox {
+        display: none !important;
+    }
+}
+
+@-moz-document url-prefix('about:addons') {
+    recommended-extensions-section,
+    recommended-themes-section,
+    discovery-pane,
+    .colorways-section {
+        display: none !important;
+    }
+    #categories button:first-child {
+        display: none !important;
+    }
+}
+
+@-moz-document url-prefix('about:blocked') {
+    #seeDetailsButton,
+    #learn_more,
+    #ignore_warning_link,
+    #errorInnerDescription {
+        display: none !important;
+    }
+    .button-container button { /* Undo border styling in about:blocked */
+        border-color: var(--in-content-primary-button-border-color) !important;
+    }
+}
+
+/**
+##########################################################
+# Colour Palette & Misc. Settings
+##########################################################
+**/
+
+@-moz-document url('chrome://browser/content/browser.xhtml') {
+    #TabsToolbar #firefox-view-button[open]:not([lwtheme]) > .toolbarbutton-icon,
+    #tabbrowser-tabs:not([noshadowfortests]):not([lwtheme]) .tab-background:is([selected], [multiselected]) { /* CSS Option - disable tab shadows */
+        box-shadow: none !important;
+    }
+
+    /* Remove separator from titlebar */
+    #navigator-toolbox {
+        toolbarbutton {
+            fill: var(--lwt-text-color) !important; /* Match the titlebar palette */
+        }
+        &:not([lwtheme]) {
+            border: unset !important;
+            --toolbarbutton-hover-background: light-dark(HdrFG02Light, HdrFG02Dark) !important;
+            --toolbarbutton-active-background: light-dark(HdrFG03Light, HdrFG03Dark) !important;
+        }
+    }
+
+    :root:not([lwtheme]) {
+        --chrome-content-separator-color: color-mix(in srgb, currentColor 30%, transparent) !important;
+
+        /* Titlebar */
+        --lwt-accent-color: light-dark(HdrBGLight, HdrBGDark) !important;
+        --lwt-text-color: light-dark(HdrFGLight, HdrFGDark) !important;
+        --toolbarbutton-icon-fill-attention: light-dark(AccentHdrBGLight, AccentHdrBGDark) !important;
+
+        /* Tabs */
+        --tab-selected-bgcolor: light-dark(TabBGLight, TabBGDark) !important;
+        --tab-selected-textcolor: light-dark(TabFGLight, TabFGDark) !important;
+        --tab-loading-fill: light-dark(AccentTabBGLight, AccentTabBGDark) !important;
+
+        /* Toolbar */
+        /* NOTE: Used in in-page toolbars */
+        --toolbar-bgcolor: light-dark(PageBGLight, PageBGDark) !important;
+        --toolbar-color: light-dark(PageFGLight, PageFGDark) !important;
+        --toolbarbutton-icon-fill: var(--toolbar-color) !important;
+
+        /* Infobars */
+        --button-active-bgcolor: color-mix(in srgb, currentColor 30%, transparent) !important;
+        --button-bgcolor: color-mix(in srgb, currentColor 13%, transparent) !important;
+        --button-hover-bgcolor: color-mix(in srgb, currentColor 17%, transparent) !important;
+    }
+    :root {
+        /* Pages */
+        /* NOTE: tabpanel is the 'tab is loading' background */
+        --tabpanel-background-color: light-dark(PageBGLight, PageBGDark) !important;
+    
+        --color-accent-primary: light-dark(AccentPageBGLight, AccentPageBGDark) !important;
+        --button-text-color-primary: light-dark(AccentPageFGLight, AccentPageFGDark) !important;
+    
+        --button-background-color: color-mix(in srgb, currentColor 10%, transparent) !important;
+        --button-text-color: currentColor !important;
+        --button-background-color-hover: color-mix(in srgb, currentColor 20%, transparent) !important;
+        --button-text-color-hover: currentColor !important;
+        --button-background-color-active: color-mix(in srgb, currentColor 30%, transparent) !important;
+        --button-text-color-active: currentColor !important;
+    }
+
+    /* Private Browsing palette */
+    [privatebrowsingmode="temporary"] {
+        &:not([lwtheme]) {
+            /* Titlebar */
+            --lwt-accent-color: PrivateHdrBG !important;
+            --lwt-text-color: PrivateHdrFG !important;
+
+            /* Tabs */
+            --tab-selected-bgcolor: PrivateTabBG !important;
+            --tab-selected-textcolor: PrivateTabFG !important;
+            --tab-loading-fill: PrivateTabFG !important;
+
+            /* Toolbar */
+            --toolbar-bgcolor: PrivateTabBG !important;
+            --toolbar-color: PrivateTabFG !important;
+        }
+
+        #navigator-toolbox:not([lwtheme]) {
+            --toolbarbutton-hover-background: PrivateHdrFG02 !important;
+            --toolbarbutton-active-background: PrivateHdrFG03 !important;
+        }
+    }
+
+    /* Colourise Infobars */
+    :root:not([lwtheme]) .notificationbox-stack {
+        background-color: var(--lwt-accent-color) !important;
+    }
+    :root:not([lwtheme]) notification-message {
+        /* More infobars because these need to be specific... bruh. */
+        --info-bar-background-color: light-dark(PageBGLight, PageBGDark) !important;
+        --info-bar-text-color: light-dark(PageFGLight, PageFGDark) !important;
+
+        --message-bar-icon-color: light-dark(AccentPageBGLight, AccentPageBGDark) !important;
+    }
+
+    /* Colourise Pages */
+    browser,
+    #appcontent,
+    #tabbrowser-tabpanels {
+        /* more 'tab is loading' background */
+        background-color: light-dark(PageBGLight, PageBGDark) !important;
+    }
+    a {
+        color: light-dark(AccentPageBGLight, AccentPageBGDark) !important;
+    }
+    /* Floorp: Change rounded pages background */
+    .browserContainer:not([lwtheme]) {
+        border-color: var(--lwt-accent-color) !important;
+    }
+
+    /* Colourise Customise Firefox interface */
+    #customization-content-container {
+        background: light-dark(PageBGLight, PageBGDark) !important;
+        color: light-dark(PageFGLight, PageFGDark) !important;
+    }
+    #customization-footer {
+        background: light-dark(PageBGLight, PageBGDark) !important;
+        color: light-dark(PageFGLight, PageFGDark) !important;
+        border: none !important;
+    }
+}
+
+
+/* Colourise global scrollbar and selection palettes */
+html,
+body {
+    scrollbar-color: light-dark(PageFGLight, PageFGDark) light-dark(PageBGLight, PageBGDark);
+}
+::-moz-selection {
+    color: light-dark(AccentFGLight, AccentFGDark);
+    background: light-dark(AccentBGLight, AccentBGDark);
+}
+
+
+/* Colourise all about: pages, etc. */
+@-moz-document url-prefix("about:"),
+    url-prefix("chrome://browser/content/preferences/dialogs"),
+    url-prefix("chrome://formautofill/content"),
+    url-prefix("chrome://pippki/content"),
+    url-prefix("chrome://mozapps/content/update/history.xhtml"),
+    url-prefix("chrome://browser/content/sanitize.xhtml"),
+    url-prefix("chrome://floorp/content/preferences/dialogs") {
+    :host,
+    :root {
+        --in-content-accent-color: light-dark(AccentPageBGLight, AccentPageBGDark) !important;
+        --color-accent-primary: light-dark(AccentPageBGLight, AccentPageBGDark) !important;
+        --color-accent-primary-hover: color-mix(in srgb, light-dark(PageFGLight, PageFGDark) 7%, light-dark(AccentPageBGLight, AccentPageBGDark)) !important;
+        --color-accent-primary-active: color-mix(in srgb, light-dark(PageFGLight, PageFGDark) 14%, light-dark(AccentPageBGLight, AccentPageBGDark)) !important;
+
+        --in-content-page-background: light-dark(PageBGLight, PageBGDark) !important;
+        --in-content-page-color: light-dark(PageFGLight, PageFGDark) !important;
+
+        --in-content-primary-button-background: light-dark(AccentPageBGLight, AccentPageBGDark) !important;
+        --in-content-primary-button-text-color: light-dark(AccentPageFGLight, AccentPageFGDark) !important;
+        --in-content-primary-button-background-hover: color-mix(in srgb, light-dark(PageFGLight, PageFGDark) 7%, light-dark(AccentPageBGLight, AccentPageBGDark)) !important;
+        --in-content-primary-button-text-color-hover: var(--in-content-primary-button-text-color) !important;
+        --in-content-primary-button-background-active: color-mix(in srgb, light-dark(PageFGLight, PageFGDark) 14%, light-dark(AccentPageBGLight, AccentPageBGDark)) !important;
+        --in-content-primary-button-text-color-active: var(--in-content-primary-button-text-color) !important;
+
+        --background-color-box: color-mix(in srgb, #FFF 6%, light-dark(PageBGLight, PageBGDark)) !important;
+        --in-content-box-background: color-mix(in srgb, #FFF 6%, light-dark(PageBGLight, PageBGDark)) !important;
+        --in-content-box-border-color: color-mix(in srgb, light-dark(PageFGLight, PageFGDark) 41%, transparent) !important;
+
+        /* Build Configuration */
+        --in-content-box-info-background: color-mix(in srgb, #FFF 6%, light-dark(PageBGLight, PageBGDark)) !important;
+        --in-content-border-color: color-mix(in srgb, light-dark(PageFGLight, PageFGDark) 17%, transparent) !important;
+        --in-content-table-background: color-mix(in srgb, #FFF 6%, light-dark(PageBGLight, PageBGDark)) !important;
+
+        /* Debugging */
+        --in-content-background-color: light-dark(PageBGLight, PageBGDark) !important;
+        --in-content-text-color: light-dark(PageFGLight, PageFGDark) !important;
+
+        --card-background-color: color-mix(in srgb, #FFF 6%, light-dark(PageBGLight, PageBGDark)) !important;
+        --card-separator-color: color-mix(in srgb, light-dark(PageFGLight, PageFGDark) 17%, transparent) !important;
+        --box-background: color-mix(in srgb, #FFF 6%, light-dark(PageBGLight, PageBGDark)) !important;
+
+        --button-background-color: color-mix(in srgb, currentColor 10%, transparent) !important;
+        --button-hover-background-color: color-mix(in srgb, currentColor 20%, transparent) !important;
+        --button-active-background-color: color-mix(in srgb, currentColor 30%, transparent) !important;
+        --button-color: currentColor !important;
+
+        --primary-button-background-color: light-dark(AccentPageBGLight, AccentPageBGDark) !important;
+        --primary-button-hover-background-color: color-mix(in srgb, light-dark(PageFGLight, PageFGDark) 15%, light-dark(AccentPageBGLight, AccentPageBGDark)) !important;
+        --primary-button-active-background-color: color-mix(in srgb, light-dark(PageFGLight, PageFGDark) 30%, light-dark(AccentPageBGLight, AccentPageBGDark)) !important;
+        --primary-button-color: light-dark(AccentPageFGLight, AccentPageFGDark) !important;
+
+        --sidebar-background-hover: color-mix(in srgb, currentColor 20%, transparent) !important;
+        --icon-info-color: light-dark(PageFGLight, PageFGDark) !important;
+        --secondary-text-color: color-mix(in srgb, light-dark(PageFGLight, PageFGDark) 65%, transparent) !important;
+
+        /* Add-ons */
+        --card-outline-color: color-mix(in srgb, light-dark(PageFGLight, PageFGDark) 20%, transparent) !important;
+        --text-color: light-dark(PageFGLight, PageFGDark) !important;
+        --button-text-color-hover: light-dark(PageFGLight, PageFGDark) !important;
+        --button-text-color-active: light-dark(PageFGLight, PageFGDark) !important;
+        --border-color-deemphasized: color-mix(in srgb, light-dark(PageFGLight, PageFGDark) 17%, transparent) !important;
+
+        /* Floorp */
+        --card-background: color-mix(in srgb, light-dark(PageFGLight, PageFGDark) 6%, light-dark(PageBGLight, PageBGDark)) !important;
+    }
+
+    button.category:not(:hover):not(:active):not(.selected):not([selected]),
+    richlistitem.category:not(:hover):not(:active):not(.selected):not([selected]) { /* Special condition for adaptivebg - light */
+        color: color-mix(in srgb, currentColor 58%, transparent) !important;
+    }
+
+    /* Colourise in-page scrollbar and selection palettes */
+    html,
+    body,
+    window {
+        scrollbar-color: light-dark(PageFGLight, PageFGDark) light-dark(PageBGLight, PageBGDark) !important;
+
+        background-color: var(--in-content-page-background);
+        color: var(--in-content-page-color);
+    }
+    ::-moz-selection {
+        color: light-dark(AccentPageFGLight, AccentPageFGDark);
+        background: light-dark(AccentPageBGLight, AccentPageBGDark);
+    }
+
+    /* Specific dialog box styling because they override this in-class :/ */
+    .dialogBox {
+        --in-content-page-background: light-dark(PageBGLight, PageBGDark) !important;
+        --in-content-page-color: light-dark(PageFGLight, PageFGDark) !important;
+    }
+}
+
+@-moz-document url-prefix('about:newtab'),
+                url-prefix('about:home') {
+    body {
+        --newtab-background-color: light-dark(ConnBGLight, ConnBGDark) !important;
+        --newtab-background-color-secondary: light-dark(PageBGLight, PageBGDark) !important;
+        --newtab-text-primary-color: light-dark(ConnFGLight, ConnFGDark) !important;
+        --newtab-contextual-text-primary-color: light-dark(ConnFGLight, ConnFGDark) !important;
+        --newtab-element-hover-color: color-mix(in srgb, var(--newtab-text-primary-color) 17%, var(--newtab-background-color)) !important;
+    }
+    html,
+    body {
+        scrollbar-color: light-dark(ConnFGLight, ConnFGDark) light-dark(ConnBGLight, ConnBGDark) !important;
+    }
+}
+
+@-moz-document url-prefix('about:privatebrowsing') {
+    :root {
+        --in-content-page-background: PrivatePageBG !important;
+        --in-content-page-color: PrivatePageFG !important;
+        --in-content-text-color: PrivatePageFG !important;
+    }
+    html,
+    body {
+        scrollbar-color: PrivatePageFG PrivatePageBG !important;
+    }
+    .promo {
+        display: none !important;
+    }
+}
+
+
+@-moz-document url-prefix('about:blocked') {
+    #errorTitle,
+    #errorTitleText {
+        color: light-dark(var(--color-red-50), var(--color-red-30)) !important;
+    }
+    a {
+        color: light-dark(AccentPageBGLight, AccentPageBGDark) !important;
+    }
+}

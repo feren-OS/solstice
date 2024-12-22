@@ -1,0 +1,41 @@
+.UrlBar-AddressField .BookmarkButton,
+.UrlBar-AddressField .UrlBar-UrlField,
+.UrlBar-AddressField .BookmarkButton,
+.UrlBar-AddressField .drop-down-menu {
+    display: none !important;
+}
+
+.UrlBar-AddressField {
+    background: none !important;
+    border: none !important;
+    outline: none !important;
+}
+.toolbar-mainbar .SiteInfoButton {
+    background-color: var(--colorBgIntenser);
+    color: var(--colorFg);
+    fill: var(--colorFg);
+    padding: 8px 0;
+}
+
+.toolbar-mainbar .UrlBar-AddressField {
+    fill: var(--colorFg) !important;
+}
+.color-behind-tabs-off .toolbar-mainbar .UrlBar-AddressField {
+    fill: var(--colorAccentFg) !important;
+}
+.toolbar-mainbar .UrlBar-AddressField,
+.toolbar-mainbar .UrlFragment--Highlight,
+.UrlFragment-Wrapper--ShouldHighlight,
+.toolbar-mainbar .UrlBar-AddressField .pageload {
+    color: var(--colorFg) !important;
+    --HighlightColor: var(--colorFg) !important;
+    --LowlightColor: var(--colorFgFaded) !important;
+}
+.color-behind-tabs-off .toolbar-mainbar .UrlBar-AddressField,
+.color-behind-tabs-off .toolbar-mainbar .UrlFragment--Highlight,
+.color-behind-tabs-off .UrlFragment-Wrapper--ShouldHighlight,
+.color-behind-tabs-off .toolbar-mainbar .UrlBar-AddressField .pageload {
+    color: var(--colorAccentFg) !important;
+    --HighlightColor: var(--colorAccentFg) !important;
+    --LowlightColor: var(--colorAccentFgFaded) !important;
+}

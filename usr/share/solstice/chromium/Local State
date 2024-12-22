@@ -1,40 +1,53 @@
 {
-    "background_mode": {
-        "enabled": false
-    },
-    "brave": {
-        "ens": {
-            "resolve_method": 1
+    "resetblacklist": {
+        "edge": {
+            "perf_center": { "efficiency_mode_toggle": null, "efficiency_mode_v2_is_active": null, "performance_mode": null, "performance_mode_is_on": null }
         },
-        "p3a": {
-            "enabled": false,
-            "notice_acknowledged": true
+        "performance_tuning": {
+            "high_efficiency_mode": { "state": null }
+        }
+    },
+    "default": {
+        "background_mode": {
+            "enabled": false
         },
-        "sns": {
-            "resolve_method": 1
+        "brave": {
+            "ens": {
+                "resolve_method": 1
+            },
+            "p3a": {
+                "enabled": false,
+                "notice_acknowledged": true
+            },
+            "sns": {
+                "resolve_method": 1
+            },
+            "stats": {
+                "reporting_enabled": false
+            },
+            "unstoppable_domains": {
+                "resolve_method": 1
+            },
+            "widevine_opted_in": true
         },
-        "stats": {
-            "reporting_enabled": false
+        "brave_shields": {
+            "p3a_usage": 0
         },
-        "unstoppable_domains": {
-            "resolve_method": 1
+        "browser": {
+            "enabled_labs_experiments": [ "ignore-gpu-blocklist" ]
         },
-        "widevine_opted_in": true
-    },
-    "brave_shields": {
-        "p3a_usage": 0
-    },
-    "browser": {
-        "enabled_labs_experiments": [ "ignore-gpu-blocklist", "edge-share-menu@1", "edge-split-screen@1", "edge-rounded-containers@1", "edge-visual-rejuv-rounded-tabs@1" ]
-    },
-    "edge": {
-        "perf_center": { "efficiency_mode_toggle": true }
-    },
-    "hardware_acceleration_mode_previous": true,
-    "tor": {
-        "tor_disabled": true
-    },
-    "user_experience_metrics": {
-        "session_id": 0
+        "edge": {
+            "perf_center": { "efficiency_mode_toggle": true, "efficiency_mode_v2_is_active": false, "performance_mode": 3, "performance_mode_is_on": true }
+        },
+        "hardware_acceleration_mode_previous": true,
+        "performance_tuning": {
+            "high_efficiency_mode": { "state": 2 }
+        },
+        "tor": {
+            "tor_disabled": true
+        },
+        "user_experience_metrics": {
+            "session_id": 0
+        }
     }
 }

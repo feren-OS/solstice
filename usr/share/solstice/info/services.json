@@ -1,0 +1,10 @@
+{
+    "google": [
+        "accounts.google.com",
+        "login.live.com"
+    ],
+    "microsoft": [
+        "login.microsoftonline.com",
+        "login.live.com"
+    ]
+}

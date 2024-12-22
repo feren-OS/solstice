@@ -1,8 +1,12 @@
 {
     "chromium": {
         "vivaldi": {
-            "name": "Vivaldi",
-            "subtitle": "Recommended browser - allows additional security features and website-specific personalisations, and follows the application's palette",
+            "name": {
+                "C": "Vivaldi"
+            },
+            "websiteperms": true,
+            "followspalette": true,
+            "extensionprotection": true,
             "icon": "vivaldi",
             "required-file": ["/usr/bin/vivaldi"],
             "classprefix": "vivaldisolstice:",
@@ -12,11 +16,40 @@
             "nocacheavailable": true,
             "bonusesavailable": true,
             "notheme": true,
-            "expected-file": "/Local State"
+            "expected-files": ["Local State", "Last Version", "Default/Preferences", "CSS/solsticss.css"],
+            "cssfolder": "vivaldi",
+            "cssroot": "CSS",
+            "forcelastversion": true
+        },
+        "vivaldi-flatpak": {
+            "name": {
+                "C": "Vivaldi (Flatpak)"
+            },
+            "websiteperms": true,
+            "followspalette": true,
+            "extensionprotection": true,
+            "icon": "vivaldi",
+            "required-file": ["/var/lib/flatpak/app/com.vivaldi.Vivaldi/current/active/files/bin/vivaldi"],
+            "classprefix": "vivaldisolstice:",
+            "command": ["/usr/bin/flatpak", "run", "com.vivaldi.Vivaldi", "%WEBSITEURL%", "--class=%WINCLASS%", "--user-data-dir=%PROFILEDIR%"],
+            "nocacheprefix": [],
+            "nocachesuffix": ["--media-cache-size=0", "--disk-cache-size=0", "--disk-cache-dir=/dev/null"],
+            "nocacheavailable": true,
+            "bonusesavailable": true,
+            "flatpak": "com.vivaldi.Vivaldi",
+            "notheme": true,
+            "expected-files": ["Local State", "Last Version", "Default/Preferences", "CSS/solsticss.css"],
+            "cssfolder": "vivaldi",
+            "cssroot": "CSS",
+            "forcelastversion": true
         },
         "chrome": {
-            "name": "Google Chrome",
-            "subtitle": "Follows the application's palette",
+            "name": {
+                "C": "Google Chrome"
+            },
+            "websiteperms": true,
+            "followspalette": true,
+            "extensionprotection": false,
             "icon": "google-chrome",
             "required-file": ["/usr/bin/google-chrome"],
             "classprefix": "solstice:",
@@ -25,11 +58,33 @@
             "nocachesuffix": ["--media-cache-size=0", "--disk-cache-size=0", "--disk-cache-dir=/dev/null"],
             "nocacheavailable": true,
             "bonusesavailable": true,
-            "expected-file": "/Local State"
+            "expected-files": ["Local State", "Default/Preferences"]
+        },
+        "chromium-flatpak": {
+            "name": {
+                "C": "Chromium"
+            },
+            "websiteperms": true,
+            "followspalette": true,
+            "extensionprotection": false,
+            "icon": "org.chromium.Chromium",
+            "required-file": ["/var/lib/flatpak/app/org.chromium.Chromium/current/active/files/bin/chromium"],
+            "classprefix": "solstice:",
+            "command": ["/usr/bin/flatpak", "run", "org.chromium.Chromium", "--app=%WEBSITEURL%", "--class=%WINCLASS%", "--user-data-dir=%PROFILEDIR%"],
+            "nocacheprefix": [],
+            "nocachesuffix": ["--media-cache-size=0", "--disk-cache-size=0", "--disk-cache-dir=/dev/null"],
+            "nocacheavailable": true,
+            "bonusesavailable": false,
+            "flatpak": "org.chromium.Chromium",
+            "expected-files": ["Local State", "Default/Preferences"]
         },
         "msedge": {
-            "name": "Microsoft Edge",
-            "subtitle": "Follows the application's palette",
+            "name": {
+                "C": "Microsoft Edge"
+            },
+            "websiteperms": true,
+            "followspalette": true,
+            "extensionprotection": false,
             "icon": "microsoft-edge",
             "required-file": ["/usr/bin/microsoft-edge"],
             "classprefix": "solstice:",
@@ -38,11 +93,15 @@
             "nocachesuffix": ["--media-cache-size=0", "--disk-cache-size=0", "--disk-cache-dir=/dev/null"],
             "nocacheavailable": true,
             "bonusesavailable": true,
-            "expected-file": "/Local State"
+            "expected-files": ["Local State", "Default/Preferences"]
         },
         "brave": {
-            "name": "Brave",
-            "subtitle": "Follows the application's palette",
+            "name": {
+                "C": "Brave"
+            },
+            "websiteperms": true,
+            "followspalette": true,
+            "extensionprotection": false,
             "icon": "brave-browser",
             "required-file": ["/usr/bin/brave-browser"],
             "classprefix": "solstice:",
@@ -51,10 +110,33 @@
             "nocachesuffix": ["--media-cache-size=0", "--disk-cache-size=0", "--disk-cache-dir=/dev/null"],
             "nocacheavailable": true,
             "bonusesavailable": true,
-            "expected-file": "/Local State"
+            "expected-files": ["Local State", "Default/Preferences"]
+        },
+        "brave-flatpak": {
+            "name": {
+                "C": "Brave (Flatpak)"
+            },
+            "websiteperms": true,
+            "followspalette": true,
+            "extensionprotection": false,
+            "icon": "com.brave.Browser",
+            "required-file": ["/var/lib/flatpak/app/com.brave.Browser/current/active/files/bin/brave"],
+            "classprefix": "solstice:",
+            "command": ["/usr/bin/flatpak", "run", "com.brave.Browser", "--app=%WEBSITEURL%", "--class=%WINCLASS%", "--user-data-dir=%PROFILEDIR%"],
+            "nocacheprefix": [],
+            "nocachesuffix": ["--media-cache-size=0", "--disk-cache-size=0", "--disk-cache-dir=/dev/null"],
+            "nocacheavailable": true,
+            "bonusesavailable": false,
+            "flatpak": "com.brave.Browser",
+            "expected-files": ["Local State", "Default/Preferences"]
         },
         "ulaa-browser": {
-            "name": "Ulaa",
+            "name": {
+                "C": "Ulaa"
+            },
+            "websiteperms": true,
+            "followspalette": true,
+            "extensionprotection": false,
             "icon": "ulaa-browser",
             "required-file": ["/usr/bin/ulaa-browser"],
             "classprefix": "solstice:",
@@ -63,65 +145,87 @@
             "nocachesuffix": ["--media-cache-size=0", "--disk-cache-size=0", "--disk-cache-dir=/dev/null"],
             "nocacheavailable": true,
             "bonusesavailable": true,
-            "expected-file": "/Local State"
+            "expected-files": ["Local State", "Default/Preferences"]
         },
         "ungoogled-chromium-flatpak": {
-            "name": "Ungoogled Chromium",
-            "subtitle": "Follows the application's palette",
-            "icon": "com.github.Eloston.UngoogledChromium",
-            "required-file": ["/var/lib/flatpak/app/com.github.Eloston.UngoogledChromium/current/active/files/bin/chromium"],
+            "name": {
+                "C": "Ungoogled Chromium"
+            },
+            "websiteperms": true,
+            "followspalette": true,
+            "extensionprotection": true,
+            "icon": "io.github.ungoogled_software.ungoogled_chromium",
+            "required-file": ["/var/lib/flatpak/app/io.github.ungoogled_software.ungoogled_chromium/current/active/files/bin/chromium"],
             "classprefix": "solstice:",
-            "command": ["/usr/bin/flatpak", "run", "com.github.Eloston.UngoogledChromium", "--app=%WEBSITEURL%", "--class=%WINCLASS%", "--user-data-dir=%PROFILEDIR%"],
+            "command": ["/usr/bin/flatpak", "run", "io.github.ungoogled_software.ungoogled_chromium", "--app=%WEBSITEURL%", "--class=%WINCLASS%", "--user-data-dir=%PROFILEDIR%"],
             "nocacheprefix": [],
             "nocachesuffix": ["--media-cache-size=0", "--disk-cache-size=0", "--disk-cache-dir=/dev/null"],
             "nocacheavailable": true,
             "bonusesavailable": false,
-            "flatpak": "com.github.Eloston.UngoogledChromium",
-            "expected-file": "/Local State"
+            "flatpak": "io.github.ungoogled_software.ungoogled_chromium",
+            "expected-files": ["Local State", "Default/Preferences"]
         }
     },
     "firefox": {
         "firefox-flatpak": {
-            "name": "Mozilla Firefox",
-            "subtitle": "Follows the application's palette",
+            "name": {
+                "C": "Mozilla Firefox"
+            },
+            "websiteperms": false,
+            "followspalette": true,
+            "extensionprotection": false,
             "icon": "org.mozilla.firefox",
             "required-file": ["/var/lib/flatpak/app/org.mozilla.firefox/current/active/files/bin/firefox"],
             "classprefix": "solstice:",
-            "command": ["/usr/bin/flatpak", "run", "org.mozilla.firefox", "%WEBSITEURL%", "--class", "%WINCLASS%", "--profile", "%PROFILEDIR%", "--no-remote"],
+            "command": ["/usr/bin/flatpak", "run", "org.mozilla.firefox", "%WEBSITEURL%", "--class", "%WINCLASS%", "--name", "%WINCLASS%", "--profile", "%PROFILEDIR%", "--no-remote"],
             "nocacheprefix": [],
             "nocachesuffix": [],
             "nocacheavailable": true,
             "bonusesavailable": false,
             "flatpak": "org.mozilla.firefox",
-            "expected-file": "/user.js"
+            "expected-files": ["user.js", "chrome/userChrome.css", "chrome/userContent.css", "chrome/GTKless.css", "chrome/solstice.css"],
+            "cssfolder": "firefox",
+            "cssroot": "chrome"
         },
         "librewolf-flatpak": {
-            "name": "LibreWolf",
-            "subtitle": "Follows the application's palette",
+            "name": {
+                "C": "LibreWolf"
+            },
+            "websiteperms": false,
+            "followspalette": true,
+            "extensionprotection": false,
             "icon": "io.gitlab.librewolf-community",
             "required-file": ["/var/lib/flatpak/app/io.gitlab.librewolf-community/current/active/files/bin/librewolf"],
             "classprefix": "solstice:",
-            "command": ["/usr/bin/flatpak", "run", "io.gitlab.librewolf-community", "%WEBSITEURL%", "--class", "%WINCLASS%", "--profile", "%PROFILEDIR%", "--no-remote"],
+            "command": ["/usr/bin/flatpak", "run", "io.gitlab.librewolf-community", "%WEBSITEURL%", "--class", "%WINCLASS%", "--name", "%WINCLASS%", "--profile", "%PROFILEDIR%", "--no-remote"],
             "nocacheprefix": [],
             "nocachesuffix": [],
             "nocacheavailable": true,
             "bonusesavailable": false,
             "flatpak": "io.gitlab.librewolf-community",
-            "expected-file": "/user.js"
+            "expected-files": ["user.js", "chrome/userChrome.css", "chrome/userContent.css", "chrome/GTKless.css", "chrome/solstice.css"],
+            "cssfolder": "firefox",
+            "cssroot": "chrome"
         },
         "floorp-flatpak": {
-            "name": "Floorp",
-            "subtitle": "Follows the application's palette",
+            "name": {
+                "C": "Floorp"
+            },
+            "websiteperms": false,
+            "followspalette": true,
+            "extensionprotection": false,
             "icon": "one.ablaze.floorp",
             "required-file": ["/var/lib/flatpak/app/one.ablaze.floorp/current/active/files/bin/floorp"],
             "classprefix": "solstice:",
-            "command": ["/usr/bin/flatpak", "run", "one.ablaze.floorp", "%WEBSITEURL%", "--class", "%WINCLASS%", "--profile", "%PROFILEDIR%", "--no-remote"],
+            "command": ["/usr/bin/flatpak", "run", "one.ablaze.floorp", "%WEBSITEURL%", "--class", "%WINCLASS%", "--name", "%WINCLASS%", "--profile", "%PROFILEDIR%", "--no-remote"],
             "nocacheprefix": [],
             "nocachesuffix": [],
             "nocacheavailable": true,
             "bonusesavailable": false,
             "flatpak": "one.ablaze.floorp",
-            "expected-file": "/user.js"
+            "expected-files": ["user.js", "chrome/userChrome.css", "chrome/userContent.css", "chrome/GTKless.css", "chrome/solstice.css"],
+            "cssfolder": "firefox",
+            "cssroot": "chrome"
         }
     },
     "epiphany": {

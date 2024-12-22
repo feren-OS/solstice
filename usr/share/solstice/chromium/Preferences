@@ -1,32 +1,113 @@
 {
-    "general": {
-        "alternate_error_pages": {
-            "backup": false
+    "disable-googlehangouts": {
+        "brave": {
+            "hangouts_enabled": false
         },
+        "vivaldi": {
+            "privacy": {
+                "google_component_extensions": {
+                    "hangout_services": false
+                }
+            }
+        }
+    },
+    "nohistory": {
+        "browser": {
+            "show_toolbar_history_button": false
+        },
+        "vivaldi": {
+            "tabs": {
+                "show_trash_can": false
+            },
+            "toolbars": { "navigation": ["AddressField", "DownloadButton", "Extensions", "UpdateButton"] }
+        }
+    },
+    "workspaces": {
+        "session": { "restore_on_startup": 1 },
+        "vivaldi": {
+            "workspaces": {
+                "enabled": true
+            }
+        }
+    },
+    "resetblacklist": {
+        "extensions": {
+            "theme": {
+                "id": null
+            }
+        },
+        "webkit": {
+            "webprefs": {
+                "fonts": {
+                    "fixed": {"Zyyy": null},
+                    "sansserif": {"Zyyy": null},
+                    "serif": {"Zyyy": null},
+                    "standard": {"Zyyy": null}
+                }
+            }
+        },
+        "vivaldi": {
+            "downloads": {
+                "start_automatically": null
+            },
+            "themes": {
+                "current": ["ice", "ice-dark"]
+            },
+            "theme": {
+                "schedule": {
+                    "enabled": null,
+                    "o_s": {
+                        "dark": ["ice-dark"],
+                        "light": ["ice"]
+                    }
+                }
+            }
+        }
+    },
+    "default": {
+        "aadc_info": { "age_group": 0 },
         "autofill": {
             "credit_card_enabled": false,
             "profile_enabled": false
         },
         "default_apps_install_state": 3,
-        "bookmark_bar": {
-            "show_only_on_ntp": false
-        },
+        "bookmark_bar": { "show_on_all_tabs": false },
         "brave": {
+            "ai_chat": {
+                "autocomplete_provider_enabled": false,
+                "context_menu_enabled": false
+            },
             "always_show_bookmark_bar_on_ntp": false,
+            "brave_ads": {
+                "notification_ads": [],
+                "should_allow_ads_subdivision_targeting": false
+            },
             "default_private_search_provider_guid": "b459346a-828a-485a-b68b-340f5aacabf4",
             "enable_media_router_on_restart": false,
             "hangouts_enabled": true,
-            "ipfs": { "resolve_method": 3 },
-            "new_tab_page": { "hide_all_widgets": true, "show_branded_background_image": false, "show_brave_today": false },
+            "ipfs": {
+                "auto_redirect_to_configured_gateway": false,
+                "resolve_method": 3
+            },
+            "location_bar_is_wide": true,
+            "new_tab_page": {
+                "hide_all_widgets": true,
+                "show_branded_background_image": false,
+                "show_brave_news": false,
+                "show_rewards": false,
+                "show_together": false,
+                "shows_options": 0
+            },
+            "rewards": {
+                "show_brave_rewards_button_in_location_bar": false
+            },
             "shields_settings_version": 2,
             "show_bookmarks_button": false,
-            "show_brave_rewards_button": false,
             "show_side_panel_button": false,
-            "hide_brave_rewards_button": true,
-            "location_bar_is_wide": true,
             "today": {
                 "should_show_toolbar_button": false
             },
+            "top_site_suggestions_enabled": false,
             "wallet": {
                 "auto_lock_minutes": 1,
                 "default_solana_wallet": 1,
@@ -39,38 +120,18 @@
         "browser": {
             "custom_chrome_frame": true,
             "has_seen_welcome_page": true,
-            "hub_app_preferences": {
-                "64be4f9b-3b81-4b6e-b354-0ba00d6ba485": { "auto_show": { "enabled": false } },
-                "8682d0fa-50b3-4ece-aa5b-e0b33f9919e2": { "auto_show": { "enabled": false } },
-                "96defd79-4015-4a32-bd09-794ff72183ef": { "auto_show": { "enabled": false } }
-            },
-            "should_shoreline_search_auto_open": false,
-            "should_underside_auto_open": false,
-            "show_edge_pill_shaped_tabs": false,
-            "show_hub_app_in_sidebar_buttons": {
-                "0c835d2d-9592-4c7a-8d0a-0e283c9ad3cd": 3,
-                "2354565a-f412-4654-b89c-f92eaa9dbd20": 3,
-                "523b5ef3-0b10-4154-8b62-10b2ebd00921": 3,
-                "64be4f9b-3b81-4b6e-b354-0ba00d6ba485": 3,
-                "8682d0fa-50b3-4ece-aa5b-e0b33f9919e2": 3,
-                "8ac719c5-140b-4bf2-a0b7-c71617f1f377": 3,
-                "92f1b743-e26b-433b-a1ec-912d1f0ad1fa": 3,
-                "96defd79-4015-4a32-bd09-794ff72183ef": 3,
-                "9ce3c9c2-462f-4cc9-bbd7-57d656445be0": 3,
-                "cd4688a9-e888-48ea-ad81-76193d56b1be": 3
-            },
-            "show_hub_apps_tower": false,
-            "show_hub_apps_tower_pinned": false,
-            "show_hubapps_personalization": false,
-            "show_sidebar_notification": false,
-            "show_sidebar_notification_preferred": false,
-            "show_hub_popup_on_download_start": false,
             "show_toolbar_bookmarks_button": false,
             "show_toolbar_collections_button": false,
             "show_toolbar_downloads_button": true,
             "show_toolbar_history_button": true,
             "show_toolbar_vertical_tabs_button": false,
-            "toolbar_extensions_hub_button_visibility": 0
+            "theme": {
+                "color_scheme": 0,
+                "is_grayscale": true,
+                "color_variant": 1,
+                "follows_system_colors": false,
+                "user_color": -1
+            }
         },
         "credentials_enable_autosignin": false,
         "custom_links": {
@@ -128,102 +189,17 @@
             }
         },
         "download": { "allow_office_viewer_for_download": false, "default_directory": "", "directory_upgrade": true },
-        "edge_quick_search": {
-            "show_mini_menu": false,
-            "show_smart_actions": false
-        },
-        "edge_shopping_assistant_enabled": false,
-        "edge_underside_triggering_enabled": false,
+        "enable_a_ping": false,
         "enable_do_not_track": true,
         "extensions": {
-            "settings": {
-                "cimiefiiaegbelhefglklhhakcgmhkai": {
-                    "active_permissions": {
-                        "api": [ "contextMenus", "downloads", "downloadsInternal", "history", "nativeMessaging", "notifications", "storage", "tabs" ],
-                        "explicit_host": [ "<all_urls>", "chrome://favicon/*" ],
-                        "manifest_permissions": [],
-                        "scriptable_host": [ "*://*/*" ]
-                    },
-                    "from_webstore": true,
-                    "granted_permissions": {
-                        "api": [ "contextMenus", "downloads", "downloadsInternal", "history", "nativeMessaging", "notifications", "storage", "tabs" ],
-                        "explicit_host": [ "<all_urls>", "chrome://favicon/*" ],
-                        "manifest_permissions": [],
-                        "scriptable_host": [ "*://*/*" ]
-                    },
-                    "incognito": true,
-                    "location": 1,
-                    "manifest": {
-                        "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1Wz6JigIdPBxPJvYrnjuKM3X4YEaUHgyOW2TM1G1Maxook1HO8vLFGhBR7g3jEQ7Yw9PTa6ZAa8J/I9a/1EQz0Ssx2+m3R9SvJfdKSCrCth8nwMpB8V8I5EhiUoW57kM0v9r/18Buem5cBIo0EnSAVCbmNG95R5jtg62P4+LNGEwHk5L7RSblXUN2hhUwXty4A98EXD6T2Pnpu1m8nRF2B1t5AcspSMV5ECnL9x8kT5bup1gJo0FGTz6C+1huDNRaI3OY1YDWyvCVRFXlAhuFERTW6siMdghK++kYM43H7cvJMFYnVVuffD9WNRsUCI9V0SrqYbPre/2nEl+8VUXVwIDAQAB",
-                        "name": "Plasma Integration 🕑",
-                        "optional_permissions": [ "history" ],
-                        "permissions": ["nativeMessaging", "notifications", "storage", "downloads", "tabs", "<all_urls>", "contextMenus", "history"],
-                        "update_url": "http://clients2.google.com/service/update2/crx",
-                        "version": "0.0",
-                        "manifest_version": 2
-                    },
-                    "path": "cimiefiiaegbelhefglklhhakcgmhkai\\0.0",
-                    "state": 1,
-                    "was_installed_by_default": true,
-                    "withholding_permissions": false
-                },
-                "aghfnjkcakhmadgdomlmlhhaocbkloab": {
-                    "location": 1,
-                    "manifest": {
-                        "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqxThvdYeWk6kwfNo+/HoqQSkL6iBx48w28vEPXHdhJo8OHMxS7D+1W1nhUsv4hOnb1CM2TlP/Nh9G+1Z32R9r6RmVxD1Anq9ZTZpK7VHVUxExGR4X9+TYHKWk8VGAjSBmutvayf0i0gCEkh7Pdc68ex4M0ypKGFWxBzxqw2uQ/4BLMVB/9KZJwXOC5LcaBNgq2Q74J3Dd3a90OzFXh+vC9zIyDueu3/K4F6u5bXgsgviAGIrUm7YbGhLDMxuW81zvYMlLtkA4XDDnhgk88s0G/5OwoMEyU6YdMq9R795NHsI0bPUMOOgUsPT5cytKRcQMegMassBe9EB+ktTl9CloQIDAQAB",
-                        "name": "Solstice",
-                        "version": "99",
-                        "manifest_version": 3,
-                        "theme": {
-                            "colors": {
-                                "bookmark_text": [0, 255, 219],
-                                "button_background": [136, 0, 255, 1],
-                                "frame": [158, 190, 255],
-                                "frame_inactive": [ 0, 0, 0 ],
-                                "ntp_background": [255, 163, 163],
-                                "ntp_link": [255, 235, 0],
-                                "ntp_text": [255, 160, 0],
-                                "omnibox_background": [ 84, 84, 84 ],
-                                "omnibox_text": [ 194, 194, 194 ],
-                                "tab_background_text": [0, 0, 255],
-                                "tab_background_text_inactive": [ 153, 153, 153 ],
-                                "tab_text": [0, 146, 255],
-                                "toolbar": [255, 0, 0],
-                                "toolbar_button_icon": [ 194, 194, 194 ],
-                                "toolbar_text": [ 194, 194, 194 ]
-                            }
-                        }
-                    },
-                    "path": "aghfnjkcakhmadgdomlmlhhaocbkloab/99_0",
-                    "state": 1
-                }
-            },
-            "theme": { "id": "aghfnjkcakhmadgdomlmlhhaocbkloab" }
+            "theme": {
+                "id": "user_color_theme_id",
+                "system_theme": 0
+            }
         },
         "homepage": "WEBSITEHERE",
         "homepage_is_newtabpage": false,
         "https_only_mode_enabled": true,
-        "ntp": {
-            "background_image_type": "off",
-            "custom_background_dict": {
-                "attribution_action_url": "",
-                "attribution_line_1": "",
-                "collection_id": "",
-                "refresh_timestamp": 0,
-                "resume_token": ""
-            },
-            "custom_background_local_to_device": false,
-            "enable_prerender": false,
-            "hide_default_top_sites": true,
-            "layout_mode": 3,
-            "news_feed_display": "off",
-            "num_personal_suggestions": 1,
-            "quick_links_options": 1,
-            "show_greeting": false,
-            "show_image_of_day": false,
-            "show_settings": false,
-            "use_most_visited_tiles": false
-        },
         "payments": { "can_make_payment_enabled": false },
         "plugins": { "always_open_pdf_externally": true, "plugins_list": [] },
         "privacy_sandbox": {
@@ -256,9 +232,12 @@
                 "app_banner": 2,
                 "ar": 2,
                 "automatic_downloads": 2,
+                "automatic_fullscreen": 2,
+                "auto_picture_in_picture": 2,
                 "autoplay": 2,
                 "background_sync": 2,
                 "bluetooth_scanning": 2,
+                "captured_surface_control": 2,
                 "clipboard": 2,
                 "cookies": 1,
                 "file_handling": 2,
@@ -275,8 +254,10 @@
                 "midi_sysex": 2,
                 "notifications": 2,
                 "payment_handler": 2,
+                "popups": 2,
                 "sensors": 2,
                 "serial_guard": 2,
+                "sleeping_tabs": 2,
                 "sound": 1,
                 "storage_access": 2,
                 "usb_guard": 2,
@@ -292,62 +273,90 @@
             }
         },
         "search": { "suggest_enabled": false },
-        "session": { "restore_on_startup": 4, "startup_urls": ["https://feren-os.github.io/start-page"] },
+        "session": { "restore_on_startup": 4, "startup_urls": ["WEBSITEHERE"] },
         "sessions": { "session_data_status": 3 },
-        "signin": { "allowed": false, "allowed_on_next_startup": false },
+        "shopping": { "contextual_features_enabled": false },
+        "signin": { "allowed": false },
         "sync": {
             "requested": false
         },
         "unified_consent": { "migration_state": 10 },
         "url_keyed_anonymized_data_collection": { "enabled": false },
-        "user_experience_metrics": { "personalization_data_consent_enabled_last_known_value": false },
+        "user_experience_metrics": {
+            "personalization_data_consent_enabled_last_known_value": false
+        },
         "vivaldi": {
             "address_bar": {
                 "extensions": {
-                    "hidden_extensions": [
-                        "gebbhagfogifgggkldgodflihgfeippi",
-                        "immpkjjlgappgfkkfieppnmlhakdmaab",
-                        "gmopgnhbhiniibbiilmbjilcmgaocokj",
-                        "cimiefiiaegbelhefglklhhakcgmhkai"
-                    ],
+                    "hidden_extensions": ["cimiefiiaegbelhefglklhhakcgmhkai"],
                     "render_in_dropdown": true
                 },
-                "search": { "display": 2 },
-                "show_qr_generator": false
+                "omnibox": {
+                    "enabled": false,
+                    "show_best_result": false,
+                    "show_bookmarks": false,
+                    "show_browser_history": false,
+                    "show_internal_urls": false,
+                    "show_nicknames": false,
+                    "show_search_history": false,
+                    "show_search_or_go_to": false,
+                    "show_sync_tabs": false,
+                    "show_typed_history": false
+                },
+                "inline_search": { "enabled": false },
+                "search": {
+                    "direct_match_enabled": false,
+                    "keep_selected": false,
+                    "show_keyword": false
+                }
             },
-            "appearance": { "css_ui_mods_directory": "/usr/share/solstice/vivaldicss" },
-            "autofill": { "server_assist": false },
-            "bookmarks": { "version": "24" },
-            "panels": {
-                "list": [
-                    { "available": false, "forMailOnly": false, "format": 7, "id": "format", "resizable": false, "width": -1 },
-                    { "available": false, "forMailOnly": false, "id": "bookmarks", "resizable": false, "width": -1 },
-                    { "available": true, "forMailOnly": false, "id": "downloads", "resizable": false, "width": -1 },
-                    { "available": true, "forMailOnly": false, "id": "history", "resizable": false, "width": -1 },
-                    { "available": false, "forMailOnly": false, "id": "notes", "resizable": false, "width": -1 },
-                    { "available": false, "forMailOnly": false, "id": "tabs", "resizable": false, "width": -1 },
-                    { "available": false, "forMailOnly": true, "id": "mail", "resizable": false, "width": -1 },
-                    { "available": false, "forMailOnly": true, "id": "feeds", "resizable": false, "width": -1 },
-                    { "available": false, "forMailOnly": true, "id": "contacts", "resizable": false, "width": -1 },
-                    { "available": false, "forMailOnly": false, "id": "calendar", "resizable": false, "width": -1 },
-                    { "available": false, "forMailOnly": false, "id": "chat", "resizable": false, "width": 290 }
-                ],
-                "window_defaults": { "barVisible": false, "panelVisible": false },
-                "version": "99.0.0001.02",
-                "web": { "items": [], "modified": ["ckmam0bsw00002y5xoafpww5i", "ckn7fhhqx0000hc2roo8jshm4"], "removed_items": [{ "id": "ckmam0bsw00002y5xoafpww5i" }, { "id": "ckn7fhhqx0000hc2roo8jshm4" }], "version": "99.0.0001.02" },
-                "window": { "single_click_opens": true }
+            "appearance": { "density": false },
+            "downloads": {
+                "start_automatically": true,
+                "use_popout": true
             },
-            "downloads": { "start_automatically": true, "notify_on_complete": false, "use_popout": true },
             "experiments": ["css_mods"],
-            "homepage": "",
-            "homepage_cache": "",
-            "incognito": { "show_intro": false },
-            "menu": { "icon_type": 1 },
-            "privacy": { "google_component_extensions": { "hangout_services": true, "web_store": false } },
-            "settings": { "in_tab": true },
-            "startpage": { "navigation": 2, "speed_dial": { "add_button_visible": false, "allow_dnd": false, "columns": 99, "controls_visible": false, "delete_visible": false, "favicon_visible": true, "titles_visible": 0, "width": 320 } },
-            "startup": { "check_is_default": false, "has_seen_feature": 1, "last_seen_version": "99.0.0001.02" },
-            "status_bar": { "display": 2, "minimized": 1 },
+            "homepage": "WEBSITEHERE",
+            "homepage_cache": "WEBSITEHERE",
+            "menu": { "compact": true, "icon_type": 1 },
+            "panels": {
+                "lazy_load": true,
+                "window_defaults": {
+                    "barVisible": false,
+                    "panelVisible": false
+                }
+            },
+            "privacy": {
+                "google_component_extensions": {
+                    "hangout_services": false,
+                    "web_store": false
+                }
+            },
+            "settings": {
+                "in_tab": true,
+                "mono_icons": true
+            },
+            "startpage": {
+                "navigation": 2,
+                "speed_dial": {
+                    "add_button_visible": false,
+                    "columns": 1,
+                    "controls_visible": false,
+                    "delete_visible": false,
+                    "display_search": false,
+                    "privacy_stats_show": false,
+                    "size": 0,
+                    "titles_visible": 2
+                }
+            },
+            "startup": {
+                "check_is_default": false,
+                "has_seen_feature": 1
+            },
+            "status_bar": {
+                "display": 2,
+                "minimized": 1
+            },
             "system": { "show_exit_confirmation_dialog": false },
             "tabs": {
                 "active_min_size": 90,
@@ -357,28 +366,22 @@
                 "focus_webview": true,
                 "horizontal_scrolling": true,
                 "never_close_last": false,
-                "new_page": {
-                    "custom_url": "",
-                    "link": 3
-                },
-                "page_load_info": 3,
+                "new_page": { "link": 1 },
                 "show_synced_tabs_button": false,
                 "show_trash_can": true,
-                "visual_switch": {
-                    "enable": true
-                }
+                "visual_switch": { "enable": true }
             },
             "theme": {
                 "schedule": {
                     "enabled": 1,
                     "o_s": {
-                        "dark": "ice-dark",
-                        "light": "ice"
+                        "dark": "solstice-dark",
+                        "light": "solstice"
                     }
                 }
             },
             "themes": {
-                "current": "ice",
+                "current": "solstice",
                 "system": [
                     {
                         "accentFromPage": false,
@@ -390,8 +393,8 @@
                         "contrast": 4,
                         "dimBlurred": false,
                         "engineVersion": 1,
-                        "id": "ice",
-                        "name": "ice",
+                        "id": "solstice",
+                        "name": "solstice",
                         "preferSystemAccent": false,
                         "radius": 4,
                         "simpleScrollbar": true,
@@ -410,8 +413,8 @@
                         "contrast": 4,
                         "dimBlurred": false,
                         "engineVersion": 1,
-                        "id": "ice-dark",
-                        "name": "ice-dark",
+                        "id": "solstice-dark",
+                        "name": "solstice-dark",
                         "preferSystemAccent": false,
                         "radius": 4,
                         "simpleScrollbar": true,
@@ -431,7 +434,7 @@
                         "dimBlurred": false,
                         "engineVersion": 1,
                         "id": "Vivaldi9",
-                        "name": "ice-private",
+                        "name": "solstice-private",
                         "preferSystemAccent": false,
                         "radius": 4,
                         "simpleScrollbar": true,
@@ -442,9 +445,13 @@
                     }
                 ]
             },
-            "toolbars": { "navigation": ["Back", "Reload", "AddressField", "DownloadButton", "Extensions", "UpdateButton"] },
-            "windows": { "show_window_close_confirmation_dialog": false, "use_native_decoration": false },
-            "workspaces": { "enabled": true }
+            "toolbars": {
+                "navigation": ["Back", "Reload", "AddressField", "DownloadButton", "Extensions", "UpdateButton"],
+                "panel": [],
+                "status": []
+            },
+            "windows": { "show_window_close_confirmation_dialog": false },
+            "workspaces": { "enabled": false }
         },
         "webkit": {
             "webprefs": {

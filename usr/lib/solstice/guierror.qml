@@ -9,9 +9,7 @@ ApplicationWindow {
     visible: true
     width: 25 * Kirigami.Units.gridUnit
     height: 17 * Kirigami.Units.gridUnit
-    title: "ERRORTITLE" // Changed by solstice
     property var buttonRowMargin: 5
-    property var creationCancel: QtObject { property bool returnHome: true }
     maximumHeight: height
     maximumWidth: width
     minimumHeight: height
@@ -20,7 +18,7 @@ ApplicationWindow {
     //SIGNALS
     signal dismiss()
     signal openStoreBrowsers()
-    signal openStoreID(var storeid)
+    signal openStoreID()
     signal unavailMoreInformation()
 
     Kirigami.Theme.inherit: true
@@ -181,7 +179,7 @@ ApplicationWindow {
             icon {
                 name: "feren-store"
             }
-            visible: noBrowsersError.visible && storeAvailable
+            visible: noBrowsersError.visible && storeAvailable && canEdit
             onClicked: openStoreBrowsers();
         }
 
@@ -224,8 +222,8 @@ ApplicationWindow {
                 name: "delete"
                 color: Kirigami.Theme.negativeTextColor
             }
-            visible: unavailableError.visible
-            onClicked: dismiss(); //TODO
+            visible: unavailableError.visible && storeAvailable && canEdit
+            onClicked: openStoreID();
         }
     }
 }

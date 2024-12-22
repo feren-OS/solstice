@@ -6,7 +6,7 @@ import os
 import sys
 import subprocess
 import gettext
-gettext.install("solstice-gui", "/usr/share/locale", names="ngettext")
+gettext.install("solstice", "/usr/share/locale", names="ngettext")
 import gi
 from gi.repository import GLib
 from PyQt5.QtCore import *
@@ -15,8 +15,12 @@ from PyQt5.QtQml import * #Needs python3-pyqt5.qtquick
 from xdg.DesktopEntry import DesktopEntry
 import ast
 import json
+from functools import partial
 
 QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
+
+storelocation = "/usr/bin/feren-store"
+storename = _("toreSay")
 
 #######################################################################################
 # Solstice Profile Launcher/Manager                                                   #
@@ -27,10 +31,14 @@ QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
 if len(sys.argv) < 2:
     print(_("Usage: solstice desktopfile [options]"))
     sys.exit(1)
+if not os.path.isfile(sys.argv[1]):
+    print(_("File does not exist."))
+    sys.exit(2)
 
-class SolsticeGUIException(Exception):
+class SolsticeRuntimeException(Exception):
     pass
 
+# Available profiles storage for GUI
 class ProfilesModel(QAbstractListModel):
     IDRole = Qt.UserRole + 1
     NameRole = Qt.UserRole + 2
@@ -56,6 +64,7 @@ class ProfilesModel(QAbstractListModel):
         self.profiles = data
         self.layoutChanged.emit()
 
+# Ditto but for the browsers in the browser select
 class BrowsersModel(QAbstractListModel):
     IDRole = Qt.UserRole + 1
     NameRole = Qt.UserRole + 2
@@ -95,598 +104,784 @@ class BrowsersModel(QAbstractListModel):
         self.browsers = data
         self.layoutChanged.emit()
 
-class DesktopFileInformation:
+
+class SolsticeErrorWnd():
+    def __init__(self, wmclass, hasstore=None, canedit=None, amadmin=None, inapp=False, engine=None):
+        if inapp == False:
+            self.app = QApplication(sys.argv)
+            self.app.setDesktopFileName(wmclass)
+            self.app.setApplicationName(wmclass)
+            self.eng = QQmlApplicationEngine()
+            self.eng.quit.connect(self.app.quit)
+        else:
+            self.eng = engine
+
+        # Load condition-variables
+        if hasstore == None:
+            self.hasstore = storelocation and os.path.isfile(storelocation)
+        else:
+            self.hasstore = hasstore
+        self.eng.rootContext().setContextProperty('storeAvailable', hasstore)
+        if canedit == None:
+            self.canedit = os.access(sys.argv[1], os.W_OK)
+        else:
+            self.canedit = canedit
+        self.eng.rootContext().setContextProperty('canEdit', canedit)
+        if amadmin == None:
+            self.amadmin = utils.amAdministrator()
+        else:
+            self.amadmin = amadmin
+        self.eng.rootContext().setContextProperty('amAdmin', amadmin)
+
+        #Load QML
+        self.eng.load('/usr/lib/solstice/guierror.qml')
+        self.wnd = self.eng.rootObjects()[0]
+        #Connect main window events
+        self.wnd.dismiss.connect(self.wnd.close)
+        self.wnd.openStoreBrowsers.connect(self.wnd.close) #TODO
+        self.wnd.openStoreID.connect(self.wnd.close) #TODO
+        #Set label values
+        self.labels()
+
+    def exec(self): #Allows pre-app error-dialogs
+        return self.app.exec()
+
+    def labels(self):
+        self.wnd.findChild(QObject, "moreInformationBtn").setProperty("text", _("More information"))
+        self.wnd.findChild(QObject, "getStoreBrowsersBtn").setProperty("text", _("Get a new browser from %s...") % storename + " (dummy)") #TODO
+        self.wnd.findChild(QObject, "genericOk").setProperty("text", _("Ok"))
+        self.wnd.findChild(QObject, "unavailableOk").setProperty("text", _("Ok"))
+        self.wnd.findChild(QObject, "unavailableDismiss").setProperty("text", _("Dismiss"))
+        self.wnd.findChild(QObject, "uninstallStoreBtn").setProperty("text", _("Remove...") + " (dummy)") #TODO
+
+
+    def SolsticeError(self, errortitle, errorheader, errortext):
+        self.wnd.findChild(QObject, "genericError").setProperty('visible', True)
+
+        #Change labels
+        self.wnd.setProperty('title', errortitle)
+        self.wnd.findChild(QObject, "genericErrorHeader").setProperty("text", errorheader)
+        self.wnd.findChild(QObject, "genericErrorSubheader").setProperty("text", errortext)
+
+
+    def SolsticeWebsiteGoneError(self, appname, announcement):
+        self.wnd.findChild(QObject, "unavailableError").setProperty('visible', True)
+        #Connect More Information button
+        self.wnd.unavailMoreInformation.connect(partial(subprocess.run, ["/usr/bin/xdg-open", announcement]))
+
+        #Change labels
+        self.wnd.setProperty('title', appname)
+        self.wnd.findChild(QObject, "unavailableHeader").setProperty("text", _("%s is no longer available") % appname)
+        self.wnd.findChild(QObject, "unavailableSubheader").setProperty("text", _("Unfortunately, %s has been closed down, meaning it is no longer available.\n\nSince %s is no longer available, would you like to remove it?\nNOTE: Once done, you cannot install %s again.") % (appname, appname, appname))
+
+        #Special conditions for when unable to manage the file
+        if self.canedit == False and self.amadmin == False:
+            self.wnd.findChild(QObject, "unavailableSubheader").setProperty("text", _("Unfortunately, %s has been closed down, meaning it is no longer available.\n\nPlease contact an administrator to remove %s.") % (appname, appname))
+
+
+    def SolsticeBrowserTypeUnavailableError(self, appname):
+        self.wnd.findChild(QObject, "unavailableError").setProperty('visible', True)
+        self.wnd.findChild(QObject, "moreInformationBtn").setProperty('visible', False)
+
+        #Change labels
+        self.wnd.setProperty('title', _("No browsers available - %s") % appname)
+        self.wnd.findChild(QObject, "unavailableHeader").setProperty("text", _("No browsers are available for %s") % appname)
+        self.wnd.findChild(QObject, "unavailableSubheader").setProperty("text", _("%s cannot start as there are no longer any browsers available that can run it.\n\nYou will need to remove, then re-install, %s to continue using it.") % (appname, appname))
+
+        #Special conditions for when unable to manage the file
+        if self.canedit == False and self.amadmin == False:
+            self.wnd.findChild(QObject, "unavailableSubheader").setProperty("text", _("%s cannot start as there are no longer any browsers available that can run it.\n\nAn administrator needs to remove, then re-install, %s before you can continue using it.") % (appname, appname))
+
+
+    def SolsticeNoBrowserError(self, appname, browser, browsertype):
+        self.wnd.findChild(QObject, "noBrowsersError").setProperty('visible', True)
+
+        #Change labels
+        self.wnd.setProperty('title', _("No browsers available - %s") % appname)
+        self.wnd.findChild(QObject, "noBrowsersHeader").setProperty("text", _("No browsers are available for %s") % appname)
+        self.wnd.findChild(QObject, "noBrowsersSubheader").setProperty("text", _("%s cannot currently start as there are no installed browsers that can run it.") % appname)
+        if "unavailable" in variables.sources[browsertype][browser]:
+            self.wnd.findChild(QObject, "browserSubstituteTitle").setProperty("text", _("%s can no longer run %s") % (variables.sources[browsertype][browser]["name"], appname))
+            if variables.sources[browsertype][browser]["unavailable"] == 0: #Changed browsertype
+                self.wnd.findChild(QObject, "browserSubstituteDesc").setProperty("text", _("The browser used to launch %s has changed browser engines, and is no longer compatible with its profiles.") % appname)
+            elif variables.sources[browsertype][browser]["unavailable"] == 1: #No longer supported
+                self.wnd.findChild(QObject, "browserSubstituteDesc").setProperty("text", _("The browser used to launch %s is no longer compatible.") % appname)
+            self.wnd.findChild(QObject, "getStoreBrowserBtn").setProperty('visible', False)
+        else:
+            self.wnd.findChild(QObject, "browserSubstituteTitle").setProperty("text", _("%s was chosen for %s") % (variables.sources[browsertype][browser]["name"], appname))
+            self.wnd.findChild(QObject, "browserSubstituteDesc").setProperty("text", _("Would you like to install {0} to allow {1} to run?").format(variables.sources[browsertype][browser]["name"], appname))
+            self.wnd.findChild(QObject, "getStoreBrowserBtn").setProperty("text", _("View %s in %s... (dummy)") % (variables.sources[browsertype][browser]["name"], storename))
+            self.wnd.findChild(QObject, "getStoreBrowserBtn").setProperty('visible', 'storeAvailable')
+
+        #Special conditions for when unable to manage the file
+        if self.canedit == False:
+            self.wnd.setProperty('title', _("Browser unavailable - %s") % appname)
+            self.wnd.findChild(QObject, "noBrowsersHeader").setProperty("text", _("The browser for %s is unavailable") % appname)
+            self.wnd.findChild(QObject, "noBrowsersSubheader").setProperty("text", _("%s cannot currently start as its chosen browser is currently unavailable.") % appname)
+
+
+
+class SolsticeDFileException(Exception):
+    pass
+class SolsticeOutdatedException(Exception):
+    pass
+class ApplicationInfo():
     def __init__(self, desktopfile):
-        self.info = {}
-        try:
-            entry=DesktopEntry()
-            entry.parse(desktopfile)
-        except Exception as e:
-            raise SolsticeGUIException(_("Corrupt or missing .desktop file: %s") % e)
+        self.app = {}
+        self.parent = {}
+        self.parentfile = None
 
-        parentid = entry.get("X-Solstice-ParentID")
-        if parentid != '': #Child shortcuts have parent IDs, meaning we need some data from their parent shortcut's configs
-            self.info["parentid"] = parentid
-            self.info["name"] = entry.getName()
-            self.info["solwmclass"] = entry.getStartupWMClass()
-            self.info["website"] = entry.get("X-Solstice-Website")
-            desktopfilelist = desktopfile.split("/")
-            desktopfilelist[-1] = desktopfilelist[-1].replace(entry.get("X-Solstice-ID"), parentid)
-            desktopfile = "/".join(desktopfilelist)
-            del desktopfilelist
-            try:
-                entry.parse(desktopfile)
-            except Exception as e:
-                raise SolsticeGUIException(_("Corrupt or missing parent .desktop file: %s") % e)
-        else: #Parent shortcuts
-            self.info["name"] = entry.getName()
-            self.info["solwmclass"] = entry.getStartupWMClass()
-            self.info["website"] = entry.get("X-Solstice-Website")
-
-        self.info["wmclass"] = entry.getStartupWMClass()
-        self.info["browser"] = entry.get("X-Solstice-Browser")
-        self.info["browsertype"] = entry.get("X-Solstice-BrowserType")
-        self.info["id"] = entry.get("X-Solstice-ID")
-        self.info["storeid"] = entry.get("X-Solstice-StoreID")
+        #Open the main .desktop file
+        info = DesktopEntry()
         try:
-            self.info["bonusids"] = ast.literal_eval(entry.get("X-Solstice-BonusIDs"))
-        except:
-            self.info["bonusids"] = []
-        self.info["nohistory"] = self.strToBool(entry.get("X-Solstice-NoHistory"))
-        self.info["googlehangouts"] = self.strToBool(entry.get("X-Solstice-GoogleHangouts"))
-        self.info["workspaces"] = self.strToBool(entry.get("X-Solstice-Workspaces"))
-        try:
-            self.info["extrawebsites"] = ast.literal_eval(entry.get("X-Solstice-ExtraWebsites"))
-        except:
-            self.info["extrawebsites"] = []
-        self.info["bg"] = entry.get("X-Solstice-BG")
-        self.info["bgdark"] = entry.get("X-Solstice-BG-Dark")
-        self.info["accent"] = entry.get("X-Solstice-Accent")
-        self.info["accentdark"] = entry.get("X-Solstice-Accent-Dark")
-        self.info["color"] = entry.get("X-Solstice-Color")
-        self.info["colordark"] = entry.get("X-Solstice-Color-Dark")
-        self.info["accentonwindow"] = self.strToBool(entry.get("X-Solstice-AccentWindow"))
-        self.info["chromicolor"] = entry.get("X-Solstice-ChromiColor")
-        self.info["lastupdated"] = entry.get("X-Solstice-LastUpdate")
-        try:
-            self.info = utils.complete_item_information(self.info)
+            info.parse(desktopfile)
         except Exception as e:
-            del self.info
-            raise SolsticeGUIException(e)
+            raise SolsticeDFileException(e)
+
+        #Ensure this shortcut is new enough for this version of Solstice
+        # NOTE: Increasing this value should only be done under emergency circumstances.
+        if info.get("X-Solstice-Version") == "":
+            raise SolsticeOutdatedException()
+        elif int(info.get("X-Solstice-Version")) < 1:
+            raise SolsticeOutdatedException()
+
+        #Is this file a child application?
+        try:
+            parentid = info.get("X-Solstice-ParentID")
+            if parentid != '':
+                self.parentfile = utils.getParentShortcut(parentid, info.getStartupWMClass(), info.get("X-Solstice-ID"), sys.argv[1])
+                parentinfo = DesktopEntry()
+                parentinfo.parse(self.parentfile)
+                #Get parent information for profile updating usage
+                self.parent = self.getParentInformation(parentinfo)
+            else:
+                self.parent = self.getParentInformation(info)
+
+            #Get information for the Solstice GUI
+            self.app["name"] = info.getName()
+            self.app["wmclass"] = info.getStartupWMClass()
+            self.app["website"] = info.get("X-Solstice-Website")
+        except Exception as e:
+            raise SolsticeDFileException(e)
+
+
+    def verifySetting(self, getvalue, intendedtype, valueid, fallback=None):
+        if getvalue == "": #Not found
+            if fallback == None:
+                raise SolsticeDFileException(_("%s required but not found") % valueid)
+            else:
+                print(_("W: %s was not found - using fallback value") % valueid)
+                return fallback
+        #Convert to correct typing
+        try:
+            if intendedtype == list or intendedtype == dict:
+                getvalue = ast.literal_eval(getvalue)
+            elif intendedtype == bool:
+                getvalue = self.strToBool(getvalue)
+            elif intendedtype == int:
+                getvalue = int(getvalue)
+            if type(getvalue) != intendedtype:
+                raise SolsticeDFileException
+        except:
+            if fallback == None:
+                raise SolsticeDFileException(_("%s has an invalid value") % valueid)
+            else:
+                print(_("W: %s has an invalid value - using fallback value") % valueid)
+                return fallback
+        #All checks have passed
+        return getvalue
+
+    def getParentInformation(self, entry):
+        result = {}
+        # Base information
+        result["name"] = self.verifySetting(entry.getName(), str, "Name")
+        result["wmclass"] = self.verifySetting(entry.getStartupWMClass(), str, "Window Class")
+        result["website"] = self.verifySetting(entry.get("X-Solstice-Website"), str, "Website")
+        result["browser"] = self.verifySetting(entry.get("X-Solstice-Browser"), str, "Selected Browser")
+        result["browsertype"] = self.verifySetting(entry.get("X-Solstice-BrowserType"), str, "browsertype")
+        result["id"] = self.verifySetting(entry.get("X-Solstice-ID"), str, "Shortcut ID")
+        result["childids"] = self.verifySetting(entry.get("X-Solstice-Children"), list, "Childrens' IDs")
+        result["lastupdated"] = self.verifySetting(entry.get("X-Solstice-LastUpdate"), int, "lastupdated")
+        # Enables the Store shortcut
+        result["storeid"] = entry.get("X-Solstice-StoreID")
+        # Application Features
+        result["extrawebsites"] = self.verifySetting(entry.get("X-Solstice-ExtraWebsites"), list, "Extra required websites")
+        result["services"] = self.verifySetting(entry.get("X-Solstice-Services"), list, "Required services", [])
+        result["nohistory"] = self.verifySetting(entry.get("X-Solstice-NoHistory"), bool, "Disable history", False)
+        result["workspaces"] = self.verifySetting(entry.get("X-Solstice-Workspaces"), bool, "Enable Workspaces", False)
+        # Your Preferences
+        result["bonusids"] = self.verifySetting(entry.get("X-Solstice-BonusIDs"), list, "Bonuses", [])
+        # Colour Palette
+        result["accent"] = self.verifySetting(entry.get("X-Solstice-Accent"), str, "Accent Colour")
+        result["accentdark"] = self.verifySetting(entry.get("X-Solstice-Accent-Dark"), str, "Accent Colour (Dark)", result["accent"])
+        # Colour Palette - Connected Tabs
+        result["connheaderlight"] = self.verifySetting(entry.get("X-Solstice-ConnectedHeader"), str, "Header background (Connected Tabs)")
+        result["connheaderdark"] = self.verifySetting(entry.get("X-Solstice-ConnectedHeader-Dark"), str, "Header background (Connected Tabs, Dark)", result["connheaderlight"])
+        result["conntablight"] = self.verifySetting(entry.get("X-Solstice-ConnectedTab"), str, "Tab background (Connected Tabs)")
+        result["conntabdark"] = self.verifySetting(entry.get("X-Solstice-ConnectedTab-Dark"), str, "Tab background (Connected Tabs, Dark)", result["conntablight"])
+        result["connsitelight"] = self.verifySetting(entry.get("X-Solstice-ConnectedSite"), str, "Page background (Connected Tabs)")
+        result["connsitedark"] = self.verifySetting(entry.get("X-Solstice-ConnectedSite-Dark"), str, "Page background (Connected Tabs, Dark)", result["connsitelight"])
+        # Colour Palette - Floating Tabs
+        result["headerlight"] = self.verifySetting(entry.get("X-Solstice-Header"), str, "Header background")
+        result["headerdark"] = self.verifySetting(entry.get("X-Solstice-Header-Dark"), str, "Header background (Dark)", result["headerlight"])
+        result["tablight"] = self.verifySetting(entry.get("X-Solstice-Tab"), str, "Tab background")
+        result["tabdark"] = self.verifySetting(entry.get("X-Solstice-Tab-Dark"), str, "Tab background (Dark)", result["tablight"])
+        result["sitelight"] = self.verifySetting(entry.get("X-Solstice-Site"), str, "Page background")
+        result["sitedark"] = self.verifySetting(entry.get("X-Solstice-Site-Dark"), str, "Page background (Dark)", result["sitelight"])
+        result["tabhasshadow"] = self.verifySetting(entry.get("X-Solstice-Tab-Shadow"), bool, "Floating tabs shadows", True)
+        return result
 
     def strToBool(self, string):
         if string == "true":
             return True
-        elif string == "false":
+        else:
             return False
-        else:
-            return "" #Fallback for utils.complete_item_information filling
 
-class SolsticeGUI(QApplication):
-    def __init__(self, infoclass):
+
+class SolsticeApp(QApplication):
+    def __init__(self, wmclass, info, profilesdir, browseravailable, configs, autoload):
         super().__init__(sys.argv)
-        self.main = solstice.main()
-        self.info = infoclass
-        self.mainwnd = None #we manipulate the window numerous times in the code,
-        self.errorwnd = None #same with this one.
-        self.maineng = None #storing the engines so they don't get deleted
-        self.erroreng = None # after self.open...Window()
 
-        if self.info != {}: #Don't run this code if the file is corrupt
-            self.profilesdir = "{0}/{1}".format(variables.solstice_profiles_directory, self.info["id"])
-            self.browser = self.info["browser"]
-            self.browsertype = self.info["browsertype"]
-            guiwmclass = self.info["solwmclass"]
-        else: #Instead run this code if the file is corrupt
-            guiwmclass = "solstice"
+        # Load essential pre-autoload variables
+        self.info = info
+        self.profilesdir = profilesdir
+        self.configs = configs
+        self.autoload = autoload
 
-        #Set window class
-        self.setDesktopFileName(guiwmclass)
-        self.setApplicationName(guiwmclass)
+        # Automatically load the profile if conditions are met
+        if "--force-manager" not in sys.argv and autoload != None and browseravailable == True:
+            if self.openProfile(autoload, True, True) == True:
+                sys.exit(0)
 
-        if self.info == {}: #Corrupt file
-            self.genericError(_("Incompatible file - Solstice"), _("Corrupt or incompatible file"), _("The shortcut you attempted to open is either corrupt or is too new for this version of Solstice.\n\nPlease reinstall the application you were trying to launch from Store."))
-            return
-        if self.browsertype not in variables.sources or self.browser not in variables.sources[self.browsertype]: #Invalid browser
-            print(_("Failed to load shortcut: %s") % _("Invalid browser"))
-            self.genericError(_("Incompatible file - Solstice"), _("Corrupt or incompatible file"), _("The shortcut you attempted to open is either corrupt or is too new for this version of Solstice.\n\nPlease reinstall the application you were trying to launch from Store."))
-            return
-        if utils.shorten_url(self.info["website"]) in variables.unavailable: #Website is currently unavailable
-            url = utils.shorten_url(self.info["website"])
-            self.websiteUnavailableError(variables.unavailable[url]["perma"], variables.unavailable[url]["announcement"])
-            return
+        # Initialise QML Engines, and ensure the application actually exits upon their closure
+        self.eng = QQmlApplicationEngine()
+        self.eng.quit.connect(self.quit)
 
-        #Check the application's settings, and if missing or incorrect update them
-        try:
-            if os.path.isdir(self.profilesdir):
-                essentialvalues = ["lastdownloadsdir", "downloadsname"]
-                if os.path.isfile("%s/.solstice-settings" % self.profilesdir):
-                    with open("%s/.solstice-settings" % self.profilesdir, 'r') as fp:
-                        itemconfs = json.loads(fp.read())
-                    for i in essentialvalues:
-                        if i not in itemconfs:
-                            self.main.update_item_settings(self.info)
-                        if i == "lastdownloadsdir" and i in itemconfs and itemconfs["lastdownloadsdir"] != GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD):
-                            self.main.update_item_settings(self.info)
-                else:
-                    self.main.update_item_settings(self.info)
-            else:
-                self.main.update_item_settings(self.info)
-            #Reload settings once updated
-            with open("%s/.solstice-settings" % self.profilesdir, 'r') as fp:
-                self.itemconfs = json.loads(fp.read())
-        except Exception as e:
-            self.genericError(_("Failed to load settings - %s") % self.info["name"], _("Failed to load settings"), _("An error occurred when attempting to load this application's settings:\n%s\n\nPlease reinstall the application you were trying to launch from Store.") % e)
-            return
+        self.setDesktopFileName(wmclass)
+        self.setApplicationName(wmclass)
 
-        #Load automatically selected profile if there's one
-        self.autoload = self.getAutoProfileLoad() #Multiple parts of code get this value
-        browserCheck = self.browserCheck() #It's used again later in the code
-        if browserCheck == True:
-            self.autoProfileLoad() #If a profile is set to autolaunch, launch it
-        
-        #Set up QML windows
-        self.maineng = QQmlApplicationEngine()
-        self.maineng.quit.connect(self.quit)
+        # Load variables
+        self.hasstore = os.path.isfile(storelocation)
+        self.eng.rootContext().setContextProperty('storeAvailable', self.hasstore)
+        self.canedit = os.access(sys.argv[1], os.W_OK)
+        self.eng.rootContext().setContextProperty('canEdit', self.canedit)
+        self.amadmin = utils.amAdministrator()
+        self.eng.rootContext().setContextProperty('amAdmin', self.amadmin)
+        self.eng.rootContext().setContextProperty('fromStore', "storeid" in self.info.parent and self.info.parent["storeid"])
+        self.eng.rootContext().setContextProperty('bonusesAvailable', False)
 
-        self.openMainWindow()
-        #Apply browser-specific GUI adjustments
-        self.refreshBrowserFeatures()
-        #Final checks
-        if browserCheck == False: #Show the browser selector if browser not available
-            self.gotoBrowserSelect()
-        else:
-            #Refresh profiles list, and go to profile select
-            self.refreshProfilesList()
-            self.gotoProfiles()
-
-
-    #GUI spawning
-    def openMainWindow(self):
-        #Load models
-        self.profilesmodel = ProfilesModel()
-        self.maineng.rootContext().setContextProperty('ProfilesModel', self.profilesmodel)
+        # Initialise models
         self.browsersmodel = BrowsersModel()
-        self.maineng.rootContext().setContextProperty('BrowsersModel', self.browsersmodel)
-        #Load condition-variables
-        if "storeid" in self.info:
-            self.maineng.rootContext().setContextProperty('fromStore', self.info["storeid"] != "")
-        else:
-            self.maineng.rootContext().setContextProperty('fromStore', False)
-        if os.path.isfile("/usr/bin/feren-store"):
-            self.maineng.rootContext().setContextProperty('storeAvailable', True)
-        else:
-            self.maineng.rootContext().setContextProperty('storeAvailable', False)
-        self.maineng.rootContext().setContextProperty('bonusesAvailable', False)
-        #Load QML
-        self.maineng.load('/usr/lib/solstice/gui.qml')
-        self.mainwnd = self.maineng.rootObjects()[0]
-        #Connect main window events
-        self.mainwnd.openProfile.connect(self.openProfile)
-        self.mainwnd.gotoProfileEditor.connect(self.gotoProfileEditor)
-        self.mainwnd.saveProfile.connect(self.saveProfile)
-        self.mainwnd.deleteProfile.connect(self.deleteProfile)
-        self.mainwnd.gotoBrowserSelect.connect(self.gotoBrowserSelect)
-        self.mainwnd.setBrowser.connect(self.setBrowser)
-        #Load value of autolaunch checkbox
-        self.mainwnd.findChild(QObject, "alwaysUseProfile").setProperty('checked', not self.autoload == "")
-        #Set label values, and the window title
-        self.mainwndLabels()
+        self.eng.rootContext().setContextProperty('BrowsersModel', self.browsersmodel)
+        self.profilesmodel = ProfilesModel()
+        self.eng.rootContext().setContextProperty('ProfilesModel', self.profilesmodel)
 
-    def openErrorWindow(self):
-        if self.mainwnd != None:
-            self.mainwnd.hide()
-        #Set up QML windows
-        self.erroreng = QQmlApplicationEngine()
-        self.erroreng.quit.connect(self.quit)
-        #Load condition-variables
-        if os.path.isfile("/usr/bin/feren-store"):
-            self.erroreng.rootContext().setContextProperty('storeAvailable', True)
+        # Load QML
+        self.eng.load('/usr/lib/solstice/gui.qml')
+        self.wnd = self.eng.rootObjects()[0]
+        # Connect main window events
+        self.wnd.openProfile.connect(self.openProfile)
+        self.wnd.newProfile.connect(self.newProfile)
+        self.wnd.manageProfile.connect(self.manageProfile)
+        self.wnd.saveProfile.connect(self.saveProfile)
+        self.wnd.deleteProfile.connect(self.deleteProfile)
+        self.wnd.gotoBrowserSelect.connect(self.browserSelect)
+        self.wnd.setBrowser.connect(self.setBrowser)
+
+        # Set label values, and the window title
+        self.labels()
+
+        # If the browser is unavailable, enter browser select
+        if not browseravailable:
+            self.browserSelect(True)
+            return
+        
+        # Set browser-available-only variables/labels
+        if utils.browserFeatureAvailable(self.info.parent["browsertype"], self.info.parent["browser"], "bonusesavailable"):
+            self.eng.rootContext().setContextProperty('bonusesAvailable', "storeid" in self.info.app)
+        if utils.browserFeatureAvailable(self.info.parent["browsertype"], self.info.parent["browser"], "nocacheavailable"):
+            self.wnd.findChild(QObject, "noCacheHint").setProperty("text", _("Worsens load times of websites"))
         else:
-            self.erroreng.rootContext().setContextProperty('storeAvailable', False)
-        #Load QML
-        self.erroreng.load('/usr/lib/solstice/guierror.qml')
-        self.errorwnd = self.erroreng.rootObjects()[0]
-        #Connect main window events
-        self.errorwnd.dismiss.connect(self.quit)
-        self.errorwnd.openStoreBrowsers.connect(self.quit) #TODO
-        self.errorwnd.openStoreID.connect(self.quit) #TODO
-        #Set label values
-        self.errorwndLabels()
+            self.wnd.findChild(QObject, "noCache").setProperty('enabled', False)
+            self.wnd.findChild(QObject, "noCacheHint").setProperty("text", _("Not available on %s") % \
+                utils.getTranslation(variables.sources[self.info.parent["browsertype"]][self.info.parent["browser"]]["name"]))
 
+        # Otherwise, load profile select:
+        self.loadUserModel()
+        self.editedprof = None
+        self.editrname = None # Used in profile editor
+        self.editnocache = None
 
-    #Labels
-    def mainwndLabels(self):
-        self.mainwnd.setProperty('title', self.info["name"])
-        self.mainwnd.findChild(QObject, "profilesHeader").setProperty('text', _("Who's using %s?") % self.info["name"])
-        self.mainwnd.findChild(QObject, "profilesSubheader").setProperty('text', _("Select your profile from the options below to begin.\nIf you are a new user, press "+'"'+"Add a profile"+'"'+" instead to begin."))
-        self.mainwnd.findChild(QObject, "alwaysUseProfile").setProperty('text', _("Always use this profile"))
-        self.mainwnd.findChild(QObject, "alwaysUseProfileHint").setProperty('text', _('You can manage profiles and select other profiles by right-clicking this application in the Applications Menu and choosing "Manage profiles".'))
-        self.mainwnd.findChild(QObject, "manageHeader").setProperty('text', _("Manage %s Profiles") % self.info["name"])
-        self.mainwnd.findChild(QObject, "manageSubheader").setProperty('text', _("Select a profile from the options below to manage it.\nOnce you are done managing profiles, press Done below."))
+    def labels(self):
+        self.wnd.setProperty('title', self.info.app["name"])
+        self.wnd.findChild(QObject, "profilesHeader").setProperty("text", _("Who's using %s?") % self.info.app["name"])
+        self.wnd.findChild(QObject, "profilesSubheader").setProperty("text", _("Select your profile from the options below to begin.\nIf you are a new user, press "+'"'+"Add a profile"+'"'+" instead to begin."))
+        self.wnd.findChild(QObject, "alwaysUseProfile").setProperty("text", _("Always use this profile"))
+        self.wnd.findChild(QObject, "alwaysUseProfileHint").setProperty("text", _('You can manage profiles and select other profiles by right-clicking this application in the Applications Menu and choosing "Manage profiles".'))
+        self.wnd.findChild(QObject, "manageHeader").setProperty("text", _("Manage %s Profiles") % self.info.app["name"])
+        self.wnd.findChild(QObject, "manageSubheader").setProperty("text", _("Select a profile from the options below to manage it.\nOnce you are done managing profiles, press Done below."))
         #editProfileHeader is changed when visiting the page
-        self.mainwnd.findChild(QObject, "editProfileSubheader").setProperty('text', _("Choose your name, and options for your profile.\nOnce you are done. press Finish below."))
-        self.mainwnd.findChild(QObject, "editProfileNameHint").setProperty('text', _("Profile name"))
-        self.mainwnd.findChild(QObject, "noCache").setProperty('text', _("Disable browser cache"))
-        #noCacheHint is changed by refreshBrowserFeatures
-        self.mainwnd.findChild(QObject, "browsersHeader").setProperty('text', _("Choose a browser to launch %s") % self.info["name"])
+        self.wnd.findChild(QObject, "editProfileSubheader").setProperty("text", _("Choose your name, and options for your profile.\nOnce you are done. press Finish below."))
+        self.wnd.findChild(QObject, "editProfileNameHint").setProperty("text", _("Profile name"))
+        self.wnd.findChild(QObject, "noCache").setProperty("text", _("Disable browser cache"))
+        #noCacheHint is changed later
+        self.wnd.findChild(QObject, "browsersHeader").setProperty("text", _("Choose a browser to launch %s") % self.info.app["name"])
         #browsersSubheader is changed by gotoBrowserSelect
-        self.mainwnd.findChild(QObject, "manageBonusesBtn").setProperty('text', _("Manage bonuses in Store...") + " (dummy)") #TODO
-        self.mainwnd.findChild(QObject, "changeBrowserBtn").setProperty('text', _("Change browser..."))
-        self.mainwnd.findChild(QObject, "editorCancelBtn").setProperty('text', _("Cancel"))
-        self.mainwnd.findChild(QObject, "deleteProfileBtn").setProperty('text', _("Delete profile"))
-        self.mainwnd.findChild(QObject, "cancelBrowserSelect").setProperty('text', _("Cancel"))
-        self.mainwnd.findChild(QObject, "storeBrowsersBtn").setProperty('text', _("Get a new browser from Store...") + " (dummy)") #TODO
-        self.mainwnd.findChild(QObject, "browserSelectDone").setProperty('text', _("Done"))
-        self.mainwnd.findChild(QObject, "profileSelectAdd").setProperty('text', _("Add a profile..."))
-        self.mainwnd.findChild(QObject, "gotoManagerBtn").setProperty('text', _("Manage profiles..."))
-        self.mainwnd.findChild(QObject, "exitManagerBtn").setProperty('text', _("Done"))
-        self.mainwnd.findChild(QObject, "editorDoneBtn").setProperty('text', _("Finish"))
+        self.wnd.findChild(QObject, "manageBonusesBtn").setProperty("text", _("Manage bonuses in %s...") % storename + " (dummy)") #TODO
+        self.wnd.findChild(QObject, "changeBrowserBtn").setProperty("text", _("Change browser..."))
+        self.wnd.findChild(QObject, "editorCancelBtn").setProperty("text", _("Cancel"))
+        self.wnd.findChild(QObject, "deleteProfileBtn").setProperty("text", _("Delete profile"))
+        self.wnd.findChild(QObject, "cancelBrowserSelect").setProperty("text", _("Cancel"))
+        self.wnd.findChild(QObject, "storeBrowsersBtn").setProperty("text", _("Get a new browser from %s...") % storename + " (dummy)") #TODO
+        self.wnd.findChild(QObject, "browserSelectDone").setProperty("text", _("Done"))
+        self.wnd.findChild(QObject, "profileSelectAdd").setProperty("text", _("Add a profile..."))
+        self.wnd.findChild(QObject, "gotoManagerBtn").setProperty("text", _("Manage profiles..."))
+        self.wnd.findChild(QObject, "exitManagerBtn").setProperty("text", _("Done"))
+        self.wnd.findChild(QObject, "editorDoneBtn").setProperty("text", _("Finish"))
 
-    def errorwndLabels(self):
-        self.errorwnd.findChild(QObject, "moreInformationBtn").setProperty('text', _("More information"))
-        self.errorwnd.findChild(QObject, "getStoreBrowsersBtn").setProperty('text', _("Get a new browser from Store...") + " (dummy)") #TODO
-        self.errorwnd.findChild(QObject, "genericOk").setProperty('text', _("Ok"))
-        self.errorwnd.findChild(QObject, "unavailableOk").setProperty('text', _("Ok"))
-        self.errorwnd.findChild(QObject, "unavailableDismiss").setProperty('text', _("Dismiss"))
-        self.errorwnd.findChild(QObject, "uninstallStoreBtn").setProperty('text', _("Remove...") + " (dummy)") #TODO
+    def showError(self):
+        self.eeng = QQmlApplicationEngine()
+        self.eeng.quit.connect(self.quit)
+        return SolsticeErrorWnd(self.info.app["wmclass"], self.hasstore, self.canedit, self.amadmin, True, self.eeng)
 
 
-    #Browser Management and Checks
-    def refreshBrowsersList(self, browsersavailable):
+    #Browser Management
+    def browserSelect(self, force=False):
+        if not os.path.isfile(sys.argv[1]):
+            sys.exit(3)
+
+        #Shortened for cleaner code
+        browser = self.info.parent["browser"]
+        browsertype = self.info.parent["browsertype"]
+
+        # Get available browser options
+        installed, available = utils.getAvailableBrowsers(browsertype)
+        # Show an error if there are no browsers available for this application
+        if available == 0:
+            error = self.showError()
+            error.SolsticeBrowserTypeUnavailableError(self.info.app["name"])
+            self.wnd.close()
+            sys.exit(error.exec())
+        # Show an error if there are no available browsers installed
+        if installed == 0:
+            error = self.showError()
+            error.SolsticeNoBrowserError(self.info.app["name"], browser, browsertype)
+            self.wnd.close()
+
         browsers = []
-        for i in browsersavailable: #only contains available browsers of the same browsertype...
-            browserdesc = ""
-            if "subtitle" in variables.sources[self.browsertype][i]:
-                browserdesc = variables.sources[self.browsertype][i]["subtitle"]
+        for i in variables.sources[browsertype]:
+            if "unavailable" in variables.sources[browsertype][i]:
+                continue #Don't show unavailable browsers
+            if not utils.isBrowserAvailable(i, browsertype):
+                continue #Don't show uninstalled browsers
+
+            browserhas = []
+            descs = {"extensionprotection": _("additional security features"),
+                     "websiteperms": _("website-specific personalisations"),
+                     "followspalette": _("follows the application's palette")}
+            for ii in descs:
+                if ii in variables.sources[browsertype][i]:
+                    if variables.sources[browsertype][i][ii] == True:
+                        browserhas.append(ii)
+
+            #Conditional subtitles
+            if "extensionprotection" in browserhas and "websiteperms" in browserhas and "followspalette" in browserhas:
+                browserdesc = _("Recommended browser - allows additional security features and website-specific personalisations, and follows the application's palette")
+            elif browserhas == []:
+                browserdesc = ""
+            else:
+                browserdesc = ""
+                for ii in browserhas:
+                    if browserdesc == "":
+                        if ii != "followspalette":
+                            browserdesc = _("Allows %s") % descs[ii]
+                        else:
+                            browserdesc = descs[ii].capitalize()
+                    elif ii == browserhas[-1]:
+                        browserdesc = _("%s, and %s") % (browserdesc, descs[ii])
+                    else:
+                        browserdesc = _("%s, %s") % (browserdesc, descs[ii])
+
+            #Append to list of browsers
             browsers.append({"browserid": i,
-                "brname": variables.sources[self.browsertype][i]["name"],
-                "bricon": variables.sources[self.browsertype][i]["icon"],
+                "brname": utils.getTranslation(variables.sources[browsertype][i]["name"]),
+                "bricon": variables.sources[browsertype][i]["icon"],
                 "desc": browserdesc,
                 "available": True,
-                "prechecked": i == self.browser})
-        for browsertype in variables.sources:
-            if browsertype == self.browsertype: #...but we still want to list the others as unavailable.
-                continue #Also, skipping the one we already did for obvious reasons.
-            for i in variables.sources[browsertype]:
-                if not "required-file" in variables.sources[browsertype][i]:
-                    continue #Skip dummy browser slots for unavailable browsers
-                if not os.path.isfile(variables.sources[browsertype][i]["required-file"][0]):
-                    continue #Skip uninstalled browsers
-                browserdesc = _("Not available - Website Applications made on non-{0} browsers cannot use {1} as their browser").format(
-                    browsertype.capitalize(),
-                    variables.sources[browsertype][i]["name"])
-                browsers.append({"browserid": i,
-                    "brname": variables.sources[browsertype][i]["name"],
-                    "bricon": variables.sources[browsertype][i]["icon"],
-                    "desc": browserdesc,
+                "prechecked": i == browser})
+
+        for i in variables.sources:
+            if i == browsertype:
+                continue
+            for ii in variables.sources[i]:
+                if "unavailable" in variables.sources[i][ii]:
+                    continue
+                if not utils.isBrowserAvailable(ii, i):
+                    continue
+
+                #Append to list of browsers
+                browsers.append({"browserid": ii,
+                    "brname": utils.getTranslation(variables.sources[i][ii]["name"]),
+                    "bricon": variables.sources[i][ii]["icon"],
+                    "desc": _("Not available - Website Applications made on non-%s browsers cannot use %s as their browser") % (
+                        i.capitalize(),
+                        utils.getTranslation(variables.sources[i][ii]["name"])),
                     "available": False,
                     "prechecked": False})
+
         #Refresh browsers list in browsersmodel
         self.browsersmodel.setData(browsers)
 
-    def browserCheck(self):
-        if not utils.is_browser_available(self.browser, self.browsertype):
-            return False
-        else:
-            return True
+        #Switch pages to browser select
+        if force == True:
+            self.wnd.findChild(QObject, "cancelBrowserSelect").setProperty('enabled', False) #Disable cancel button
+            self.wnd.findChild(QObject, "browsersSubheader").setProperty("text", _("The browser used to launch this application is missing or has been removed.\nTo continue, please choose a replacement browser below."))
+            if "unavailable" in variables.sources[browsertype][browser]: #Check if unavailable
+                if variables.sources[browsertype][browser]["unavailable"] == 0: #Changed browsertype
+                    self.wnd.findChild(QObject, "browsersSubheader").setProperty("text", _("The browser used to launch this application has changed browser engines, and is no longer compatible with %s's profiles.\nTo continue, please choose a replacement browser below.") % self.info.parent["name"])
+                elif variables.sources[browsertype][browser]["unavailable"] == 1: #No longer supported
+                    self.wnd.findChild(QObject, "browsersSubheader").setProperty("text", _("The browser used to launch this application is no longer compatible.\nTo continue, please choose a replacement browser below."))
+        else: #Visiting the browser changer manually
+            self.wnd.findChild(QObject, "browsersSubheader").setProperty("text", _("Select a browser from the options below to use it for this application.\nIf you want to keep your current preference, press Cancel."))
+            self.wnd.findChild(QObject, "cancelBrowserSelect").setProperty('enabled', True)
+        self.wnd.findChild(QObject, "pages").setProperty('currentIndex', 3)
 
-    def gotoBrowserSelect(self):
-        browsersavailable = []
-        try:
-            browsersavailable = utils.get_available_browsers(self.browsertype)
-        except:
-            pass
-        if browsersavailable == []:
-            self.browserUnavailableError()
-            return
-
-        try:
-            #Refresh model
-            self.refreshBrowsersList(browsersavailable)
-
-            if self.browser not in browsersavailable:
-                self.mainwnd.findChild(QObject, "cancelBrowserSelect").setProperty('enabled', False) #Disable cancel button
-                self.mainwnd.findChild(QObject, "browsersSubheader").setProperty('text', _("The browser used to launch this application is missing or has been removed.\nTo continue, please choose a replacement browser below."))
-                if self.browser in variables.sources[self.browsertype]: #Check if unavailable
-                    if "unavailable" in variables.sources[self.browsertype][self.browser]:
-                        if variables.sources[self.browsertype][self.browser]["unavailable"] == 0: #Changed browsertype
-                            self.mainwnd.findChild(QObject, "browsersSubheader").setProperty('text', _("The browser used to launch this application has changed browser engines, and is no longer compatible with %s's profiles.\nTo continue, please choose a replacement browser below.") % self.info["name"])
-                        elif variables.sources[self.browsertype][self.browser]["unavailable"] == 1: #No longer supported
-                            self.mainwnd.findChild(QObject, "browsersSubheader").setProperty('text', _("The browser used to launch this application is no longer compatible.\nTo continue, please choose a replacement browser below."))
-            else: #Visiting the browser changer manually
-                self.mainwnd.findChild(QObject, "browsersSubheader").setProperty('text', _("Select a browser from the options below to use it for this application.\nIf you want to keep your current preference, press Cancel."))
-                self.mainwnd.findChild(QObject, "cancelBrowserSelect").setProperty('enabled', True)
-
-            #Go to browser selection page
-            self.mainwnd.findChild(QObject, "pages").setProperty('currentIndex', 3)
-        except Exception as e:
-            print(_("Failed to load browser select: %s") % e)
-            self.genericError(_("Runtime error - %s") % self.info["name"], _("Runtime error"), _("A runtime error occurred when trying to load the browser selection page.\nPlease view the 'solstice' logs in ~/.xsession-errors and consider reporting this issue to Solstice's developers.\n\nThe application will now exit."))
-            return
 
     def setBrowser(self, newbrowser):
-        try:
-            newpath = utils.set_browser(sys.argv[1], self.browsertype, self.info["id"], self.info["name"], self.browser, newbrowser)
-        except Exception as e:
-            print(_("Failed to change browser: %s") % e)
-            self.genericError(_("Failed to change browser - %s") % self.info["name"], _("Failed to change browser"), _("An error occurred when trying to change the current browser.\n%s\n\nThe application will now exit.") % e)
-            return
+        #Edit the .desktop file, and rename it if necessary
+        if self.info.parentfile != None:
+            newlocation = utils.changeBrowserValue(self.info.parentfile, self.info.parent["browsertype"], self.info.parent["browser"], newbrowser, sys.argv[1])
+        else:
+            newlocation = utils.changeBrowserValue(sys.argv[1], self.info.parent["browsertype"], self.info.parent["browser"], newbrowser)
 
-        #Reload with new file
+        #Relaunch with new .desktop file, and exit this instance
         commandtorun = list(sys.argv)
-        commandtorun[1] = newpath
+        commandtorun[1] = newlocation
         subprocess.Popen(commandtorun)
         self.quit()
 
-    def refreshBrowserFeatures(self):
-        #But can it do bonuses?
-        if utils.is_feature_available(self.browsertype, self.browser, "bonusesavailable"):
-            self.maineng.rootContext().setContextProperty('bonusesAvailable', True)
-        else:
-            self.maineng.rootContext().setContextProperty('bonusesAvailable', False)
-        #No cache option
-        if utils.is_feature_available(self.browsertype, self.browser, "nocacheavailable"):
-            self.mainwnd.findChild(QObject, "noCache").setProperty('enabled', True)
-            self.mainwnd.findChild(QObject, "noCacheHint").setProperty('text', _("Worsens load times of websites"))
-        else:
-            self.mainwnd.findChild(QObject, "noCache").setProperty('enabled', False)
-            self.mainwnd.findChild(QObject, "noCacheHint").setProperty('text', _("Not available on %s") % variables.sources[self.browsertype][self.browser]["name"])
 
+    #User Management
+    def loadUserModel(self):
+        if not os.path.isfile(sys.argv[1]) or not os.path.isdir(self.profilesdir):
+            sys.exit(3) #It will regenerate on the next run.
 
-    #Error handling
-    def genericError(self, wintitle, errortitle, errormessage):
-        self.openErrorWindow()
-
-        #Change labels
-        self.errorwnd.setProperty('title', wintitle)
-        self.errorwnd.findChild(QObject, "genericErrorHeader").setProperty('text', errortitle)
-        self.errorwnd.findChild(QObject, "genericErrorSubheader").setProperty('text', errormessage)
-        self.errorwnd.findChild(QObject, "genericError").setProperty('visible', True)
-
-    def browserUnavailableError(self):
-        self.openErrorWindow()
-
-        #The browser and ID are in self.infoclass
-        #Change labels
-        self.errorwnd.setProperty('title', _("No browsers available - %s") % self.info["name"])
-        self.errorwnd.findChild(QObject, "noBrowsersHeader").setProperty('text', _("No browsers are available for %s") % self.info["name"])
-        self.errorwnd.findChild(QObject, "noBrowsersSubheader").setProperty('text', _("Unfortunately, %s cannot currently start as there are no installed browsers that can run it.") % self.info["name"])
-        self.errorwnd.findChild(QObject, "noBrowsersError").setProperty('visible', True)
-        if self.browser in variables.sources[self.browsertype]: #Check if unavailable
-            if "unavailable" in variables.sources[self.browsertype][self.browser]:
-                self.errorwnd.findChild(QObject, "browserSubstituteTitle").setProperty('text', _("{0} can no longer run {1}").format(variables.sources[self.browsertype][self.browser]["name"], self.info["name"]))
-                if variables.sources[self.browsertype][self.browser]["unavailable"] == 0: #Changed browsertype
-                    self.errorwnd.findChild(QObject, "browserSubstituteDesc").setProperty('text', _("The browser used to launch this application has changed browser engines, and is no longer compatible with %s's profiles.") % self.info["name"])
-                elif variables.sources[self.browsertype][self.browser]["unavailable"] == 1: #No longer supported
-                    self.errorwnd.findChild(QObject, "browserSubstituteDesc").setProperty('text', _("The browser used to launch this application is no longer compatible."))
-                self.errorwnd.findChild(QObject, "getStoreBrowserBtn").setProperty('visible', False)
-            else:
-                self.errorwnd.findChild(QObject, "browserSubstituteTitle").setProperty('text', _("{0} was chosen for {1}").format(variables.sources[self.browsertype][self.browser]["name"], self.info["name"]))
-                self.errorwnd.findChild(QObject, "browserSubstituteDesc").setProperty('text', _("Would you like to install {0} to allow {1} to run?").format(variables.sources[self.browsertype][self.browser]["name"], self.info["name"]))
-                self.errorwnd.findChild(QObject, "getStoreBrowserBtn").setProperty('text', _("View %s in Store... (dummy)") % variables.sources[self.browsertype][self.browser]["name"])
-                self.errorwnd.findChild(QObject, "getStoreBrowserBtn").setProperty('visible', os.path.isfile("/usr/bin/feren-store"))
-
-    def websiteUnavailableError(self, perma=False, announcement=""):
-        self.openErrorWindow()
-        self.announcement = announcement
-
-        #perma: Is the website permanently dead?
-        #announcement: Link to the announcement - used if perma is True
-        if perma == True:
-            self.errorwnd.setProperty('title', self.info["name"])
-            self.errorwnd.findChild(QObject, "unavailableHeader").setProperty('text', _("%s is no longer available") % self.info["name"])
-            self.errorwnd.findChild(QObject, "unavailableSubheader").setProperty('text', _("Unfortunately, {0} has been closed down, meaning it is no longer available.\n\nSince {1} is no longer available, would you like to remove it?\nNOTE: Once done, you cannot install {2} again.").format(self.info["name"], self.info["name"], self.info["name"]))
-        else:
-            self.errorwnd.setProperty('title', self.info["name"])
-            self.errorwnd.findChild(QObject, "unavailableHeader").setProperty('text', _("%s is currently unavailable") % self.info["name"])
-            self.errorwnd.findChild(QObject, "unavailableSubheader").setProperty('text', _("Unfortunately, {0} is currently unavailable, and might never be available ever again, as the domain it was on has been taken over.\n\nIt is currently potentially unsafe, and the website could be used by malicious actors to take your private information, or credentials like passwords.\n\nSince {1} is currently unavailable, would you like to remove it?").format(self.info["name"], self.info["name"]))
-        self.errorwnd.findChild(QObject, "moreInformationBtn").setProperty('visible', announcement != "")
-        self.errorwnd.findChild(QObject, "unavailableError").setProperty('visible', True)
-        #Connect More Information button
-        self.errorwnd.unavailMoreInformation.connect(self.unavailAnnouncement)
-    def unavailAnnouncement(self):
-        subprocess.Popen(["/usr/bin/xdg-open", self.announcement])
-
-
-    #Automatic Profile Loading
-    def autoProfileLoad(self):
-        #Don't autoload if overridden or there is no configured profile
-        if "--force-manager" in sys.argv or self.autoload == "":
-            return
-        if os.path.isfile(self.profilesdir + "/" + self.autoload + variables.sources[self.browsertype][self.browser]["expected-file"]):
-            if self.openProfile(self.autoload, True, True): #True means successful opening
-                sys.exit(0) #End the code here
-
-    def getAutoProfileLoad(self):
-        if "autolaunch" in self.itemconfs:
-            if self.itemconfs["autolaunch"] == "":
-                return ""
-            if os.path.isdir(utils.get_profilepath(self.info["id"], self.itemconfs["autolaunch"])):
-                result = self.itemconfs["autolaunch"]
-                #Check if there's more than one profile, first
-                for i in os.listdir(self.profilesdir):
-                    if i == result:
-                        continue
-                    if os.path.isdir(self.profilesdir + "/" + i):
-                        if os.path.isfile(self.profilesdir + "/" + i + variables.sources[self.browsertype][self.browser]["expected-file"]):
-                            return "" #More than one profile exists, so don't autostart
-                return result
-        return ""
-
-    def setAutoProfileLoad(self, value):
-        with open("%s/.solstice-settings" % self.profilesdir, 'r') as fp:
-            self.itemconfs = json.loads(fp.read())
-        if value == "":
-            self.itemconfs.pop("autolaunch")
-        else:
-            self.itemconfs["autolaunch"] = value
-        try:
-            with open("%s/.solstice-settings" % self.profilesdir, 'w') as fp:
-                fp.write(json.dumps(self.itemconfs, separators=(',', ':')))
-        except Exception as exceptionstr:
-            raise SolsticeModuleException(_("Failed to write to .solstice-settings to configure automatic profile launching"))
-
-
-    #Profile(s) Checks
-    def refreshProfilesList(self):
-        if not os.path.isdir(self.profilesdir):
-            self.profilesmodel.setData([])
-            return
         profiles = []
         for i in os.listdir(self.profilesdir):
             if os.path.isdir(self.profilesdir + "/" + i):
-                if os.path.isfile(self.profilesdir + "/" + i + variables.sources[self.browsertype][self.browser]["expected-file"]):
-                    readablename = i
-                    if os.path.isfile(self.profilesdir + "/" + i + "/.solstice-settings"):
-                        with open(self.profilesdir + "/" + i + "/.solstice-settings", 'r') as fp:
-                            solsettings = json.loads(fp.read())
-                            if "readablename" in solsettings:
-                                readablename = solsettings["readablename"]
-                    profiles.append({"pname": readablename, "profileid": i})
+                readablename = i
+                if os.path.isfile("%s/%s/.solstice-settings" % (self.profilesdir, i)):
+                    with open("%s/%s/.solstice-settings" % (self.profilesdir, i), 'r') as fp:
+                        solsettings = json.loads(fp.read())
+                        if "readablename" in solsettings:
+                            readablename = solsettings["readablename"]
+                profiles.append({"pname": readablename, "profileid": i})
+
         #Refresh profiles list in profilesmodel
         self.profilesmodel.setData(profiles)
+        if len(profiles) == 1 and self.autoload != None:
+            self.wnd.findChild(QObject, "alwaysUseProfile").setProperty("checked", True)
+        elif profiles == []:
+            self.newProfile(True)
 
 
-    #Profile management
-    def saveProfile(self):
+    def openProfile(self, profileid, autoload, autoloaded=False):
         if not os.path.isfile(sys.argv[1]):
-            self.quit() #Exit if uninstalled
-            return
-        
-        newname = self.mainwnd.findChild(QObject, "editProfileName").property('text')
-        if newname == "":
-            self.mainwnd.findChild(QObject, "editProfileNameError").setProperty('text', _("Please enter a name for this profile"))
-            return
-
-        nocache = self.mainwnd.findChild(QObject, "noCache").property('checked')
-        try:
-            if self.lastedited == "": #New profile
-                profileid = utils.profileid_generate(self.profilesdir, self.mainwnd.findChild(QObject, "editProfileName").property('text'))
-                skiptheme = utils.is_feature_available(self.browsertype, self.browser, "notheme")
-                #'Update' profile to give it its initial configurations
-                self.main.update_profile(self.info, newname, profileid, nocache, skiptheme, self.itemconfs["lastdownloadsdir"], self.itemconfs["downloadsname"])
-            else:
-                outdated = utils.get_profile_outdated(self.lastedited, self.info["id"], self.info["lastupdated"], self.browser, self.itemconfs["lastdownloadsdir"])
-                self.main.batch_set_profilesettings(self.browsertype, utils.get_profilepath(self.info["id"], self.lastedited), self.info["name"], newname, outdated, nocache)
-        except Exception as e:
-            self.mainwnd.findChild(QObject, "editProfileNameError").setProperty('text', _("Failed to save changes"))
-            print(_("Failed to save changes: %s") % e)
-            return
-
-        self.mainwnd.findChild(QObject, "editProfileNameError").setProperty('text', _(""))
-        if self.lastedited == "":
-            #Automatically launch newly created profile
-            self.openProfile(profileid, False)
-        else:
-            #Refresh profiles list and return to profile manager
-            self.refreshProfilesList()
-            self.gotoManager()
-        del self.lastedited #delete the variable as it is now redundant
-
-    def gotoProfileEditor(self, newprofile, profileid=""):
-        if not os.path.isfile(sys.argv[1]):
-            self.quit() #Exit if uninstalled
-            return
-        
-        self.lastedited = profileid
-        self.mainwnd.findChild(QObject, "editProfileNameError").setProperty('text', _(""))
-        if newprofile == True:
-            self.mainwnd.findChild(QObject, "editProfileHeader").setProperty('text', _("Create a profile"))
-            self.mainwnd.findChild(QObject, "deleteProfileBtn").setProperty('enabled', False)
-            self.mainwnd.findChild(QObject, "editProfileName").setProperty('text', "")
-            self.mainwnd.findChild(QObject, "noCache").setProperty('checked', False)
-        else:
-            profilename, nocache = utils.get_profile_settings(self.info["id"], profileid) #Getting necessary values
-            self.mainwnd.findChild(QObject, "editProfileHeader").setProperty('text', _("Configuring %s") % profilename)
-            self.mainwnd.findChild(QObject, "deleteProfileBtn").setProperty('enabled', True)
-            self.mainwnd.findChild(QObject, "editProfileName").setProperty('text', profilename)
-            self.mainwnd.findChild(QObject, "noCache").setProperty('checked', nocache)
-        self.mainwnd.findChild(QObject, "pages").setProperty('currentIndex', 2)
-        self.mainwnd.findChild(QObject, "editProfileName").forceActiveFocus(True)
-
-    def updateProfile(self, profileid):
-        profilename, nocache = utils.get_profile_settings(self.info["id"], profileid) #Getting necessary values
-        skiptheme = utils.is_feature_available(self.browsertype, self.browser, "notheme")
-        self.main.update_profile(self.info, profilename, profileid, nocache, skiptheme, self.itemconfs["lastdownloadsdir"], self.itemconfs["downloadsname"])
-
-    def gotoProfiles(self):
-        if self.profilesmodel.profiles == []: #Jump to profile creator if there are no profiles
-            self.gotoProfileEditor(True)
-        else:
-            self.mainwnd.findChild(QObject, "pages").setProperty('currentIndex', 0)
-            self.mainwnd.findChild(QObject, "profileSelect").forceActiveFocus(True)
-
-    def gotoManager(self):
-        if self.profilesmodel.profiles == []: #Jump to profile creator if there are no profiles
-            self.gotoProfileEditor(True)
-        else:
-            self.mainwnd.findChild(QObject, "pages").setProperty('currentIndex', 1)
-            self.mainwnd.findChild(QObject, "profileManager").forceActiveFocus(True)
-
-    def deleteProfile(self):
-        if not os.path.isfile(sys.argv[1]):
-            self.quit() #Exit if uninstalled
-            return
-        
-        #The only time we can press this button is inside the Editor.
-        #Therefore, since self.lastedited exists during such times, we can use it for the profile ID
-        self.main.delete_profile(self.info, self.lastedited)
-
-        self.refreshProfilesList()
-        self.gotoManager()
-
-
-    #Run profile
-    def openProfile(self, profileid, alwaysuse, auto=False):
-        if not os.path.isfile(sys.argv[1]):
-            self.quit() #Exit if uninstalled
-            return True
-
-        #Set autostart if alwaysuse is True
-        if auto == False: #Don't change autoload if autoloading
-            try:
-                if alwaysuse == True and self.autoload != profileid: #Reducing file-writes
-                    self.setAutoProfileLoad(profileid)
-                elif alwaysuse == False:
-                    self.setAutoProfileLoad("")
-            except Exception as e:
-                print(_("W: Could not change autostart preference: %s") % e) #Warn in output, but continue
-
-        #Check lastupdated of profile against shortcut's lastupdated
-        if utils.get_profile_outdated(profileid, self.info["id"], self.info["lastupdated"], self.browser, self.itemconfs["lastdownloadsdir"]) == True:
-            try:
-                self.updateProfile(profileid) #Update the profile if the shortcut's newer
-            except Exception as e:
-                if e.__class__.__name__ != "ProfileInUseException": #skip if profile's in use
-                    print(_("Failed to update profile: %s") % e)
-                    self.genericError(_("Failed to update profile - %s") % self.info["name"], _("Failed to update profile"), _("An error occurred when trying to update this profile:\n%s\n\nThe application will now exit.") % e)
-                    return False
+            sys.exit(3)
 
         #Start the requested profile
         try:
-            self.main.run_profile(self.info["id"], profileid, self.info["browser"], self.info["browsertype"], self.info["website"], self.info["wmclass"], self.info["nohistory"], self.closeCallback if not auto else None)
+            solstice.runProfile(self.info.parent, self.info.app, self.configs, self.profilesdir, profileid, self.closecall)
         except Exception as e:
-            print(_("Failed to load profile: %s") % e)
-            self.genericError(_("Failed to load profile - %s") % self.info["name"], _("Failed to load profile"), _("An error occurred when trying to load this profile.\n%s\n\nThe application will now exit.") % e)
-            return False
+            if autoloaded == True:
+                return False
+            else:
+                error = self.showError()
+                error.SolsticeError(_("Failed to load profile - %s") % self.info.app["name"], _("Failed to load profile"), _("An error occurred while attempting to load this profile:\n%s\n\nPlease check Solstice is up to date, and if so report this error to your Solstice distributor.") % e)
+                self.wnd.close()
+                return False
+
+        #Set autoload if autoload is True
+        if autoloaded == False: #Don't change autoload if autoloading
+            if (autoload == True and self.autoload == profileid) \
+                or (autoload == False and self.autoload == None): #Prevent file-write-redundancy
+                self.quit()
+                return True
+
+            with open("%s/.solstice-settings" % self.profilesdir, 'r') as fp:
+                configs = json.loads(fp.read())
+            if autoload == True:
+                configs["autoload"] = profileid
+            else:
+                configs.pop("autoload", None)
+
+            try:
+                with open("%s/.solstice-settings" % self.profilesdir, 'w') as fp:
+                    fp.write(json.dumps(configs, separators=(',', ':')))
+            except Exception as e:
+                print(_("W: Could not change autostart preference: %s") % e) #Warn in output, but continue
 
         self.quit()
         return True
 
-    #Callback to close mainwnd
-    def closeCallback(self):
-        self.mainwnd.close()
+    def closecall(self):
+        try:
+            self.wnd.close()
+        except:
+            pass #Autoload doesn't have wnd, so will always fail without try.
 
-app = None
-if not os.path.isfile(sys.argv[1]):
-    sys.exit(2)
-try:
-    infoclass = DesktopFileInformation(sys.argv[1])
-except Exception as e:
-    print("Failed to load shortcut: %s" % e)
-    app = SolsticeGUI({})
-else:
-    app = SolsticeGUI(infoclass.info)
 
-sys.exit(app.exec())
+    def newProfile(self, forced=False):
+        if not os.path.isfile(sys.argv[1]):
+            self.quit() #Exit if uninstalled
+            return
+        
+        self.editedprof, self.editrname, self.editnocache = None, None, None
+
+        self.wnd.findChild(QObject, "editProfileNameError").setProperty("text", "")
+        self.wnd.findChild(QObject, "editProfileHeader").setProperty("text", _("Create a profile for %s") % self.info.app["name"])
+        self.wnd.findChild(QObject, "editProfileName").setProperty("text", "")
+        self.wnd.findChild(QObject, "noCache").setProperty("checked", False)
+
+        self.wnd.findChild(QObject, "deleteProfileBtn").setProperty('enabled', False)
+        self.wnd.findChild(QObject, "pages").setProperty('currentIndex', 2)
+        self.wnd.findChild(QObject, "editProfileName").forceActiveFocus(True)
+
+    def manageProfile(self, profileid):
+        if not os.path.isfile(sys.argv[1]):
+            self.quit()
+            return
+        
+        self.editedprof = profileid
+        self.editrname, self.editnocache = utils.getProfileSettings(self.profilesdir, profileid)
+
+        self.wnd.findChild(QObject, "editProfileNameError").setProperty("text", "")
+        self.wnd.findChild(QObject, "editProfileHeader").setProperty("text", _("Configure %s") % self.editrname)
+        self.wnd.findChild(QObject, "editProfileName").setProperty("text", self.editrname)
+        if self.wnd.findChild(QObject, "noCache").property("enabled"):
+            self.wnd.findChild(QObject, "noCache").setProperty("checked", self.editnocache)
+
+        self.wnd.findChild(QObject, "deleteProfileBtn").setProperty('enabled', True)
+        self.wnd.findChild(QObject, "pages").setProperty('currentIndex', 2)
+        self.wnd.findChild(QObject, "editProfileName").forceActiveFocus(True)
+
+
+    def saveProfile(self):
+        if not os.path.isfile(sys.argv[1]):
+            self.quit()
+            return
+        
+        newname = self.wnd.findChild(QObject, "editProfileName").property("text")
+        if newname == "":
+            self.wnd.findChild(QObject, "editProfileNameError").setProperty("text", _("Please enter a name for this profile"))
+            return
+        nocache = self.wnd.findChild(QObject, "noCache").property("checked")
+
+        try:
+            if self.editedprof == None: # New profile
+                profileid = utils.generateProfileID(self.profilesdir, newname)
+                profiledir = self.profilesdir + "/" + profileid
+
+                # Create the profile's folder and generate initial configurations
+                os.mkdir(profiledir)
+                psettings = {"readablename": newname, "nocache": nocache}
+                with open("%s/.solstice-settings" % profiledir, 'w') as fp:
+                    fp.write(json.dumps(psettings, separators=(',', ':')))
+                # 'Update' the newly generated profile and its CSS
+                solstice.updateCSS(self.info.parent, profiledir)
+                solstice.updateProfile(self.info.parent, self.configs, psettings, profiledir)
+            else: # Existing profile
+                profiledir = self.profilesdir + "/" + self.editedprof
+
+                # Check profile isn't running
+                running = solstice.profileInUse(profiledir)
+
+                # Set new settings
+                if newname != self.editrname:
+                    solstice.setProfileName(self.info.parent, newname, profiledir, running)
+                if nocache != self.editnocache:
+                    solstice.setNoCache(self.info.parent, nocache, profiledir, running)
+
+                if running == True and (newname != self.editrname or nocache != self.editnocache):
+                    # Force the profile to be updated on next launch
+                    psettings = {}
+                    if os.path.isfile("%s/.solstice-settings" % profiledir):
+                        with open("%s/.solstice-settings" % profiledir, 'r') as fp:
+                            psettings = json.loads(fp.read())
+
+                    psettings.pop("solstlastupdated")
+
+                    with open("%s/.solstice-settings" % profiledir, 'w') as fp:
+                        fp.write(json.dumps(psettings, separators=(',', ':')))
+        except Exception as e:
+            self.wnd.findChild(QObject, "editProfileNameError").setProperty('text', _("Failed to save changes"))
+            print(_("Failed to save changes: %s") % e)
+            return
+
+        if self.editedprof == None:
+            # Automatically open the new profile
+            self.openProfile(profileid, False)
+        else:
+            # Refresh profiles list and return to profiles manager
+            self.loadUserModel()
+            if (len(self.profilesmodel.profiles) > 0):
+                self.wnd.findChild(QObject, "pages").setProperty('currentIndex', 1)
+                self.wnd.findChild(QObject, "profileSelect").forceActiveFocus(True)
+
+
+    def deleteProfile(self):
+        utils.deleteProfile(self.profilesdir + "/" + self.editedprof)
+
+        self.loadUserModel()
+        if (len(self.profilesmodel.profiles) > 0):
+            self.wnd.findChild(QObject, "pages").setProperty('currentIndex', 1)
+            self.wnd.findChild(QObject, "profileSelect").forceActiveFocus(True)
+
+
+class SolsticeInit():
+    def __init__(self):
+        # Get the required information
+        try:
+            self.info = ApplicationInfo(sys.argv[1])
+        except Exception as e:
+            error = SolsticeErrorWnd("solstice")
+            if e.__class__.__name__ == "SolsticeDFileException":
+                print(_("Corrupt or incompatible file: %s") % e)
+                error.SolsticeError(_("Incompatible file - Solstice"), _("Corrupt or incompatible file"), _("The application you attempted to open is either corrupt or is too new for this version of Solstice.\n\nPlease reinstall or update this application, or update Solstice."))
+            elif e.__class__.__name__ == "SolsticeOutdatedException":
+                error.SolsticeError(_("Update required - Solstice"), _("This application needs to be updated"), _("The application you attempted to open was made for an older version of Solstice, and is no longer compatible with this version of Solstice.\n\nPlease update this application to continue using it."))
+            else:
+                error.SolsticeError(_("Failed to load application - Solstice"), _("Failed to load application"), _("An error occurred when attempting to load this application:\n%s\n\nPlease reinstall or update this application, or try reinstalling Solstice.") % e)
+            sys.exit(error.exec())
+
+        # Check the browser is valid
+        if self.info.parent["browsertype"] not in variables.sources or self.info.parent["browser"] not in variables.sources[self.info.parent["browsertype"]]:
+            print(_("Corrupt or incompatible file: %s") % _("Browser is invalid"))
+            error = SolsticeErrorWnd(self.info.app["wmclass"])
+            error.SolsticeError(_("Incompatible file - Solstice"), _("Corrupt or incompatible file"), _("The application you attempted to open is either corrupt or is too new for this version of Solstice.\n\nPlease reinstall or update this application, or update Solstice."))
+            sys.exit(error.exec())
+
+        # Check the website is even available
+        if utils.shortenURL(self.info.app["website"]) in variables.unavailable:
+            url = utils.shortenURL(self.info.app["website"])
+            error = SolsticeErrorWnd(self.info.app["wmclass"])
+            error.SolsticeWebsiteGoneError(self.info.app["name"], variables.unavailable[url]["announcement"])
+            sys.exit(error.exec())
+
+        # Check the browser is installed
+        browseravailable = utils.isBrowserAvailable(self.info.parent["browser"], self.info.parent["browsertype"])
+        if browseravailable == False:
+            installed, available = utils.getAvailableBrowsers(self.info.parent["browsertype"])
+            #Show an error if there are no browsers available for this application
+            if available == 0:
+                error = SolsticeErrorWnd(self.info.app["wmclass"])
+                error.SolsticeBrowserTypeUnavailableError(self.info.app["name"])
+                sys.exit(error.exec())
+            #Show an error if the shortcut is read-only or there are no available browsers installed
+            if os.access(sys.argv[1], os.W_OK) == False or installed == 0:
+                error = SolsticeErrorWnd(self.info.app["wmclass"])
+                error.SolsticeNoBrowserError(self.info.app["name"], self.info.parent["browser"], self.info.parent["browsertype"])
+                sys.exit(error.exec())
+
+        # All checks passed, commence initialisation
+        self.profilesdir = "{0}/{1}".format(variables.solsticeProfilesDirectory, self.info.parent["id"])
+
+        # If browser isn't available, launch the GUI in browser picker mode
+        if browseravailable != True:
+            # Load settings for this application, without granting permissions if missing
+            configs = self.loadMainSettings(True)
+
+            # Start the GUI to the browser switcher interface
+            app = SolsticeApp(self.info.app["wmclass"], self.info, self.profilesdir, browseravailable, configs, None)
+        else:
+            # Load settings for this application
+            configs = self.loadMainSettings()
+
+            # Get automatic load profile
+            autoload = self.getAutoload(configs)
+
+            #Start the GUI with the collated settings
+            app = SolsticeApp(self.info.app["wmclass"], self.info, self.profilesdir, browseravailable, configs, autoload)
+        sys.exit(app.exec())
+
+
+    def loadMainSettings(self, noperms=False):
+        # Check the settings exist - if not, generate them
+        if not os.path.isdir(self.profilesdir):
+            os.mkdir(self.profilesdir)
+        if not os.path.isfile("%s/.solstice-settings" % self.profilesdir):
+            return self.updateMainSettings({}, noperms)
+
+        # Load and update any settings needing updating
+        with open("%s/.solstice-settings" % self.profilesdir, 'r') as fp:
+            configs = json.loads(fp.read())
+        return self.updateMainSettings(configs, noperms)
+    
+
+    def updateMainSettings(self, configs, noperms):
+        changesmade = False
+        newflatpak = None
+        if "flatpak" in variables.sources[self.info.parent["browsertype"]][self.info.parent["browser"]]:
+            newflatpak = variables.sources[self.info.parent["browsertype"]][self.info.parent["browser"]]["flatpak"]
+        # Remove Flatpak permissions if Flatpak changed
+        if "lastflatpak" in configs:
+            if configs["lastflatpak"] != newflatpak:
+                utils.removeFlatpakProfilesPerm(configs["lastflatpak"], self.profilesdir)
+                if "lastdownloadsdir" in configs and "downloadsdirname" in configs:
+                    utils.removeFlatpakDownloadsPerm(configs["lastflatpak"], configs["lastdownloadsdir"], configs["downloadsdirname"])
+                configs.pop("lastflatpak", None)
+                changesmade = True
+
+        # Disassociate the Downloads folder if the folder locale changed
+        newdownloadsdir = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD)
+        if "lastdownloadsdir" in configs:
+            if configs["lastdownloadsdir"] != newdownloadsdir:
+                if "lastflatpak" in configs and "downloadsdirname" in configs:
+                    utils.removeFlatpakDownloadsPerm(configs["lastflatpak"], configs["lastdownloadsdir"], configs["downloadsdirname"])
+                configs.pop("lastdownloadsdir", None)
+                changesmade = True
+
+        # Assign permanent name for the specific Downloads folder if first launch
+        if "downloadsdirname" not in configs:
+            configs["downloadsdirname"] = _("%s Downloads") % self.info.parent["name"]
+            changesmade = True
+
+        # Associate new Downloads folder if disassociated or first launch
+        #  NOTE: Blocked if noperms is enabled because noperms is used when
+        #  the browser is unavailable, thus an incorrect folder can't matter,
+        #  while also preventing new Flatpak permission assignment from being
+        #  skipped if the browser becomes available again.
+        if "lastdownloadsdir" not in configs and not noperms:
+            configs["lastdownloadsdir"] = newdownloadsdir
+            if "lastflatpak" in configs:
+                utils.grantFlatpakDownloadsPerm(self.info.parent["browsertype"], self.info.parent["browser"], newdownloadsdir, configs["downloadsdirname"])
+            changesmade = True
+
+        # Assign profiles directory read/write access to the browser if it is now
+        #  a Flatpak
+        if "lastflatpak" not in configs and newflatpak and not noperms:
+            utils.grantFlatpakProfilesPerm(self.info.parent["browsertype"], self.info.parent["browser"], self.profilesdir)
+            utils.grantFlatpakDownloadsPerm(self.info.parent["browsertype"], self.info.parent["browser"], newdownloadsdir, configs["downloadsdirname"])
+            configs["lastflatpak"] = newflatpak
+            changesmade = True
+
+        # Save changes to file if changes were made
+        if changesmade:
+            with open("%s/.solstice-settings" % self.profilesdir, 'w') as fp:
+                fp.write(json.dumps(configs, separators=(',', ':')))
+        return configs
+
+
+    def getAutoload(self, configs):
+        if "autoload" not in configs:
+            return None
+        if type(configs["autoload"]) != str:
+            return None #Invalid value
+        #Ensure a valid profile exists of the ID
+        if os.path.isdir("%s/%s" % (self.profilesdir, configs["autoload"])):
+            return configs["autoload"]
+        else:
+            return None
+
+
+SolsticeInit()

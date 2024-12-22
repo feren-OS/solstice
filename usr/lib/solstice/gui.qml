@@ -18,7 +18,8 @@ ApplicationWindow {
 
     //SIGNALS
     signal openProfile(var profileid, var alwaysuse)
-    signal gotoProfileEditor(var newprofile, var profileid)
+    signal newProfile()
+    signal manageProfile(var profileid)
     signal saveProfile()
     signal deleteProfile()
     signal gotoBrowserSelect()
@@ -216,7 +217,7 @@ ApplicationWindow {
                             id: buttondeleg1
                             Layout.preferredWidth: 7.5 * Kirigami.Units.gridUnit
                             Layout.preferredHeight: 7 * Kirigami.Units.gridUnit
-                            onClicked: mainwnd.gotoProfileEditor(false, profileid);
+                            onClicked: mainwnd.manageProfile(profileid);
 
                             ToolTip.visible: pname ? hovered : false
                             ToolTip.text: pname
@@ -579,7 +580,7 @@ ApplicationWindow {
                 name: "list-add"
             }
             visible: pages.currentIndex == 0 || pages.currentIndex == 1 ? true : false
-            onClicked: gotoProfileEditor(true, "");
+            onClicked: newProfile();
         }
         Button {
             objectName: "gotoManagerBtn"
