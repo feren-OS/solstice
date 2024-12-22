@@ -21,28 +21,6 @@
             "cssroot": "CSS",
             "forcelastversion": true
         },
-        "vivaldi-flatpak": {
-            "name": {
-                "C": "Vivaldi (Flatpak)"
-            },
-            "websiteperms": true,
-            "followspalette": true,
-            "extensionprotection": true,
-            "icon": "vivaldi",
-            "required-file": ["/var/lib/flatpak/app/com.vivaldi.Vivaldi/current/active/files/bin/vivaldi"],
-            "classprefix": "vivaldisolstice:",
-            "command": ["/usr/bin/flatpak", "run", "com.vivaldi.Vivaldi", "%WEBSITEURL%", "--class=%WINCLASS%", "--user-data-dir=%PROFILEDIR%"],
-            "nocacheprefix": [],
-            "nocachesuffix": ["--media-cache-size=0", "--disk-cache-size=0", "--disk-cache-dir=/dev/null"],
-            "nocacheavailable": true,
-            "bonusesavailable": true,
-            "flatpak": "com.vivaldi.Vivaldi",
-            "notheme": true,
-            "expected-files": ["Local State", "Last Version", "Default/Preferences", "CSS/solsticss.css"],
-            "cssfolder": "vivaldi",
-            "cssroot": "CSS",
-            "forcelastversion": true
-        },
         "chrome": {
             "name": {
                 "C": "Google Chrome"
