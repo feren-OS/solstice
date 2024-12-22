@@ -1,7 +1,6 @@
 {
     "google": [
-        "accounts.google.com",
-        "login.live.com"
+        "accounts.google.com"
     ],
     "microsoft": [
         "login.microsoftonline.com",
