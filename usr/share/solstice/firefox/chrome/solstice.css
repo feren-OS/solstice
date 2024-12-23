@@ -468,13 +468,25 @@
 
 
 /* Colourise global scrollbar and selection palettes */
-html,
-body {
-    scrollbar-color: light-dark(PageFGLight, PageFGDark) light-dark(PageBGLight, PageBGDark);
+@media (prefers-color-scheme: light) {
+    html,
+    body {
+        scrollbar-color: PageFGLight PageBGLight;
+    }
+    ::-moz-selection {
+        color: AccentFGLight;
+        background: AccentBGLight;
+    }
 }
-::-moz-selection {
-    color: light-dark(AccentFGLight, AccentFGDark);
-    background: light-dark(AccentBGLight, AccentBGDark);
+@media (prefers-color-scheme: dark) {
+    html,
+    body {
+        scrollbar-color: PageFGDark PageBGDark;
+    }
+    ::-moz-selection {
+        color: AccentFGDark;
+        background: AccentBGDark;
+    }
 }
 
 
