@@ -100,7 +100,7 @@ def updateCSSSettings(parentinfo, psettings, profiledir, browsermodule):
             return True # CSS preferences are invalid
         elif csssettings != {}:
             for i in csssettings:
-                if i not in psettings or psettings["css"][i] != csssettings[i]:
+                if i not in psettings["css"] or psettings["css"][i] != csssettings[i]:
                     return True # CSS setting has been added/changed since
             for i in psettings["css"]:
                 if i not in csssettings:
@@ -108,6 +108,7 @@ def updateCSSSettings(parentinfo, psettings, profiledir, browsermodule):
 
     # Skip if the CSS Settings DON'T need updating
     if not isCSSSettingsOutdated(psettings, csssettings):
+        print("cssssettings up to date")
         return psettings, False
 
     # Update the CSS Settings influencing values for the browser
