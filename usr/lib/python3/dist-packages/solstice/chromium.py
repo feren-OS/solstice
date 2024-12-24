@@ -318,7 +318,7 @@ def setPermissions(defaults, confdict, parentinfo):
     for i in parentinfo["services"]: # Required services' domains
         if i in services:
             for ii in services[i]:
-                websites.append(services[i][ii])
+                websites.append(ii)
 
     # Grant permissions to the websites
     for domain in websites:
