@@ -108,7 +108,6 @@ def updateCSSSettings(parentinfo, psettings, profiledir, browsermodule):
 
     # Skip if the CSS Settings DON'T need updating
     if not isCSSSettingsOutdated(psettings, csssettings):
-        print("cssssettings up to date")
         return psettings, False
 
     # Update the CSS Settings influencing values for the browser
@@ -217,13 +216,25 @@ def runProfile(parentinfo, appinfo, appsettings, pdir, pid, closewndcall):
     if os.path.isfile("%s/.solstice-settings" % profiledir):
         with open("%s/.solstice-settings" % profiledir, 'r') as fp:
             psettings = json.loads(fp.read())
-    else: #Write fallback profile settings
-        psettings = {"readablename": pid}
+    else:
+        psettings = {}
+     
+    # Add fallback profile values if they're missing
+    psettingsupd = False
+    defaults = {
+        "readablename": pid,
+        "nocache": False
+    }
+    for i in defaults:
+        if i not in psettings:
+            psettings[i] = defaults[i]
+            psettingsupd = True
+    if psettingsupd:
         try:
             with open("%s/.solstice-settings" % profiledir, 'w') as fp:
-                fp.write(json.dumps(psettings, separators=(',', ':')))
+                fp.write(json.dumps({}, separators=(',', ':')))
         except Exception as e:
-            raise SolsticeModuleException(_("%s contains no settings") % pid)
+            raise SolsticeModuleException(_("Failed to add missing values to the %s profile") % psettings["readablename"])
 
     # Check if core files are missing from the profile
     filesMissing = False
