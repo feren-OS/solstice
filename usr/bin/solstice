@@ -301,11 +301,11 @@ class ApplicationInfo():
         result["browsertype"] = self.verifySetting(entry.get("X-Solstice-BrowserType"), str, "browsertype")
         result["id"] = self.verifySetting(entry.get("X-Solstice-ID"), str, "Shortcut ID")
         result["childids"] = self.verifySetting(entry.get("X-Solstice-Children"), list, "Childrens' IDs")
+        result["childwebsites"] = self.verifySetting(entry.get("X-Solstice-ChildWebsites"), list, "Child websites")
         result["lastupdated"] = self.verifySetting(entry.get("X-Solstice-LastUpdate"), int, "lastupdated")
         # Enables the Store shortcut
         result["storeid"] = entry.get("X-Solstice-StoreID")
         # Application Features
-        result["extrawebsites"] = self.verifySetting(entry.get("X-Solstice-ExtraWebsites"), list, "Extra required websites")
         result["services"] = self.verifySetting(entry.get("X-Solstice-Services"), list, "Required services", [])
         result["nohistory"] = self.verifySetting(entry.get("X-Solstice-NoHistory"), bool, "Disable history", False)
         result["workspaces"] = self.verifySetting(entry.get("X-Solstice-Workspaces"), bool, "Enable Workspaces", False)

@@ -308,7 +308,7 @@ def setPermissions(defaults, confdict, parentinfo):
 
     # Collate websites to grant permissions to
     websites = [utils.shortenURL(parentinfo["website"])] # Main website
-    for i in parentinfo["extrawebsites"]: # Child websites
+    for i in parentinfo["childwebsites"]: # Child websites
         ii = utils.shortenURL(i)
         try:
             ii = ii.split("/")[0]
