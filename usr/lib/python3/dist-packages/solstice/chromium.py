@@ -320,14 +320,16 @@ def setPermissions(defaults, confdict, parentinfo):
             for ii in services[i]:
                 websites.append(ii)
 
+    for permtype in ["automatic_downloads", "automatic_fullscreen", "auto_picture_in_picture", "autoplay", "background_sync", "captured_surface_control", "clipboard", "cookies", "file_handling", "font_access", "images", "javascript", "local_fonts", "notifications", "payment_handler", "popups", "sensors", "sleeping_tabs", "sound", "window_placement"]:
+        confdict["profile"]["content_settings"]["exceptions"][permtype] = {}
+    for permtype in ["ar", "bluetooth_scanning", "file_system_write_guard", "geolocation", "hid_guard", "media_stream_camera", "media_stream_mic", "midi_sysex", "serial_guard", "storage_access", "usb_guard", "vr"]:
+        confdict["profile"]["content_settings"]["exceptions"][permtype] = {}
     # Grant permissions to the websites
     for domain in websites:
         for permtype in ["automatic_downloads", "automatic_fullscreen", "auto_picture_in_picture", "autoplay", "background_sync", "captured_surface_control", "clipboard", "cookies", "file_handling", "font_access", "images", "javascript", "local_fonts", "notifications", "payment_handler", "popups", "sensors", "sleeping_tabs", "sound", "window_placement"]:
-            confdict["profile"]["content_settings"]["exceptions"][permtype] = {}
             confdict["profile"]["content_settings"]["exceptions"][permtype]["[*.]"+domain+",*"] = {"expiration": "0", "model": 0, "setting": 1}
             confdict["profile"]["content_settings"]["exceptions"][permtype][domain+",*"] = {"expiration": "0", "model": 0, "setting": 1}
         for permtype in ["ar", "bluetooth_scanning", "file_system_write_guard", "geolocation", "hid_guard", "media_stream_camera", "media_stream_mic", "midi_sysex", "serial_guard", "storage_access", "usb_guard", "vr"]:
-            confdict["profile"]["content_settings"]["exceptions"][permtype] = {}
             confdict["profile"]["content_settings"]["exceptions"][permtype]["[*.]"+domain+",*"] = {"expiration": "0", "model": 0, "setting": 3}
             confdict["profile"]["content_settings"]["exceptions"][permtype][domain+",*"] = {"expiration": "0", "model": 0, "setting": 3}
 

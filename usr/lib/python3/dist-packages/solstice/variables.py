@@ -16,4 +16,4 @@ cssPath = "%s/.config/solstice" % os.path.expanduser("~")
 #Developer options
 applicationsDirectory = os.path.expanduser("~") + "/.local/share/applications"
 solsticeProfilesDirectory = os.path.expanduser("~") + "/.local/share/solstice"
-solsticeLastUpdated = 20241223
+solsticeLastUpdated = 20241224
