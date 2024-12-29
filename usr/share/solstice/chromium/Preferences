@@ -288,7 +288,11 @@
         "vivaldi": {
             "address_bar": {
                 "extensions": {
-                    "hidden_extensions": ["cimiefiiaegbelhefglklhhakcgmhkai"],
+                    "hidden_extensions": [
+                        "cimiefiiaegbelhefglklhhakcgmhkai",
+                        "gebbhagfogifgggkldgodflihgfeippi",
+                        "immpkjjlgappgfkkfieppnmlhakdmaab"
+                    ],
                     "render_in_dropdown": true
                 },
                 "omnibox": {
