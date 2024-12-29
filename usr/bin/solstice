@@ -593,7 +593,6 @@ class SolsticeApp(QApplication):
         try:
             solstice.runProfile(self.info.parent, self.info.app, self.configs, self.profilesdir, profileid, self.closecall)
         except Exception as e:
-            raise(e)
             if autoloaded == True:
                 return False
             else:
