@@ -27,10 +27,16 @@ class ProfileInUseException(Exception):
     pass
 
 
-def dictRecurUpdate(d, u):
+def dictRecurUpdate(d, u, fuselists=False):
     for k, v in u.items():
-        if isinstance(v, collections.abc.Mapping):
-            d[k] = dictRecurUpdate(d.get(k, {}), v)
+        if type(v) is dict:
+            # Recurse into dictionary value
+            d[k] = dictRecurUpdate(d.get(k, {}), v, fuselists)
+        elif type(v) is list and fuselists:
+            # Create a list if there is none at the original dict
+            if k not in d or type(d[k]) is not list:
+                d[k] = []
+            d[k] = list(set(d[k] + v))
         else:
             d[k] = v
     return d

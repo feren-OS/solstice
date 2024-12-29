@@ -246,21 +246,33 @@ def setBonuses(profiledir, bonuses=[], confdict=None):
     if "settings" not in confdict["extensions"]:
         confdict["extensions"]["settings"] = {}
 
+    # Remove discontinued bonus IDs
+    for i in bonusesjson["discontinued"]:
+        # This value is a fell-swoop list of IDs as it's redundant to check the bonuses active
+        #  as we remove excluded bonuses' extensions anyway
+        if i in confdict["extensions"]["settings"]:
+            confdict["extensions"]["settings"].pop(i)
+
     # Add/remove bonuses based on bonus-selection
     bonuses.append("plasma-integration")
-    for item in bonusesjson:
+    availbonus = bonusesjson["active"]
+    for item in availbonus:
         if item in bonuses:
             # Prevent 'downgrading' the selected bonuses
-            for extid in bonusesjson[item]:
+            for extid in availbonus[item]:
                 if extid in confdict["extensions"]["settings"]:
-                    bonusesjson[item][extid]["manifest"].pop("name", None)
-                    bonusesjson[item][extid]["manifest"].pop("version", None)
-                    bonusesjson[item][extid]["manifest"].pop("manifest_version", None)
-                    bonusesjson[item][extid].pop("path", None)
-            confdict["extensions"]["settings"] = utils.dictRecurUpdate(confdict["extensions"]["settings"], bonusesjson[item])
+                    availbonus[item][extid]["manifest"].pop("name", None)
+                    availbonus[item][extid]["manifest"].pop("version", None)
+                    availbonus[item][extid]["manifest"].pop("manifest_version", None)
+                    availbonus[item][extid].pop("path", None)
+            confdict["extensions"]["settings"] = utils.dictRecurUpdate(confdict["extensions"]["settings"], availbonus[item], True)
+            # NOTE: fuselists is enabled in order to merge permissions granted by the user with permissions
+            #  granted automatically by Solstice for Extensions
+            print(confdict["extensions"]["settings"])
         else:
-            for extid in bonusesjson[item]:
+            for extid in availbonus[item]:
                 confdict["extensions"]["settings"].pop(extid, None)
+    bonuses.remove("plasma-integration") # it gets transferred through otherwise... :v
 
     if patchfiles:
         # Save to Preferences
