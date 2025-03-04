@@ -426,11 +426,11 @@ def changeBrowserValue(parentfile, browsertype, oldbrowser, newbrowser, childfil
     cids = ast.literal_eval(parent.get("X-Solstice-Children"))
     # Update childrens' shortcuts
     for i in cids:
-        childfile = parentdirectory + "/" + oldprefix + pid + "-" + i + ".desktop"
-        if not os.path.isfile(childfile):
+        cfile = parentdirectory + "/" + oldprefix + pid + "-" + i + ".desktop"
+        if not os.path.isfile(cfile):
             raise SolsticeUtilsException(_("%s's shortcut was not found") % i)
         newpath = parentdirectory + "/" + newprefix + pid + "-" + i + ".desktop"
-        with open(childfile, 'r') as old:
+        with open(cfile, 'r') as old:
             newshortcut = old.readlines()
         ii = 0
         for line in newshortcut:
@@ -443,7 +443,7 @@ def changeBrowserValue(parentfile, browsertype, oldbrowser, newbrowser, childfil
                     newshortcut[ii] = 'Exec=/usr/bin/solstice "' + newpath + '"\n'
             ii += 1
 
-        os.remove(childfile) # Remove old shortcut
+        os.remove(cfile) # Remove old shortcut
         # Write new shortcut
         with open(newpath, 'w') as fp:
             fp.write(''.join(newshortcut))
