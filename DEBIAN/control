@@ -1,0 +1,12 @@
+Package: solstice
+Version: 2025.03.0.0.0
+Architecture: all
+Priority: optional
+Section: stable
+Replaces: feren-storium
+Maintainer: Feren OS Team <ferenosdev@outlook.com>
+Depends: python3 (>= 3.6), python3-pyqt5, python3-pyqt5.qtquick, python3-xdg, python3-simplejson, python3-gi, python3-psutil, python3-magic, python3-pil
+Description: The simple website-specific applications launcher
+ Allows usage of Website Applications in Feren OS, by pre-configuring and launching a designated browser per website application.
+ .
+ These website applications use their own profiles, and are therefore isolated from all your other cookies, data, and other settings.

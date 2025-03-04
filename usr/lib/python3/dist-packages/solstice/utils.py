@@ -413,28 +413,29 @@ def grantFlatpakDownloadsPerm(browsertype, browser, downloadsdir, downloadsname)
 
 
 def changeBrowserValue(parentfile, browsertype, oldbrowser, newbrowser, childfile=None):
-    #Read the parent file to obtain required information
+    # Read the parent file to obtain required information
     parent=DesktopEntry()
     parent.parse(parentfile)
     parentdirectory = os.path.dirname(parentfile)
 
     oldprefix = variables.sources[browsertype][oldbrowser]["classprefix"]
     newprefix = variables.sources[browsertype][newbrowser]["classprefix"]
+    pid = parent.get("X-Solstice-ID")
 
-    #Get childrens' IDs
-    childids = ast.literal_eval(parent.get("X-Solstice-Children"))
-    #Update childrens' shortcuts
-    for i in childids:
-        childfile = parentdirectory + "/" + oldprefix + i + ".desktop"
+    # Get childrens' IDs
+    cids = ast.literal_eval(parent.get("X-Solstice-Children"))
+    # Update childrens' shortcuts
+    for i in cids:
+        childfile = parentdirectory + "/" + oldprefix + pid + "-" + i + ".desktop"
         if not os.path.isfile(childfile):
             raise SolsticeUtilsException(_("%s's shortcut was not found") % i)
-        newpath = parentdirectory + "/" + newprefix + i + ".desktop"
+        newpath = parentdirectory + "/" + newprefix + pid + "-" + i + ".desktop"
         with open(childfile, 'r') as old:
             newshortcut = old.readlines()
         ii = 0
         for line in newshortcut:
             if line.startswith("StartupWMClass="):
-                newshortcut[ii] = "StartupWMClass=" + newprefix + i + "\n"
+                newshortcut[ii] = "StartupWMClass=" + newprefix + pid + "-" + i + "\n"
             elif line.startswith("Exec="):
                 if line.endswith(" --force-manager\n"):
                     newshortcut[ii] = 'Exec=/usr/bin/solstice "' + newpath + '" --force-manager\n'
@@ -442,16 +443,15 @@ def changeBrowserValue(parentfile, browsertype, oldbrowser, newbrowser, childfil
                     newshortcut[ii] = 'Exec=/usr/bin/solstice "' + newpath + '"\n'
             ii += 1
 
-        os.remove(childfile) #Remove old shortcut
-        #Write new shortcut
+        os.remove(childfile) # Remove old shortcut
+        # Write new shortcut
         with open(newpath, 'w') as fp:
             fp.write(''.join(newshortcut))
-        #Mark shortcut as executable
+        # Mark shortcut as executable
         os.system('/usr/bin/chmod +x "%s"' % newpath)
 
-    #Update parent file
-    i = parent.get("X-Solstice-ID")
-    newpath = parentdirectory + "/" + newprefix + i + ".desktop"
+    # Update parent file
+    newpath = parentdirectory + "/" + newprefix + pid + ".desktop"
     with open(parentfile, 'r') as old:
         newshortcut = old.readlines()
     ii = 0
@@ -459,7 +459,7 @@ def changeBrowserValue(parentfile, browsertype, oldbrowser, newbrowser, childfil
         if line.startswith("X-Solstice-Browser="):
             newshortcut[ii] = "X-Solstice-Browser=" + newbrowser + "\n"
         elif line.startswith("StartupWMClass="):
-            newshortcut[ii] = "StartupWMClass=" + newprefix + i + "\n"
+            newshortcut[ii] = "StartupWMClass=" + newprefix + pid + "\n"
         elif line.startswith("Exec="):
             if line.endswith(" --force-manager\n"):
                 newshortcut[ii] = 'Exec=/usr/bin/solstice "' + newpath + '" --force-manager\n'
@@ -467,14 +467,14 @@ def changeBrowserValue(parentfile, browsertype, oldbrowser, newbrowser, childfil
                 newshortcut[ii] = 'Exec=/usr/bin/solstice "' + newpath + '"\n'
         ii += 1
 
-    os.remove(parentfile) #Remove old shortcut
-    #Write new shortcut
+    os.remove(parentfile) # Remove old shortcut
+    # Write new shortcut
     with open(newpath, 'w') as fp:
         fp.write(''.join(newshortcut))
-    #Mark as executable too
+    # Mark as executable too
     os.system('/usr/bin/chmod +x "%s"' % newpath)
 
-    #Return the shortcut to relaunch into
+    # Return the shortcut to relaunch into
     if childfile == None:
         return newpath
     else:
